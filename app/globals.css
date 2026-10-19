@@ -5909,3 +5909,17 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.sidebar-settings {
+  width: 30px;
+  height: 30px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: #aeb5d2;
+}
+
+.sidebar-settings:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}

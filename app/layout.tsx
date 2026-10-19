@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppStoreProvider } from "@/lib/store/app-store";
+import { ToastProvider } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: {
@@ -18,7 +20,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <AppStoreProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </AppStoreProvider>
+      </body>
     </html>
   );
 }
