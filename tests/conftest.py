@@ -19,7 +19,11 @@ def clean_db():
 
 def _clean_account_tables() -> None:
     with engine.begin() as connection:
+        connection.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         for table in (
+            "daily_plan_items",
+            "task_occurrences",
+            "daily_plans",
             "import_issues",
             "import_items",
             "import_batches",
@@ -39,6 +43,7 @@ def _clean_account_tables() -> None:
             "users",
         ):
             connection.execute(text(f"DELETE FROM {table}"))
+        connection.execute(text("SET FOREIGN_KEY_CHECKS=1"))
 
 
 @pytest.fixture()

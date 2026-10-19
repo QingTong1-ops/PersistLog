@@ -1,4 +1,5 @@
 from app.models.import_plan import ImportBatch, ImportIssue, ImportItem
+from app.models.planning import DailyPlan, DailyPlanItem, TaskOccurrence
 from app.models.profile import JobTarget, UserConsent, UserProfile
 from app.models.route import Route, RouteStage, RouteVersion, RouteWeek, Task
 from app.models.system import AiRun, Job, StoredFile
@@ -21,4 +22,7 @@ __all__ = [
     "ImportBatch",
     "ImportItem",
     "ImportIssue",
+    "DailyPlan",
+    "DailyPlanItem",
+    "TaskOccurrence",
 ]

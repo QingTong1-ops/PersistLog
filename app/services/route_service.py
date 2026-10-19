@@ -8,6 +8,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
+from app.models.planning import TaskOccurrence
 from app.models.profile import UserProfile
 from app.models.route import Route, RouteStage, RouteVersion, RouteWeek, Task
 from app.models.user import User
@@ -192,6 +193,7 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
     )
     stage_payloads = []
     total_tasks = 0
+    task_ids: list[str] = []
     for stage in stages:
         weeks = list(
             db.scalars(
@@ -214,6 +216,7 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
                 )
             )
             total_tasks += len(tasks)
+            task_ids.extend(task.id for task in tasks)
             week_payloads.append(
                 {
                     "id": week.id,
@@ -238,6 +241,19 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
                 "weeks": week_payloads,
             }
         )
+    completed_tasks = 0
+    if task_ids:
+        completed_tasks = int(
+            db.scalar(
+                select(func.count(func.distinct(TaskOccurrence.task_id))).where(
+                    TaskOccurrence.user_id == route.user_id,
+                    TaskOccurrence.status == "completed",
+                    TaskOccurrence.task_id.in_(task_ids),
+                )
+            )
+            or 0
+        )
+    percent = (completed_tasks / total_tasks * 100.0) if total_tasks else 0.0
     return RouteDetail.model_validate(
         {
             "id": route.id,
@@ -253,8 +269,8 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
             "current_version": route.current_version,
             "progress": {
                 "total_tasks": total_tasks,
-                "completed_tasks": 0,
-                "percent": 0.0,
+                "completed_tasks": completed_tasks,
+                "percent": percent,
             },
             "stages": stage_payloads,
         }
