@@ -1,0 +1,47 @@
+[project]
+name = "persistlog"
+version = "0.1.0"
+description = "恒序 persistLog Phase 1 backend"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.146",
+    "uvicorn[standard]>=0.54",
+    "sqlalchemy>=2.1",
+    "alembic>=1.20",
+    "pymysql>=1.2",
+    "pydantic>=2.14",
+    "pydantic-settings>=2.16",
+    "PyJWT>=2.15",
+    "argon2-cffi>=25.1",
+    "celery[redis]>=5.6",
+    "redis>=6.4",
+    "httpx>=0.28",
+    "python-multipart>=0.0.32",
+    "email-validator>=2.3",
+    "cryptography>=50.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.1",
+    "pytest-cov>=7.1",
+    "freezegun>=1.5",
+    "ruff>=0.17",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

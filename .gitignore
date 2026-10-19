@@ -25,6 +25,7 @@ tmp/
 .pip-cache/
 .acl-recovery/
 tools/
+pip-*/
 storage/
 logs/
 *.log
