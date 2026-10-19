@@ -4,6 +4,7 @@ os.environ["APP_ENV"] = "test"
 
 import pytest
 from app.core.db import SessionLocal, engine
+from app.core.rate_limit import reset_rate_limits
 from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -12,9 +13,11 @@ from sqlalchemy import text
 @pytest.fixture()
 def clean_db():
     """Remove account data before and after each API test."""
+    reset_rate_limits()
     _clean_account_tables()
     yield
     _clean_account_tables()
+    reset_rate_limits()
 
 
 def _clean_account_tables() -> None:
@@ -39,6 +42,7 @@ def _clean_account_tables() -> None:
             "notification_outbox",
             "notification_preferences",
             "notification_channels",
+            "audit_logs",
             "user_consents",
             "refresh_tokens",
             "job_targets",

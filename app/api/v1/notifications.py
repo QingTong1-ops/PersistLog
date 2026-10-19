@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Response, status
+from fastapi import APIRouter, Query, Request, Response, status
 
 from app.api.deps import CurrentUser, DbSession
+from app.core.rate_limit import check_rate_limit
 from app.schemas.notification import (
     ChannelCreate,
     ChannelOut,
@@ -15,9 +16,17 @@ from app.schemas.notification import (
     PreferencesUpdate,
     TemplateOut,
 )
-from app.services import notification_service
+from app.services import audit_service, notification_service
 
 router = APIRouter(tags=["notifications"])
+
+
+def _channel_audit(channel) -> dict:
+    return {
+        "name": channel.name,
+        "status": channel.status,
+        "quiet_hours": channel.quiet_hours_json,
+    }
 
 
 @router.get("/notification-channels", response_model=list[ChannelOut])
@@ -34,9 +43,18 @@ def list_channels(user: CurrentUser, db: DbSession) -> list[ChannelOut]:
     status_code=status.HTTP_201_CREATED,
 )
 def create_channel(
-    user: CurrentUser, db: DbSession, payload: ChannelCreate
+    user: CurrentUser, db: DbSession, request: Request, payload: ChannelCreate
 ) -> ChannelOut:
     channel = notification_service.create_channel(db, user, payload)
+    audit_service.record(
+        db,
+        user,
+        action="notification.channel.create",
+        target_type="notification_channel",
+        target_id=channel.id,
+        after=_channel_audit(channel),
+        request=request,
+    )
     return ChannelOut.model_validate(notification_service.channel_payload(channel))
 
 
@@ -44,16 +62,40 @@ def create_channel(
 def update_channel(
     user: CurrentUser,
     db: DbSession,
+    request: Request,
     channel_id: str,
     payload: ChannelUpdate,
 ) -> ChannelOut:
+    before = _channel_audit(notification_service.get_channel(db, user, channel_id))
     channel = notification_service.update_channel(db, user, channel_id, payload)
+    audit_service.record(
+        db,
+        user,
+        action="notification.channel.update",
+        target_type="notification_channel",
+        target_id=channel.id,
+        before=before,
+        after=_channel_audit(channel),
+        request=request,
+    )
     return ChannelOut.model_validate(notification_service.channel_payload(channel))
 
 
 @router.delete("/notification-channels/{channel_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_channel(user: CurrentUser, db: DbSession, channel_id: str) -> Response:
+def delete_channel(
+    user: CurrentUser, db: DbSession, request: Request, channel_id: str
+) -> Response:
+    before = _channel_audit(notification_service.get_channel(db, user, channel_id))
     notification_service.delete_channel(db, user, channel_id)
+    audit_service.record(
+        db,
+        user,
+        action="notification.channel.delete",
+        target_type="notification_channel",
+        target_id=channel_id,
+        before=before,
+        request=request,
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -61,6 +103,7 @@ def delete_channel(user: CurrentUser, db: DbSession, channel_id: str) -> Respons
 def test_channel(
     user: CurrentUser, db: DbSession, channel_id: str
 ) -> ChannelTestResponse:
+    check_rate_limit(f"notification-test:{user.id}", 5, 3600)
     outbox = notification_service.test_channel(db, user, channel_id)
     return ChannelTestResponse(outbox_id=outbox.id, status=outbox.status)
 

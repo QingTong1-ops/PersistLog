@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, Request, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.schemas.route import (
@@ -16,7 +16,7 @@ from app.schemas.route import (
     WeekCreate,
     WeekUpdate,
 )
-from app.services import route_service
+from app.services import audit_service, route_service
 
 router = APIRouter(prefix="/routes", tags=["routes"])
 stage_router = APIRouter(prefix="/stages", tags=["routes"])
@@ -74,9 +74,27 @@ def archive_route(user: CurrentUser, db: DbSession, route_id: str) -> RouteDetai
 
 @router.post("/{route_id}/adjust", response_model=RouteDetail)
 def adjust_route(
-    user: CurrentUser, db: DbSession, route_id: str, payload: RouteAdjust
+    user: CurrentUser,
+    db: DbSession,
+    request: Request,
+    route_id: str,
+    payload: RouteAdjust,
 ) -> RouteDetail:
-    return route_service.adjust_route(db, user, route_id, payload)
+    result = route_service.adjust_route(db, user, route_id, payload)
+    audit_service.record(
+        db,
+        user,
+        action="route.adjust",
+        target_type="route",
+        target_id=route_id,
+        after={
+            "start_date": result.start_date.isoformat(),
+            "end_date": result.end_date.isoformat(),
+            "daily_capacity_minutes": result.daily_capacity_minutes,
+        },
+        request=request,
+    )
+    return result
 
 
 @router.get("/{route_id}/versions", response_model=list[RouteVersionSummary])

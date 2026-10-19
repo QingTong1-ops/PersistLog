@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Request, Response, status
 
 from app.api.deps import CurrentUser, DbSession
+from app.core.rate_limit import check_rate_limit, request_ip
 from app.schemas.auth import (
     LoginRequest,
     LogoutRequest,
@@ -41,7 +42,8 @@ def register(payload: RegisterRequest, db: DbSession) -> TokenResponse:
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
+def login(payload: LoginRequest, db: DbSession, request: Request) -> TokenResponse:
+    check_rate_limit(f"login:{request_ip(request)}", 5, 60)
     user = auth_service.authenticate_user(
         db, email=str(payload.email), password=payload.password
     )
