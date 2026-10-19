@@ -37,8 +37,9 @@ class LogoutRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
+    """Access tokens stay in memory; the refresh token is an HttpOnly cookie."""
+
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
     user: UserOut

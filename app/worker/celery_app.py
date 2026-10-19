@@ -20,6 +20,10 @@ celery_app.conf.update(
     enable_utc=True,
     task_always_eager=settings.app_env == "test",
     broker_connection_retry_on_startup=True,
+    # Fail fast when publishing so the API can fall back to inline processing
+    # instead of hanging on an unavailable broker.
+    broker_connection_timeout=2,
+    task_publish_retry=False,
 )
 celery_app.conf.beat_schedule = {
     "morning-report": {
@@ -32,7 +36,7 @@ celery_app.conf.beat_schedule = {
     },
     "overdue-reminder": {
         "task": "app.worker.tasks.notification_tasks.send_overdue_reminders",
-        "schedule": crontab(hour=9, minute=0),
+        "schedule": crontab(hour=20, minute=0),
     },
     "carry-over-reminder": {
         "task": "app.worker.tasks.notification_tasks.send_carry_over_reminders",
@@ -43,5 +47,8 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(day_of_week=0, hour=20, minute=0),
     },
 }
-celery_app.conf.imports = ("app.worker.tasks.notification_tasks",)
+celery_app.conf.imports = (
+    "app.worker.tasks.import_tasks",
+    "app.worker.tasks.notification_tasks",
+)
 celery_app.autodiscover_tasks(["app.worker.tasks"])

@@ -136,6 +136,21 @@ def test_import_user_isolation(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_import_falls_back_inline_without_broker(
+    client: TestClient, monkeypatch
+) -> None:
+    from app.services import import_service
+    from app.worker.celery_app import celery_app
+
+    monkeypatch.setattr(celery_app.conf, "task_always_eager", False)
+    monkeypatch.setattr(import_service, "_broker_available", lambda: False)
+
+    body = register(client)
+    created = _upload(client, body["access_token"])
+    assert created.status_code == 201, created.text
+    assert created.json()["status"] == "needs_review"
+
+
 def test_import_cancel(client: TestClient) -> None:
     body = register(client)
     created = _upload(client, body["access_token"])

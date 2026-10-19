@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -100,7 +100,24 @@ def rotate_refresh_token(db: Session, raw_refresh_token: str) -> tuple[str, str,
             RefreshToken.revoked_at.is_(None),
         )
     )
-    if stored is None or stored.expires_at <= now:
+    if stored is None:
+        # A revoked token being replayed means the token may have leaked:
+        # revoke the whole active family for that user.
+        revoked = db.scalar(
+            select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        )
+        if revoked is not None:
+            db.execute(
+                update(RefreshToken)
+                .where(
+                    RefreshToken.user_id == revoked.user_id,
+                    RefreshToken.revoked_at.is_(None),
+                )
+                .values(revoked_at=now)
+            )
+            db.commit()
+        raise AppError("INVALID_REFRESH_TOKEN", "刷新令牌无效或已过期", status_code=401)
+    if stored.expires_at <= now:
         raise AppError("INVALID_REFRESH_TOKEN", "刷新令牌无效或已过期", status_code=401)
 
     user = db.get(User, stored.user_id)

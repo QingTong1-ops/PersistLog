@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     notification_provider: str = "wecom"
     web_base_url: str = "http://localhost:3000"
 
+    # Comma-separated browser origins allowed to call the API with credentials.
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    refresh_cookie_name: str = "persistlog_refresh"
+    refresh_cookie_secure: bool | None = None
+    refresh_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    refresh_cookie_domain: str | None = None
+
     storage_backend: str = "local"
     storage_dir: str = "storage"
     max_upload_bytes: int = 5 * 1024 * 1024
@@ -56,6 +63,22 @@ class Settings(BaseSettings):
         if self.app_env == "test" and self.test_database_url:
             return self.test_database_url
         return self.database_url
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Return the configured CORS origins without empty entries."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def refresh_cookie_path(self) -> str:
+        """Limit the refresh cookie to the authentication endpoints."""
+        return f"{self.api_v1_prefix.rstrip('/')}/auth"
+
+    def resolved_refresh_cookie_secure(self) -> bool:
+        """Require HTTPS for the refresh cookie unless explicitly overridden."""
+        if self.refresh_cookie_secure is not None:
+            return self.refresh_cookie_secure
+        return self.app_env == "prod"
 
 
 @lru_cache

@@ -1,6 +1,13 @@
+# ruff: noqa: E402
 import os
+from pathlib import Path
 
 os.environ["APP_ENV"] = "test"
+# Keep test uploads out of the developer's local storage directory. The
+# directory lives under the workspace root so the sandbox can write to it.
+_test_storage = Path(__file__).resolve().parents[1] / "storage_test"
+_test_storage.mkdir(exist_ok=True)
+os.environ["STORAGE_DIR"] = str(_test_storage)
 
 import pytest
 from app.core.db import SessionLocal, engine

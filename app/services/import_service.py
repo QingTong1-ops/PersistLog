@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import time
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
 from fastapi import UploadFile
+from redis import Redis
+from redis.exceptions import RedisError
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.orm import Session
 
@@ -23,6 +26,15 @@ from app.services.import_validation import validate_route_draft
 from app.services.markdown_parser import parse_markdown
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+TERMINAL_IMPORT_STATUSES = {
+    "needs_review",
+    "failed",
+    "confirmed",
+    "cancelled",
+    "rolled_back",
+}
 
 
 def _capacity_minutes(db: Session, user: User) -> int:
@@ -91,11 +103,19 @@ def _process_import(
     stored,
 ) -> None:
     started = time.perf_counter()
+    job.status = "running"
+    job.progress = Decimal("0.15")
+    db.commit()
+
     source_text = file_service.read_text(stored)
     rule_draft = parse_markdown(source_text)
+    job.progress = Decimal("0.40")
+    db.commit()
 
     normalizer = get_plan_normalizer(settings.ai_provider)
     draft = normalizer.normalize_plan(source_text, rule_draft)
+    job.progress = Decimal("0.65")
+    db.commit()
 
     capacity = _capacity_minutes(db, user)
     draft, issues, stats = validate_route_draft(
@@ -103,6 +123,8 @@ def _process_import(
         daily_capacity_minutes=capacity,
     )
     has_errors = any(issue["severity"] == "error" for issue in issues)
+    job.progress = Decimal("0.85")
+    db.commit()
 
     ai_run = AiRun(
         user_id=user.id,
@@ -142,6 +164,81 @@ def _process_import(
     db.refresh(job)
 
 
+def _mark_import_failed(
+    db: Session,
+    batch: ImportBatch,
+    job: Job,
+    *,
+    code: str,
+    message: str,
+) -> None:
+    batch.status = "failed"
+    batch.error_json = {"code": code, "message": message}
+    job.status = "failed"
+    job.progress = Decimal("1.00")
+    job.error_json = {"code": code, "message": message}
+    db.commit()
+
+
+def process_import(db: Session, batch_id: str, job_id: str) -> None:
+    """Run the import pipeline for an already persisted batch and job."""
+    batch = db.get(ImportBatch, batch_id)
+    job = db.get(Job, job_id)
+    if batch is None or job is None:
+        return
+    if batch.status in TERMINAL_IMPORT_STATUSES:
+        return
+
+    user = db.get(User, batch.user_id)
+    stored = db.get(StoredFile, batch.file_id)
+    if user is None or stored is None:
+        _mark_import_failed(
+            db,
+            batch,
+            job,
+            code="IMPORT_NOT_FOUND",
+            message="导入文件或用户不存在",
+        )
+        return
+
+    try:
+        _process_import(db, user, batch, job, stored)
+    except AppError as exc:
+        db.rollback()
+        batch = db.get(ImportBatch, batch_id)
+        job = db.get(Job, job_id)
+        if batch is not None and job is not None:
+            _mark_import_failed(db, batch, job, code=exc.code, message=exc.message)
+        raise
+    except Exception as exc:
+        db.rollback()
+        logger.exception("import %s failed", batch_id)
+        batch = db.get(ImportBatch, batch_id)
+        job = db.get(Job, job_id)
+        if batch is not None and job is not None:
+            _mark_import_failed(
+                db,
+                batch,
+                job,
+                code="IMPORT_FAILED",
+                message="导入处理失败",
+            )
+        raise AppError("IMPORT_FAILED", "导入处理失败", status_code=500) from exc
+
+
+def _broker_available() -> bool:
+    """Check Redis quickly so a missing broker cannot stall the request."""
+    try:
+        client = Redis.from_url(
+            settings.redis_url,
+            socket_connect_timeout=0.5,
+            socket_timeout=0.5,
+        )
+        return bool(client.ping())
+    except (RedisError, OSError):
+        return False
+
+
 def create_import(
     db: Session, user: User, upload: UploadFile
 ) -> tuple[ImportBatch, Job]:
@@ -156,36 +253,32 @@ def create_import(
     job = Job(
         user_id=user.id,
         job_type="import_normalization",
-        status="running",
-        progress=Decimal("0.10"),
+        status="queued",
+        progress=Decimal("0.05"),
     )
     db.add(batch)
     db.add(job)
     db.commit()
     db.refresh(batch)
     db.refresh(job)
-    try:
-        _process_import(db, user, batch, job, stored)
-    except Exception as exc:
-        db.rollback()
-        failed_batch = db.get(ImportBatch, batch.id)
-        failed_job = db.get(Job, job.id)
-        if failed_batch is not None:
-            failed_batch.status = "failed"
-            failed_batch.error_json = {
-                "code": "IMPORT_FAILED",
-                "message": str(exc),
-            }
-        if failed_job is not None:
-            failed_job.status = "failed"
-            failed_job.error_json = {
-                "code": "IMPORT_FAILED",
-                "message": str(exc),
-            }
-        db.commit()
-        if isinstance(exc, AppError):
-            raise
-        raise AppError("IMPORT_FAILED", "导入处理失败", status_code=500) from exc
+
+    from app.worker.celery_app import celery_app
+
+    # Fall back to in-process execution when the broker is unavailable, so
+    # local development still works without a running Redis/worker.
+    if celery_app.conf.task_always_eager or not _broker_available():
+        process_import(db, batch.id, job.id)
+    else:
+        from app.worker.tasks import import_tasks
+
+        try:
+            import_tasks.process_import_task.delay(job.id, batch.id)
+        except Exception:  # noqa: BLE001
+            logger.warning("import broker unavailable, processing inline", exc_info=True)
+            process_import(db, batch.id, job.id)
+
+    db.refresh(batch)
+    db.refresh(job)
     return batch, job
 
 

@@ -27,6 +27,9 @@ tmp/
 tools/
 pip-*/
 storage/
+storage_test/
+storage_dev/
+.test-storage-*/
 logs/
 *.log
 

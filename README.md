@@ -28,7 +28,7 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-测试使用 `persistlog_test`，每个 API 测试前后清表；AI 使用 Stub，通知使用 Logging Provider，不访问外网。
+测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；AI 使用 Stub，通知使用 Logging Provider，不访问外网。当前为 **99 passed**。
 
 ## 数据库
 
@@ -71,16 +71,22 @@ $mysql = "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 - `AI_PROVIDER=stub`：本地导入不访问外部模型。
 - `NOTIFICATION_PROVIDER=wecom`：生产使用企微；测试环境自动使用 Logging Provider。
 - `ENCRYPTION_KEY`：用于加密通知 Webhook，必须使用合法 Fernet key。
+- `CORS_ORIGINS`：允许的浏览器来源，逗号分隔；带 credentials 时不能使用 `*`。
+- `REFRESH_COOKIE_SECURE`：生产默认 `true`；本地 HTTP 开发可设为 `false`。
+- `STORAGE_DIR`：本地文件目录；测试使用 `storage_test/`。
 - `.env` 不提交；`.env.example` 只保留占位符。
 
 ## 接口约定
 
 - API 前缀：`/api/v1`
+- 认证：Access Token 走 `Authorization: Bearer`；Refresh Token 只放 `HttpOnly` Cookie（`Path=/api/v1/auth`），响应体不返回 `refresh_token`
+- CORS：`CORS_ORIGINS` 白名单 + `allow_credentials`；`/auth/refresh`、`/auth/logout` 校验 `Origin`
+- 导入：`POST /imports` 返回 `import_id + job_id`，用 `GET /jobs/{id}` 轮询进度
 - 错误统一为 `{"error": {"code", "message", "details", "request_id"}}`
 - 每个响应带 `X-Request-ID`
 - 限流：登录 5 次/分钟/IP；导入 3 次/小时/用户；通知测试 5 次/小时/用户
-- 常见错误码：`AUTH_INVALID_CREDENTIALS`、`RATE_LIMITED`、`IMPORT_VALIDATION_FAILED`、`NOTIFICATION_CHANNEL_INVALID`、`NOTIFICATION_SEND_FAILED`
+- 常见错误码：`AUTH_INVALID_CREDENTIALS`、`RATE_LIMITED`、`IMPORT_VALIDATION_FAILED`、`NOTIFICATION_CHANNEL_INVALID`、`NOTIFICATION_SEND_FAILED`、`CSRF_ORIGIN_REJECTED`
 
 ## 当前阶段
 
-Phase 1 后端 M1–M8 已完成。Phase 2/3（代码静态评审、AI 诊断等）不在本仓库当前范围内。
+Phase 1 后端 M1–M8 + W0 已完成（W0：安全认证 Cookie、CORS、异步导入 + Job 查询、OpenAPI 导出）。Phase 2/3（代码静态评审、AI 诊断等）不在本仓库当前范围内。
