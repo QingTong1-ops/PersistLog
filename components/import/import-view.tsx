@@ -57,8 +57,16 @@ function clonePreview() {
 
 export function ImportView({ demoState }: { demoState?: string }) {
   const { showToast } = useToast();
-  const [pane, setPane] = useState<ImportPane>("empty");
-  const [consent, setConsent] = useState(false);
+  const initialPane: ImportPane =
+    demoState === "preview"
+      ? "preview"
+      : demoState === "error"
+        ? "error"
+        : demoState === "done"
+          ? "done"
+          : "empty";
+  const [pane, setPane] = useState<ImportPane>(initialPane);
+  const [consent, setConsent] = useState(demoState === "preview");
   const [fileName, setFileName] = useState("后端冲刺计划.md");
   const [progress, setProgress] = useState(5);
   const [step, setStep] = useState(0);
@@ -69,19 +77,6 @@ export function ImportView({ demoState }: { demoState?: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<number | null>(null);
   const finishRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (demoState === "preview") {
-      setConsent(true);
-      setPane("preview");
-    } else if (demoState === "error") {
-      setPane("error");
-    } else if (demoState === "done") {
-      setPane("done");
-    } else {
-      setPane("empty");
-    }
-  }, [demoState]);
 
   useEffect(
     () => () => {

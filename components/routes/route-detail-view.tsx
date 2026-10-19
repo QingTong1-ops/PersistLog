@@ -11,15 +11,17 @@ import {
   MoreHorizontal,
   Pause,
   Play,
+  Route as RouteIcon,
 } from "lucide-react";
 import {
   Button,
   ConfirmDialog,
+  EmptyState,
   Modal,
   Tag,
   useToast,
 } from "@/components/ui";
-import { INITIAL_ROUTES, ROUTE_TOTAL_TASKS } from "@/lib/mock-data";
+import { INITIAL_ROUTES } from "@/lib/mock-data";
 import { useAppStore } from "@/lib/store/app-store";
 import type { RouteStatus, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -166,6 +168,7 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
   const route = INITIAL_ROUTES.find((item) => String(item.id) === routeId) ?? INITIAL_ROUTES[0];
   const status = routeStates[route.id] ?? route.status;
   const statusMeta = ROUTE_STATUS[status] ?? ROUTE_STATUS.active;
+  const isPrimary = route.id === 1;
   const [tab, setTab] = useState<DetailTab>("structure");
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -201,11 +204,11 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
 
       <section className="route-hero">
         <div>
-          <span className="eyebrow">Route · 36 天</span>
+          <span className="eyebrow">Route · {route.days} 天</span>
           <h1>{route.id === 1 ? "Java 后端实习准备" : route.name}</h1>
           <div className="route-hero__meta">
             <span>目标：{route.job} · {route.targetDate}</span>
-            <span>路线周期：{route.startDate} → 2026-11-06</span>
+            <span>路线周期：{route.startDate} → {isPrimary ? "2026-11-06" : "待排期"}</span>
             <span className={cn("status", statusMeta.className)}>{statusMeta.label}</span>
             <Tag variant="outline">版本 v3</Tag>
           </div>
@@ -243,19 +246,21 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
       <div className="summary-strip">
         <div className="summary-strip__item">
           <span>路线周期</span>
-          <b>36 <small>天</small></b>
+          <b>{route.days} <small>天</small></b>
         </div>
         <div className="summary-strip__item">
           <span>任务 / 已完成</span>
-          <b>{ROUTE_TOTAL_TASKS} <small>/ {routeDone} 项</small></b>
+          <b>{route.taskCount} <small>/ {isPrimary ? routeDone : route.doneCount} 项</small></b>
         </div>
         <div className="summary-strip__item">
           <span>路线进度</span>
-          <b>{routePercent} <small>%</small></b>
+          <b>{isPrimary ? routePercent : route.progress} <small>%</small></b>
         </div>
         <div className="summary-strip__item">
           <span>预计完成</span>
-          <b className="text-risk">11/12 <small>晚 2 天</small></b>
+          <b className={isPrimary ? "text-risk" : undefined}>
+            {route.forecast} <small>{isPrimary ? "晚 2 天" : ""}</small>
+          </b>
         </div>
       </div>
 
@@ -297,7 +302,8 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
             </div>
           </div>
 
-          {STAGES.map((stage, stageIndex) => (
+          {isPrimary ? (
+            STAGES.map((stage, stageIndex) => (
             <details className="stage" open={stage.open} key={stage.title}>
               <summary>
                 <span className="stage__chevron">
@@ -356,7 +362,30 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
                 ))}
               </div>
             </details>
-          ))}
+          ))
+          ) : (
+            <section className="card">
+              <EmptyState
+                icon={<RouteIcon className="icon" aria-hidden="true" />}
+                title="这条路线还没有阶段结构"
+                description="草稿路线需要先导入计划或手动添加阶段，确认后才会生成每日任务。"
+                actions={
+                  <>
+                    <Link className="btn btn--primary btn--sm" href="/import">
+                      导入 Markdown
+                    </Link>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => showToast("<strong>新增阶段：</strong> 填写名称、开始日期和目标。")}
+                    >
+                      添加阶段
+                    </Button>
+                  </>
+                }
+              />
+            </section>
+          )}
         </div>
       ) : null}
 

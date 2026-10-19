@@ -164,9 +164,19 @@ export function RoutesView({ demoState }: { demoState?: string }) {
                   </div>
                 </div>
                 <div className="route-actions">
-                  <Link className="btn btn--secondary btn--sm" href={`/routes/${route.id}`}>
-                    查看详情
-                  </Link>
+                  {route.taskCount > 0 ? (
+                    <Link className="btn btn--secondary btn--sm" href={`/routes/${route.id}`}>
+                      查看详情
+                    </Link>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => showToast("<strong>草稿路线还没有阶段。</strong> 请先导入计划或添加阶段。")}
+                    >
+                      配置
+                    </Button>
+                  )}
                   {status === "active" ? (
                     <Button variant="ghost" size="sm" onClick={() => handleAction(route, "pause")}>
                       <Pause className="icon" aria-hidden="true" />

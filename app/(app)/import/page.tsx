@@ -11,5 +11,5 @@ export default async function ImportPage({
   searchParams: Promise<{ state?: string }>;
 }) {
   const { state } = await searchParams;
-  return <ImportView demoState={state} />;
+  return <ImportView key={state ?? "default"} demoState={state} />;
 }

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
-import { Button, IconButton, useToast } from "@/components/ui";
+import { IconButton, useToast } from "@/components/ui";
 import { useAppStore } from "@/lib/store/app-store";
 import { DEMO_TODAY_LABEL, DEMO_USER, ROUTE_TOTAL_TASKS } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";

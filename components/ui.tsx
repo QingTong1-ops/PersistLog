@@ -8,6 +8,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
@@ -15,6 +16,16 @@ import { createPortal } from "react-dom";
 import { AlertCircle, CheckCircle2, X } from "lucide-react";
 import { cn, STATUS_META } from "@/lib/utils";
 import type { TaskStatus } from "@/lib/types";
+
+const subscribeToClient = () => () => {};
+
+function useMounted() {
+  return useSyncExternalStore(
+    subscribeToClient,
+    () => true,
+    () => false
+  );
+}
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "light" | "on-dark";
 type ButtonSize = "md" | "sm" | "xs";
@@ -256,11 +267,9 @@ export function Modal({
   footer?: ReactNode;
   wide?: boolean;
 }) {
-  const [mounted, setMounted] = useState(false);
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   useEffect(() => {
     if (!open) return;
@@ -341,9 +350,7 @@ export function Sheet({
   children: ReactNode;
   label: string;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   useEffect(() => {
     if (!open) return;
@@ -421,6 +428,14 @@ export function ConfirmDialog({
 
 type ToastTone = "success" | "risk";
 
+function renderToastMessage(message: ReactNode): ReactNode {
+  if (typeof message !== "string") return message;
+  return message.split(/(<(?:strong|b)>[\s\S]*?<\/(?:strong|b)>)/g).map((part, index) => {
+    const match = part.match(/^<(?:strong|b)>([\s\S]*)<\/(?:strong|b)>$/);
+    return match ? <strong key={`toast-${index}`}>{match[1]}</strong> : part;
+  });
+}
+
 const ToastContext = createContext<{
   showToast: (message: ReactNode, tone?: ToastTone) => void;
 } | null>(null);
@@ -450,7 +465,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           ) : (
             <CheckCircle2 className="icon" aria-hidden="true" />
           )}
-          <span>{toast.message}</span>
+          <span>{renderToastMessage(toast.message)}</span>
         </div>
       ) : null}
     </ToastContext.Provider>

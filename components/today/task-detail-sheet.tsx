@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Button, Sheet, StatusBadge, Tag } from "@/components/ui";
 import type { Task } from "@/lib/types";
-import { CATEGORY_TAG, STATUS_META } from "@/lib/utils";
+import { STATUS_META } from "@/lib/utils";
 
 export type TaskAction =
   | "start"
