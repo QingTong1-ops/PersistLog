@@ -1,9 +1,9 @@
-import { PageHeader } from "@/components/ui";
+import { LoginView } from "@/components/auth/login-view";
+
+export const metadata = {
+  title: "登录",
+};
 
 export default function LoginPage() {
-  return (
-    <main className="main">
-      <PageHeader eyebrow="Auth" title="登录 / 注册" description="登录模块正在接入。" />
-    </main>
-  );
+  return <LoginView />;
 }

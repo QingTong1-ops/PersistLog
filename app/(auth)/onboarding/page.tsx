@@ -1,9 +1,9 @@
-import { PageHeader } from "@/components/ui";
+import { OnboardingView } from "@/components/auth/onboarding-view";
+
+export const metadata = {
+  title: "首次引导",
+};
 
 export default function OnboardingPage() {
-  return (
-    <main className="main">
-      <PageHeader eyebrow="Onboarding" title="首次引导" description="引导模块正在接入。" />
-    </main>
-  );
+  return <OnboardingView />;
 }
