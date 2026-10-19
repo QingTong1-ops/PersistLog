@@ -73,3 +73,22 @@ def archive_job_target(db: Session, user: User, target_id: str) -> None:
     target.status = "archived"
     target.is_primary = False
     db.commit()
+
+
+def resolve_default(db: Session, user: User) -> JobTarget:
+    target = db.scalar(
+        select(JobTarget)
+        .where(JobTarget.user_id == user.id, JobTarget.status == "active")
+        .order_by(JobTarget.is_primary.desc(), JobTarget.created_at.asc())
+    )
+    if target is not None:
+        return target
+    target = JobTarget(
+        user_id=user.id,
+        title="我的目标岗位",
+        is_primary=True,
+        status="active",
+    )
+    db.add(target)
+    db.flush()
+    return target

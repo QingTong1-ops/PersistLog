@@ -14,11 +14,11 @@ from app.ai import get_plan_normalizer
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.models.import_plan import ImportBatch, ImportIssue, ImportItem
-from app.models.profile import JobTarget, UserProfile
+from app.models.profile import UserProfile
 from app.models.route import Route, RouteStage, RouteVersion, RouteWeek, Task
 from app.models.system import AiRun, Job, StoredFile
 from app.models.user import User
-from app.services import file_service
+from app.services import file_service, job_target_service
 from app.services.import_validation import validate_route_draft
 from app.services.markdown_parser import parse_markdown
 
@@ -288,26 +288,6 @@ def update_preview(
     return get_preview(db, user, batch.id)
 
 
-def _resolve_job_target(db: Session, user: User) -> JobTarget:
-    target = db.scalar(
-        select(JobTarget).where(
-            JobTarget.user_id == user.id,
-            JobTarget.status == "active",
-        ).order_by(JobTarget.is_primary.desc(), JobTarget.created_at.asc())
-    )
-    if target is not None:
-        return target
-    target = JobTarget(
-        user_id=user.id,
-        title="我的目标岗位",
-        is_primary=True,
-        status="active",
-    )
-    db.add(target)
-    db.flush()
-    return target
-
-
 def _date(value: Any, fallback: date) -> date:
     if isinstance(value, date):
         return value
@@ -335,7 +315,7 @@ def confirm_import(db: Session, user: User, batch_id: str) -> tuple[str, int]:
     if not route_draft:
         raise AppError("IMPORT_VALIDATION_FAILED", "缺少路线草案", status_code=422)
 
-    target = _resolve_job_target(db, user)
+    target = job_target_service.resolve_default(db, user)
     capacity = _capacity_minutes(db, user)
     start = _date(route_draft.get("start_date"), date.today())
     end = _date(route_draft.get("end_date"), start + timedelta(days=30))
