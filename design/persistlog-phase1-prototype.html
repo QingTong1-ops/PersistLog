@@ -2,97 +2,1901 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>恒序 persistLog · Phase 1 原型</title>
-  <style>
-    :root {
-      --brand:#5b5ce2;--brand-deep:#4142a8;--brand-soft:#ececff;
-      --ink:#172033;--muted:#667085;--faint:#98a2b3;--canvas:#f6f8fc;
-      --surface:#fff;--line:#e7eaf2;--teal:#16a394;--teal-soft:#ddf7f2;
-      --amber:#d88a1b;--amber-soft:#fff1d6;--coral:#d85b66;--coral-soft:#ffe5e7;
-      --sky:#3283c8;--sky-soft:#e4f1fc;--nav:#11162b;--radius:18px;
-      --shadow:0 14px 40px rgba(22,31,66,.06)
-    }
-    *{box-sizing:border-box}body{margin:0;background:var(--canvas);color:var(--ink);font-family:Inter,"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}button,input,select{font:inherit}button{cursor:pointer}
-    .shell{min-height:100vh;display:grid;grid-template-columns:238px minmax(0,1fr)}
-    .sidebar{padding:24px 14px 18px;background:var(--nav);color:#f4f5ff;display:flex;flex-direction:column;gap:25px}
-    .brand{display:flex;gap:10px;align-items:center;padding:0 10px}.brand-mark{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#898aff,#4b4cd0);box-shadow:0 8px 18px #383a9a55}.brand-mark svg{width:20px}.brand-name{font-weight:760;font-size:18px}.brand-sub{font-size:10px;color:#8f96b6;letter-spacing:.13em;text-transform:uppercase;margin-top:2px}
-    .nav-label{padding:0 12px;color:#737c9f;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin:7px 0 8px}.nav{display:grid;gap:4px}.nav-item{border:0;width:100%;padding:11px 12px;border-radius:11px;background:transparent;color:#aeb5d2;text-align:left;display:flex;align-items:center;gap:11px;transition:.18s ease}.nav-item svg{width:17px;height:17px;flex:none}.nav-item:hover{background:#ffffff0e;color:#fff}.nav-item.active{background:linear-gradient(90deg,#6566e54a,#5b5ce20e);color:#fff;box-shadow:inset 3px 0 var(--brand)}.nav-item.disabled{opacity:.48}.nav-tag{margin-left:auto;padding:3px 6px;border-radius:5px;background:#ffffff12;color:#aeb5d2;font-size:9px}.nav-count{margin-left:auto;width:20px;height:20px;display:grid;place-items:center;border-radius:7px;background:#ffffff15;color:#d9d9ff;font-size:10px}
-    .side-spacer{flex:1}.target-mini{margin:0 5px;padding:14px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff08}.target-mini small{color:#8189aa;font-size:10px}.target-mini strong{display:block;margin:6px 0 10px;font-size:13px}.target-bar{height:5px;border-radius:99px;background:#ffffff12;overflow:hidden}.target-bar span{display:block;height:100%;width:61%;background:#75d3c5;border-radius:inherit}.target-foot{display:flex;justify-content:space-between;margin-top:7px;color:#98a1c2;font-size:10px}.profile{display:flex;align-items:center;gap:9px;padding:0 6px;color:#d2d5e4;font-size:12px}.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#f7c798,#db8c76);font-weight:700}.profile small{display:block;color:#7f89ab;font-size:10px;margin-top:2px}
-    .main{min-width:0;padding:24px 32px 44px}.topbar{max-width:1320px;margin:0 auto 26px;display:flex;justify-content:space-between;align-items:center;gap:16px}.crumb{font-size:13px;color:var(--muted)}.crumb strong{color:var(--ink)}.top-actions{display:flex;gap:9px;align-items:center}.date-pill,.icon-btn{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:10px}.date-pill{padding:9px 12px;font-size:11px}.icon-btn{width:36px;height:36px;display:grid;place-items:center;position:relative}.icon-btn svg{width:16px}.dot{position:absolute;right:7px;top:7px;width:5px;height:5px;border-radius:50%;background:var(--coral);border:1px solid #fff}
-    .page{max-width:1320px;margin:0 auto;display:none}.page.active{display:block}.page-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:20px}.page-heading h1{margin:0;font-size:30px;letter-spacing:-.04em}.page-heading p{margin:8px 0 0;color:var(--muted);font-size:13px}.eyebrow{color:var(--brand);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:750}.role-pill{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:9px;background:var(--brand-soft);color:var(--brand-deep);font-size:11px;font-weight:700}.role-pill i{width:6px;height:6px;border-radius:50%;background:var(--brand)}
-    .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 4px 16px #18244806}.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 21px 15px}.card-head h2{margin:0;font-size:16px;letter-spacing:-.015em}.subtle{color:var(--muted);font-size:11px}.link-btn{border:0;background:transparent;color:var(--brand);font-size:11px;font-weight:700;padding:0}.primary{border:0;border-radius:9px;background:var(--brand);color:#fff;padding:10px 14px;font-size:12px;font-weight:700;box-shadow:0 8px 18px #5b5ce22b}.primary:hover{background:var(--brand-deep)}.secondary{border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);padding:9px 13px;font-size:12px;font-weight:650}.danger{color:var(--coral);border-color:#f3c6cb;background:var(--coral-soft)}
-    .hero{position:relative;overflow:hidden;padding:23px 26px;border-radius:21px;background:radial-gradient(circle at 88% 0,#9d9fff4f,transparent 30%),linear-gradient(115deg,#272b75,#595ad6 65%,#7a7be8);color:#fff;box-shadow:0 18px 38px #5051c932;margin-bottom:18px}.hero:after{content:"";position:absolute;width:300px;height:300px;right:-140px;bottom:-180px;border:1px solid #ffffff25;border-radius:50%;box-shadow:0 0 0 22px #ffffff08,0 0 0 44px #ffffff05}.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:21px}.ring{width:93px;height:93px;position:relative;display:grid;place-items:center}.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}.ring-text{text-align:center}.ring-text strong{display:block;font-size:22px;line-height:1}.ring-text span{font-size:10px;color:#cdd0ff}.hero h2{margin:7px 0 5px;font-size:21px;letter-spacing:-.025em}.hero p{margin:0;color:#d9dbff;font-size:12px}.hero-metrics{display:flex;gap:24px;margin-top:17px}.hero-metric strong{display:block;font-size:17px}.hero-metric span{display:block;margin-top:3px;color:#c8cbff;font-size:10px}.hero-actions{align-self:end}.ghost{margin-left:7px;border:1px solid #ffffff44;border-radius:9px;background:#ffffff10;color:#fff;padding:9px 12px;font-size:11px}
-    .two-col{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:18px}.three-col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.stack{display:grid;gap:18px}.metric-card{padding:18px 20px}.metric-card small{display:block;color:var(--muted);font-size:11px}.metric-card strong{display:block;margin-top:8px;font-size:27px;letter-spacing:-.04em}.metric-card .delta{display:inline-flex;margin-top:9px;padding:4px 7px;border-radius:6px;background:var(--teal-soft);color:var(--teal);font-size:10px;font-weight:700}.metric-card .delta.warn{background:var(--amber-soft);color:var(--amber)}.metric-card .delta.risk{background:var(--coral-soft);color:var(--coral)}
-    .tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);padding:0 21px}.tab{border:0;background:transparent;color:var(--faint);padding:0 0 11px;font-size:11px;position:relative}.tab.active{color:var(--ink);font-weight:750}.tab.active:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--brand);border-radius:99px}.task-list{padding:2px 12px 11px}.task{display:grid;grid-template-columns:28px 1fr auto;gap:11px;align-items:center;padding:13px 9px;border-bottom:1px solid #f0f1f5}.task:last-child{border-bottom:0}.check{width:21px;height:21px;border:1.5px solid #c6cbd8;border-radius:7px;background:#fff;display:grid;place-items:center}.check svg{width:13px;opacity:0}.task.done .check{background:var(--teal);border-color:var(--teal);color:#fff}.task.done .check svg{opacity:1}.task.done .task-title{color:var(--faint);text-decoration:line-through}.task-title{font-size:12px;font-weight:700}.task-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;color:var(--muted);font-size:10px}.tag{padding:3px 6px;border-radius:5px;font-size:9px;font-weight:750}.tag.focus{background:var(--brand-soft);color:var(--brand-deep)}.tag.review{background:var(--amber-soft);color:var(--amber)}.tag.output{background:var(--sky-soft);color:var(--sky)}.task-side{text-align:right;color:var(--faint);font-size:10px;white-space:nowrap}.task-side strong{display:block;color:var(--ink);font-size:11px}.task.carry .task-title:before{content:"顺延 · ";color:var(--coral);font-size:10px}.task-foot{padding:5px 21px 17px;color:var(--faint);font-size:10px}.task-foot b{color:var(--coral)}
-    .push-card{padding:19px 20px;background:linear-gradient(135deg,#20245b,#494bc1);color:#fff;overflow:hidden;position:relative}.push-card:after{content:"";position:absolute;width:190px;height:190px;right:-84px;top:-100px;border:1px solid #ffffff22;border-radius:50%;box-shadow:0 0 0 20px #ffffff06}.push-head{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center}.push-title{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:#c6c9ff}.push-icon{width:31px;height:31px;border-radius:9px;display:grid;place-items:center;background:#ffffff14}.push-icon svg{width:16px}.push-card h3{position:relative;z-index:1;margin:16px 0 6px;font-size:15px}.push-card p{position:relative;z-index:1;margin:0;color:#d5d7ff;font-size:11px;line-height:1.65}.push-status{position:relative;z-index:1;display:flex;align-items:center;gap:7px;margin-top:16px;padding-top:13px;border-top:1px solid #ffffff1f;color:#d8dcff;font-size:10px}.push-status i{width:7px;height:7px;border-radius:50%;background:#78d8ca}.mini-list{padding:0 20px 17px}.mini-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:11px}.mini-item:last-child{border-bottom:0}.mini-item span{color:var(--muted)}.mini-item b{font-size:12px}.warn-text{color:var(--amber)}.risk-text{color:var(--coral)}.good-text{color:var(--teal)}
-    .forecast{padding-bottom:18px}.forecast-body{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:5px 21px 0}.forecast-date{font-size:26px;font-weight:760;letter-spacing:-.04em}.forecast-date span{display:block;margin-top:4px;font-size:11px;color:var(--muted);font-weight:450;letter-spacing:0}.flag{padding:7px 9px;border-radius:7px;background:var(--coral-soft);color:var(--coral);font-size:10px;font-weight:750}.timeline{display:flex;margin:21px 21px 0}.step{flex:1;position:relative;min-width:0}.step:not(:last-child):after{content:"";position:absolute;left:13px;right:0;top:7px;height:2px;background:#dfe2f1}.step.done:not(:last-child):after{background:var(--teal)}.step-dot{position:relative;z-index:1;width:15px;height:15px;border:3px solid #fff;border-radius:50%;background:#dfe2f1;box-shadow:0 0 0 1px #dfe2f1}.step.done .step-dot{background:var(--teal);box-shadow:0 0 0 1px var(--teal)}.step.current .step-dot{background:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}.step-label{margin-top:8px;color:var(--muted);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.step.current .step-label{color:var(--brand-deep);font-weight:750}
-    .bar-chart{height:150px;padding:18px 21px 0;display:flex;align-items:end;gap:11px;border-bottom:1px solid var(--line);background:repeating-linear-gradient(to bottom,transparent 0,transparent 36px,#f0f1f6 37px)}.bar-col{flex:1;height:100%;display:flex;align-items:end;justify-content:center;gap:5px}.bar-col i{display:block;width:10px;border-radius:5px 5px 0 0;background:var(--brand)}.bar-col i.alt{background:#a9aae9}.bar-col span{position:absolute;transform:translateY(21px);color:var(--faint);font-size:9px}.chart-foot{display:flex;justify-content:space-between;padding:12px 21px 0;color:var(--muted);font-size:10px}.distribution{padding:10px 21px 20px;display:grid;gap:12px}.dist-row{display:grid;grid-template-columns:70px 1fr 35px;align-items:center;gap:9px;font-size:10px}.dist-bar{height:7px;border-radius:99px;background:#eef0f5;overflow:hidden}.dist-bar span{display:block;height:100%;border-radius:inherit}.purple{background:var(--brand)}.green{background:var(--teal)}.orange{background:#e8aa4d}.blue{background:var(--sky)}
-    .route-card{padding:18px 20px}.route-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}.route-row:last-child{border-bottom:0}.route-row h3{margin:0;font-size:14px}.route-row p{margin:5px 0 0;color:var(--muted);font-size:10px}.route-status{padding:5px 7px;border-radius:6px;font-size:10px;font-weight:700}.route-status.active{background:var(--teal-soft);color:var(--teal)}.route-status.draft{background:var(--brand-soft);color:var(--brand-deep)}.route-status.paused{background:var(--amber-soft);color:var(--amber)}.route-progress{height:6px;margin-top:10px;background:#eef0f5;border-radius:99px;overflow:hidden}.route-progress span{display:block;height:100%;border-radius:inherit;background:var(--brand)}.route-meta{display:flex;gap:13px;margin-top:9px;color:var(--muted);font-size:10px}
-    .import-layout{display:grid;grid-template-columns:minmax(280px,.72fr) minmax(0,1.28fr);gap:18px}.dropzone{min-height:305px;border:1.5px dashed #c4c7ee;border-radius:16px;background:#fbfbff;display:grid;place-items:center;text-align:center;padding:24px}.drop-icon{width:48px;height:48px;margin:0 auto 13px;border-radius:15px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand)}.drop-icon svg{width:22px}.dropzone h2{margin:0;font-size:16px}.dropzone p{margin:8px auto 16px;max-width:220px;color:var(--muted);font-size:11px;line-height:1.7}.file-note{margin-top:10px;color:var(--faint);font-size:10px}.preview-card{overflow:hidden}.preview-top{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}.preview-top h2{margin:0;font-size:15px}.preview-stat{display:flex;gap:13px;color:var(--muted);font-size:10px}.preview-tree{padding:8px 20px 13px}.tree-stage{padding:12px 0;border-bottom:1px solid var(--line)}.tree-stage:last-child{border-bottom:0}.tree-stage strong{font-size:12px}.tree-week{margin:10px 0 0;padding:10px 11px;border-radius:9px;background:#fafaff;color:var(--brand-deep);font-size:11px;font-weight:700}.tree-task{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:7px;padding:8px 10px;border-radius:8px;font-size:10px}.tree-task:hover{background:#f5f6fb}.tree-task span{color:var(--muted)}.issue{margin:10px 20px;padding:10px 11px;border-radius:9px;background:var(--amber-soft);color:#9b6317;font-size:10px;line-height:1.6}.preview-actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line)}
-    .settings-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:18px}.settings-nav{padding:10px}.settings-nav button{width:100%;border:0;border-radius:9px;background:transparent;text-align:left;padding:11px;color:var(--muted);font-size:11px}.settings-nav button.active{background:var(--brand-soft);color:var(--brand-deep);font-weight:750}.settings-form{padding:20px}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{margin-bottom:17px}.field label{display:block;margin-bottom:7px;color:var(--muted);font-size:10px;font-weight:700}.field input,.field select{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font-size:12px;outline:0}.field input:focus,.field select:focus{border-color:#a9aaf0;box-shadow:0 0 0 3px var(--brand-soft)}.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.toggle-row:last-child{border-bottom:0}.toggle-row strong{display:block;font-size:11px}.toggle-row span{display:block;margin-top:4px;color:var(--muted);font-size:10px}.toggle{width:36px;height:20px;border:0;border-radius:99px;background:#d6d9e2;padding:2px}.toggle i{display:block;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}.toggle.on{background:var(--brand)}.toggle.on i{transform:translateX(16px)}
-    .toast{position:fixed;right:24px;bottom:23px;z-index:20;padding:12px 14px;border:1px solid #dfe2f2;border-radius:11px;background:#fff;box-shadow:var(--shadow);color:var(--muted);font-size:11px;opacity:0;transform:translateY(12px);pointer-events:none;transition:.22s}.toast.show{opacity:1;transform:translateY(0)}.toast strong{color:var(--ink)}
-    @media(max-width:1000px){.shell{grid-template-columns:205px 1fr}.main{padding-left:22px;padding-right:22px}.two-col,.import-layout{grid-template-columns:1fr}.three-col{grid-template-columns:repeat(3,1fr)}}
-    @media(max-width:720px){.shell{display:block}.sidebar{position:sticky;top:0;z-index:10;height:auto;padding:11px 12px;display:flex;flex-direction:row;align-items:center;gap:10px}.brand{padding:0 2px}.brand-sub,.nav-label,.target-mini,.profile,.side-spacer,.nav-item span,.nav-tag{display:none}.brand-name{font-size:15px}.nav{display:flex;flex:1;justify-content:flex-end;gap:2px}.nav-item{width:37px;height:36px;justify-content:center;padding:9px}.nav-item.active{box-shadow:inset 0 -3px var(--brand)}.nav-count{display:none}.main{padding:18px 13px 28px}.topbar{margin-bottom:19px}.crumb,.date-pill{display:none}.page-heading{align-items:flex-start;flex-direction:column;gap:11px;margin-bottom:16px}.page-heading h1{font-size:26px}.hero{padding:20px}.hero-grid{grid-template-columns:auto 1fr;gap:14px}.hero-actions{grid-column:1/-1}.hero h2{font-size:18px}.three-col{grid-template-columns:1fr 1fr}.settings-layout{grid-template-columns:1fr}.settings-nav{display:flex;overflow:auto;gap:5px}.settings-nav button{width:auto;white-space:nowrap}.form-row{grid-template-columns:1fr}.task{grid-template-columns:25px 1fr}.task-side{grid-column:2;text-align:left;margin-top:-4px}.forecast-body{align-items:flex-start;flex-direction:column}.page-heading .role-pill{align-self:flex-start}}
-    @media(max-width:400px){.three-col{grid-template-columns:1fr}.hero-grid{grid-template-columns:1fr}.ring{width:82px;height:82px}.hero-copy{order:-1}}
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#11132a" />
+  <title>恒序 persistLog · Phase 1 设计初稿</title>
+  <meta name="description" content="恒序 persistLog Phase 1 前端设计初稿：计划导入、今日执行、学习路线、执行看板与企业微信推送。" />
+  <link rel="stylesheet" href="prototype.css" />
 </head>
 <body>
-  <div class="shell">
+  <!-- 图标库：全部内联，原型不依赖任何外部资源 -->
+  <svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-logo" viewBox="0 0 24 24">
+      <path d="M4 17.5c3.2 0 4.5-3.3 6.3-6.5C11.9 7.4 13.6 5 17 5" />
+      <path d="M7 19.2c3.8 0 5.2-4.5 7.4-8.2 1.7-2.8 3.4-4.5 5.6-4.5" />
+      <circle cx="17.8" cy="17.2" r="2.1" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-today" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
+    </symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24">
+      <path d="M4 19V5M4 19h16" />
+      <path d="M8 16v-5M12.5 16V7M17 16v-8M21 16v-4" />
+    </symbol>
+    <symbol id="i-route" viewBox="0 0 24 24">
+      <path d="M6 4v5a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v5" />
+      <circle cx="6" cy="4" r="2" />
+      <circle cx="18" cy="20" r="2" />
+    </symbol>
+    <symbol id="i-import" viewBox="0 0 24 24">
+      <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" />
+    </symbol>
+    <symbol id="i-code" viewBox="0 0 24 24">
+      <path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13 5l-2 14" />
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v16H7.5A2.5 2.5 0 0 0 5 21.5z" />
+      <path d="M5 18.5A2.5 2.5 0 0 1 7.5 16H19" />
+    </symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.2.6.75 1 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1Z" />
+    </symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24">
+      <path d="M18 9a6 6 0 0 0-12 0c0 6-2.5 6.5-2.5 8.5h17C20.5 15.5 18 15 18 9Z" />
+      <path d="M10 21h4" />
+    </symbol>
+    <symbol id="i-map" viewBox="0 0 24 24">
+      <path d="m9 4 6 2 5-2v14l-5 2-6-2-5 2V6z" />
+      <path d="M9 4v14M15 6v14" />
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24">
+      <rect x="4" y="5.5" width="16" height="15" rx="2.5" />
+      <path d="M8 3v5M16 3v5M4 10.5h16" />
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="10.8" cy="10.8" r="6.2" />
+      <path d="m16 16 4.2 4.2" />
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.2 4.2L19 7" />
+    </symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m8 12.3 2.6 2.6 5.5-5.6" />
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24">
+      <path d="M5 12h14M13.5 6.5 19.5 12l-6 5.5" />
+    </symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24">
+      <path d="M19 12H5M10.5 6.5 4.5 12l6 5.5" />
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24">
+      <path d="m9 5 7 7-7 7" />
+    </symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24">
+      <path d="m5 9 7 7 7-7" />
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14" />
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24">
+      <path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 20h14" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M12 4v12M7.5 11.5 12 16l4.5-4.5M5 20h14" />
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7v5.5l3.5 2" />
+    </symbol>
+    <symbol id="i-target" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-link" viewBox="0 0 24 24">
+      <path d="M10 14a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 0 0-5.7-5.7L11 7.3" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-2.6 2.6a4 4 0 0 0 5.7 5.7l1.6-1.6" />
+    </symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24">
+      <path d="M12 4 3.5 19h17z" />
+      <path d="M12 9v4.2M12 16.2v.1" />
+    </symbol>
+    <symbol id="i-alert-circle" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5M12 16.2v.1" />
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <path d="m6 6 12 12M18 6 6 18" />
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24">
+      <path d="M8 5.5v13l10-6.5z" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24">
+      <path d="M8 5v14M16 5v14" />
+    </symbol>
+    <symbol id="i-more" viewBox="0 0 24 24">
+      <circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24">
+      <path d="m4 20 4.2-1 10.6-10.6a2.2 2.2 0 0 0-3.1-3.1L5.1 15.9z" />
+      <path d="m13.8 6.2 3.1 3.1" />
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M5 7h14M9 7V4.5h6V7M7 7l.8 13h8.4L17 7M10 11v5M14 11v5" />
+    </symbol>
+    <symbol id="i-split" viewBox="0 0 24 24">
+      <path d="M12 4v7M12 11 6 17v3M12 11l6 6v3" />
+      <path d="m3.5 17 2.5 3 2.5-3M15.5 17 18 20l2.5-3" />
+    </symbol>
+    <symbol id="i-block" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m6 6 12 12" />
+    </symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24">
+      <path d="M5 5.5v13l9-6.5z" />
+      <path d="M18 5v14" />
+    </symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24">
+      <path d="M5 21V4M5 5h11l-2 3.5L16 12H5" />
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8.5" r="3.8" />
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+    </symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24">
+      <path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8M10 12h11M17 8l4 4-4 4" />
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24">
+      <path d="M20 8.5A8 8 0 1 0 20.5 14" />
+      <path d="M20 4v5h-5" />
+    </symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24">
+      <path d="M12 3v5M12 16v5M3 12h5M16 12h5M6.3 6.3l3 3M14.7 14.7l3 3M17.7 6.3l-3 3M9.3 14.7l-3 3" />
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3 5 6v6c0 4.6 3.2 7.7 7 9 3.8-1.3 7-4.4 7-9V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24">
+      <path d="M6 3h7l5 5v13H6z" />
+      <path d="M13 3v5h5M9 13h6M9 17h6" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 10.5V17M12 7.3v.1" />
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect x="5" y="10" width="14" height="10" rx="2.5" />
+      <path d="M8 10V7.5a4 4 0 0 1 8 0V10" />
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24">
+      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24">
+      <path d="M3 3l18 18M10.6 6.2A10 10 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-3.4 3.9M6.1 6.8C3.9 8.5 2.5 12 2.5 12s3.5 6 9.5 6a9 9 0 0 0 3.4-.7" />
+    </symbol>
+    <symbol id="i-server" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="16" height="6" rx="2" />
+      <rect x="4" y="14" width="16" height="6" rx="2" />
+      <path d="M8 7h.1M8 17h.1M12 7h4M12 17h4" />
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24">
+      <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3.6" />
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+    </symbol>
+  </svg>
+
+  <div class="app-shell">
+    <!-- 桌面侧边导航 -->
     <aside class="sidebar">
-      <div class="brand"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16.5 9.2 12l3.2 2.8L19 7.5"/><path d="M15.3 7.5H19v3.7"/></svg></div><div><div class="brand-name">恒序</div><div class="brand-sub">persistLog</div></div></div>
-      <div><div class="nav-label">Phase 1 · 执行层</div><nav class="nav">
-        <button class="nav-item active" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg><span>今日</span></button>
-        <button class="nav-item" data-view="routes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5h14v14H5zM8 3v4M16 3v4M5 10h14"/></svg><span>学习路线</span></button>
-        <button class="nav-item" data-view="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg><span>导入计划</span></button>
-        <button class="nav-item" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16M8 16v-5M12 16V7M16 16v-8M20 16v-4"/></svg><span>执行看板</span></button>
-        <button class="nav-item disabled" data-view="future"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4h10a2 2 0 0 1 2 2v14l-7-3-7 3V6a2 2 0 0 1 2-2Z"/><path d="M9 8h6M9 11h6"/></svg><span>代码评审</span><b class="nav-tag">Phase 2</b></button>
-        <button class="nav-item" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2A1.7 1.7 0 0 0 5.4 5.8l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg><span>设置</span></button>
-      </nav></div>
-      <div class="side-spacer"></div><div class="target-mini"><small>当前目标</small><strong>Java 后端实习 · 36 天路线</strong><div class="target-bar"><span></span></div><div class="target-foot"><span>路线进度</span><b>61%</b></div></div><div class="profile"><div class="avatar">林</div><div><b>林同学</b><small>今天也按自己的节奏</small></div></div>
+      <a class="brand" href="#/today" aria-label="恒序 persistLog 首页">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg>
+        </span>
+        <span>
+          <span class="brand-name">恒序</span>
+          <span class="brand-sub">persistLog</span>
+        </span>
+      </a>
+
+      <nav class="side-nav" aria-label="主导航">
+        <div class="nav-group">
+          <p class="nav-label">工作台</p>
+          <a class="nav-item is-active" href="#/today" data-nav="today">
+            <svg class="icon" aria-hidden="true"><use href="#i-today"></use></svg>
+            <span>今日</span>
+            <span class="nav-badge" id="nav-today-count">5</span>
+          </a>
+          <a class="nav-item" href="#/dashboard" data-nav="dashboard">
+            <svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg>
+            <span>执行看板</span>
+          </a>
+        </div>
+        <div class="nav-group">
+          <p class="nav-label">计划</p>
+          <a class="nav-item" href="#/routes" data-nav="routes">
+            <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>
+            <span>学习路线</span>
+          </a>
+          <a class="nav-item" href="#/import" data-nav="import">
+            <svg class="icon" aria-hidden="true"><use href="#i-import"></use></svg>
+            <span>导入计划</span>
+          </a>
+        </div>
+        <div class="nav-group">
+          <p class="nav-label">后续阶段</p>
+          <button class="nav-item is-locked" type="button" data-locked="代码练习将在 Phase 2 开放。">
+            <svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg>
+            <span>代码练习</span>
+            <span class="nav-tag">P2</span>
+          </button>
+          <button class="nav-item is-locked" type="button" data-locked="错题复习与能力看板将在 Phase 3 开放。">
+            <svg class="icon" aria-hidden="true"><use href="#i-book"></use></svg>
+            <span>错题复习</span>
+            <span class="nav-tag">P3</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="sidebar-goal">
+        <p class="sidebar-goal__label">当前主目标</p>
+        <p class="sidebar-goal__title">Java 后端实习 · 11 月 10 日</p>
+        <div class="progress-track" aria-hidden="true"><span id="sidebar-goal-progress" style="width:62%"></span></div>
+        <div class="sidebar-goal__meta"><span>路线进度</span><b class="tnum" id="sidebar-goal-meta">62% · 26/42</b></div>
+      </div>
+
+      <div class="sidebar-profile">
+        <span class="avatar">林</span>
+        <div class="sidebar-profile__copy">
+          <b>林同学</b>
+          <span>每天 240 分钟 · 按自己的节奏</span>
+        </div>
+        <a class="icon-button" href="#/settings/profile" aria-label="个人设置" style="width:30px;height:30px;border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#aeb5d2">
+          <svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg>
+        </a>
+      </div>
     </aside>
 
-    <main class="main">
-      <div class="topbar"><div class="crumb"><strong id="crumb-main">工作台</strong><span id="crumb-sub"> / 今日</span></div><div class="top-actions"><div class="date-pill">周一 · 2026 年 10 月 19 日</div><button class="icon-btn" type="button" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.2"/><path d="m16 16 4.2 4.2"/></svg></button><button class="icon-btn" type="button" aria-label="通知"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button></div></div>
+    <div class="app-main">
+      <!-- 顶栏 -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <a class="mobile-brand" href="#/today" aria-label="恒序首页">
+            <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></span>
+            恒序
+          </a>
+          <div class="breadcrumb" aria-label="面包屑">
+            <span>工作台</span>
+            <span>/</span>
+            <strong id="crumb-page">今日</strong>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="proto-badge">设计初稿 v1.0</span>
+          <span class="date-chip">
+            <svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg>
+            10 月 19 日 · 周一
+          </span>
+          <button class="icon-button" id="open-proto" type="button" aria-label="打开原型导航" aria-haspopup="dialog">
+            <svg class="icon" aria-hidden="true"><use href="#i-map"></use></svg>
+          </button>
+          <button class="icon-button" type="button" aria-label="通知" data-toast="今晚 20:30 会推送晚报；逾期任务会在 20:00 提醒。">
+            <span class="icon-button__dot"></span>
+            <svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg>
+          </button>
+          <a class="topbar-avatar" href="#/settings/profile">
+            <span>林同学</span>
+            <span class="avatar avatar--sm">林</span>
+          </a>
+        </div>
+      </header>
 
-      <section class="page active" id="view-today">
-        <div class="page-heading"><div><div class="eyebrow">Today · Phase 1</div><h1>今天先做什么？</h1><p>计划已经排好，今天只需要确认、执行和记录。</p></div><div class="role-pill"><i></i>Java 后端实习 · 预计 12 月 04 日</div></div>
-        <section class="hero"><div class="hero-grid"><div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="#ffffff2b" stroke-width="7"/><circle id="today-ring" cx="50" cy="50" r="42" fill="none" stroke="#a8e9df" stroke-width="7" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="158"/></svg><div class="ring-text"><strong id="today-percent">40%</strong><span>今日完成</span></div></div><div><div class="eyebrow" style="color:#c9ccff">Monday focus</div><h2>今天的重点，是完成计划中的 5 项任务。</h2><p>有效容量 192 分钟 · 已排入 164 分钟 · 剩余缓冲 28 分钟</p><div class="hero-metrics"><div class="hero-metric"><strong id="done-metric">2 / 5</strong><span>任务完成</span></div><div class="hero-metric"><strong>1</strong><span>项自动顺延</span></div><div class="hero-metric"><strong>8 天</strong><span>累计活跃</span></div></div></div><div class="hero-actions"><button class="primary" data-toast="已进入执行模式，从顺延任务开始。">开始执行</button><button class="ghost" data-toast="今日计划：192 分钟有效容量，28 分钟可自由安排。">调整计划</button></div></div></section>
-        <div class="two-col"><section class="card"><div class="card-head"><div><h2>今日任务 <span class="subtle" id="task-count">2 / 5 已完成</span></h2></div><button class="link-btn" data-toast="Phase 1 支持手动添加今日任务。">+ 添加任务</button></div><div class="tabs"><button class="tab active">今天</button><button class="tab">本周</button></div><div class="task-list" id="today-tasks">
-          <div class="task done" data-task><button class="check" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></button><div><div class="task-title">完成 2 道二叉树中等题</div><div class="task-meta"><span class="tag focus">算法</span><span>基础夯实 · 第 3 周</span><span>来源：路线</span></div></div><div class="task-side"><strong>60 分钟</strong><span>已完成</span></div></div>
-          <div class="task done" data-task><button class="check" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></button><div><div class="task-title">复习 Redis 缓存一致性</div><div class="task-meta"><span class="tag review">复习</span><span>路线基础 · 第 2 周</span><span>来源：手动</span></div></div><div class="task-side"><strong>32 分钟</strong><span>已完成</span></div></div>
-          <div class="task carry" data-task><button class="check" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></button><div><div class="task-title">完成订单系统缓存方案</div><div class="task-meta"><span class="tag output">工程</span><span>阶段二 · 第 4 周</span><span>来源：顺延</span></div></div><div class="task-side"><strong>70 分钟</strong><span>顺延 1 次</span></div></div>
-          <div class="task" data-task><button class="check" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></button><div><div class="task-title">回答 3 道 JVM 高频问题</div><div class="task-meta"><span class="tag focus">八股</span><span>阶段一 · 第 2 周</span><span>来源：路线</span></div></div><div class="task-side"><strong>35 分钟</strong><span>今晚 20:00</span></div></div>
-          <div class="task" data-task><button class="check" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 4 4L19 6"/></svg></button><div><div class="task-title">完成今日复盘并填写实际分钟</div><div class="task-meta"><span class="tag output">复盘</span><span>今日计划 · 自动生成</span></div></div><div class="task-side"><strong>25 分钟</strong><span>今晚 21:30</span></div></div>
-        </div><div class="task-foot">昨天有 1 项任务自动进入今天，路线预计结束日期 <b>顺延 1 天</b>。</div></section>
-        <div class="stack"><section class="push-card"><div class="push-head"><div class="push-title">WeCom · 已连接</div><div class="push-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 13a8 8 0 0 1 16 0v5H4z"/><path d="M8 18v2h8v-2M9 9h.01M15 9h.01"/></svg></div></div><h3>今日早报已发送</h3><p>07:30 已推送 5 项任务。晚报会在 20:30 汇总完成情况和顺延任务。</p><div class="push-status"><i></i><span>企业微信群机器人运行正常</span><button class="link-btn" style="margin-left:auto;color:#dfe1ff" data-view-go="settings">设置</button></div></section><section class="card"><div class="card-head"><h2>执行摘要</h2><button class="link-btn" data-view-go="dashboard">查看看板</button></div><div class="mini-list"><div class="mini-item"><span>本周完成率</span><b class="good-text">74%</b></div><div class="mini-item"><span>计划 / 实际分钟</span><b>620 / 578</b></div><div class="mini-item"><span>本周顺延</span><b class="warn-text">3 项</b></div><div class="mini-item"><span>路线进度</span><b>61%</b></div></div></section></div></div>
-        <section class="card forecast" style="margin-top:18px"><div class="card-head"><h2>路线预测 <span class="subtle">第 18 / 36 天</span></h2><button class="link-btn" data-view-go="routes">查看路线</button></div><div class="forecast-body"><div class="forecast-date">12 月 04 日<span>预计完成当前 Java 后端准备路线</span></div><span class="flag">顺延 1 天</span></div><div class="timeline"><div class="step done"><div class="step-dot"></div><div class="step-label">基础补齐</div></div><div class="step done"><div class="step-dot"></div><div class="step-label">算法强化</div></div><div class="step current"><div class="step-dot"></div><div class="step-label">工程输出</div></div><div class="step"><div class="step-dot"></div><div class="step-label">模拟面试</div></div><div class="step"><div class="step-dot"></div><div class="step-label">冲刺</div></div></div></section>
-      </section>
+      <main class="main" id="main-content">
+        <!-- =====================================================
+             登录 / 注册
+             ===================================================== -->
+        <section class="view view--auth" id="view-login" hidden>
+          <div class="auth-layout">
+            <div class="auth-story">
+              <a class="brand" href="#/login" aria-label="恒序 persistLog">
+                <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></span>
+                <span>
+                  <span class="brand-name">恒序</span>
+                  <span class="brand-sub">persistLog</span>
+                </span>
+              </a>
 
-      <section class="page" id="view-routes"><div class="page-heading"><div><div class="eyebrow">Plans · Phase 1</div><h1>学习路线</h1><p>路线、阶段、周目标和任务保持清晰的层级关系。</p></div><button class="primary" data-view-go="import">导入 Markdown 计划</button></div><div class="three-col"><div class="card metric-card"><small>当前路线</small><strong>1</strong><span class="delta">正在执行</span></div><div class="card metric-card"><small>路线任务</small><strong>42</strong><span class="delta">已完成 26 项</span></div><div class="card metric-card"><small>预计完成</small><strong>12.04</strong><span class="delta warn">顺延 1 天</span></div></div><section class="card route-card" style="margin-top:18px"><div class="card-head"><h2>我的路线</h2><button class="link-btn" data-toast="Phase 1 支持手动创建空路线。">+ 新建路线</button></div><div class="route-row"><div><h3>Java 后端实习准备 · 36 天</h3><p>阶段 3 / 5 · 最近更新：今天 08:02</p><div class="route-progress"><span style="width:61%"></span></div><div class="route-meta"><span>42 个任务</span><span>已用 18 天</span><span>计划 3,840 分钟</span></div></div><span class="route-status active">执行中</span></div><div class="route-row"><div><h3>秋招算法基础补齐 · 21 天</h3><p>已导入，等待确认计划日期</p><div class="route-progress"><span style="width:18%;background:#aaaaf0"></span></div><div class="route-meta"><span>18 个任务</span><span>草稿</span><span>预计 1,260 分钟</span></div></div><span class="route-status draft">待确认</span></div><div class="route-row"><div><h3>Redis 与 MySQL 专项</h3><p>用户主动暂停 · 2026-10-11</p><div class="route-meta"><span>12 个任务</span><span>已完成 5 项</span></div></div><span class="route-status paused">已暂停</span></div></section></section>
+              <div class="auth-story-copy">
+                <span class="eyebrow eyebrow--light">Quiet Momentum</span>
+                <h1>把计划，变成今天<br />能完成的事。</h1>
+                <p>恒序不催你打卡。它只回答两个问题：今天做什么，以及做完之后，有没有更接近目标岗位。</p>
+                <ul class="auth-points">
+                  <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>导入一份 Markdown 计划，自动拆成阶段、周和每日任务</span></li>
+                  <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>按真实可用时间约束容量，宁可少而完成，不可多而崩溃</span></li>
+                  <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>企业微信推送今日重点，晚上汇总完成与顺延</span></li>
+                </ul>
+              </div>
 
-      <section class="page" id="view-import"><div class="page-heading"><div><div class="eyebrow">Import · Markdown only</div><h1>导入一份计划</h1><p>把你已有的学习计划变成可以每天执行的路线。</p></div><span class="role-pill"><i></i>AI 只负责结构化与校验</span></div><div class="import-layout"><section class="card dropzone"><div><div class="drop-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg></div><h2>拖入 Markdown 文件</h2><p>支持 .md / .markdown，首次导入会请求 AI 解析授权。</p><button class="primary" id="choose-file">选择文件</button><div class="file-note">单个文件 ≤ 5MB · UTF-8</div></div></section><section class="card preview-card"><div class="preview-top"><div><h2>解析预览</h2><div class="subtle" style="margin-top:5px">后端冲刺计划.md · 已完成结构化</div></div><div class="preview-stat"><span>3 阶段</span><span>6 周</span><span>42 任务</span></div></div><div class="issue">有 2 个任务缺少验收标准，确认前可以直接在下方编辑。日期早于今天的内容将整体平移或归档。</div><div class="preview-tree"><div class="tree-stage"><strong>阶段一 · 基础夯实</strong><div class="tree-week">第 1 周 · 网络基础</div><div class="tree-task"><span>TCP 三次握手</span><b>45 分钟</b></div><div class="tree-task"><span>HTTP 缓存</span><b>45 分钟</b></div></div><div class="tree-stage"><strong>阶段二 · 算法强化</strong><div class="tree-week">第 3 周 · 树与图</div><div class="tree-task"><span>二叉树遍历与复杂度</span><b>60 分钟</b></div><div class="tree-task"><span>完成 3 道中等题</span><b>90 分钟</b></div></div></div><div class="preview-actions"><button class="secondary" data-toast="已取消本次导入，已有路线不会改变。">取消</button><button class="secondary" data-toast="正在重新校验任务日期和容量。">重新解析</button><button class="primary" id="confirm-import">确认并创建路线</button></div></section></div></section>
+              <div class="auth-proof">
+                <div class="auth-proof__item"><strong>3–6</strong><span>每日任务项</span></div>
+                <div class="auth-proof__item"><strong>80%</strong><span>默认容量系数</span></div>
+                <div class="auth-proof__item"><strong>5 类</strong><span>企微通知事件</span></div>
+                <p class="auth-proof__quote">「不用每天整理待办。打开就是今天，做完就能看到路线往前挪了一点。」</p>
+              </div>
+            </div>
 
-      <section class="page" id="view-dashboard"><div class="page-heading"><div><div class="eyebrow">Execution dashboard · Phase 1</div><h1>执行看板</h1><p>看计划有没有落地、时间花在哪里，以及路线什么时候完成。</p></div><button class="secondary" data-toast="已切换到最近 30 天。">最近 30 天 ▾</button></div><div class="three-col"><div class="card metric-card"><small>计划完成率</small><strong>74%</strong><span class="delta">+8% 较上周</span></div><div class="card metric-card"><small>计划 / 实际分钟</small><strong>620 / 578</strong><span class="delta">偏差 6.8%</span></div><div class="card metric-card"><small>累计活跃天数</small><strong>8 天</strong><span class="delta">不会因中断清零</span></div></div><div class="two-col" style="margin-top:18px"><section class="card"><div class="card-head"><div><h2>近 7 天执行趋势</h2><span class="subtle">完成任务数 / 计划任务数</span></div><span class="good-text" style="font-size:12px;font-weight:750">稳定上升</span></div><div class="bar-chart"><div class="bar-col"><i style="height:42%"></i><i class="alt" style="height:58%"></i><span>一</span></div><div class="bar-col"><i style="height:64%"></i><i class="alt" style="height:78%"></i><span>二</span></div><div class="bar-col"><i style="height:50%"></i><i class="alt" style="height:68%"></i><span>三</span></div><div class="bar-col"><i style="height:74%"></i><i class="alt" style="height:84%"></i><span>四</span></div><div class="bar-col"><i style="height:60%"></i><i class="alt" style="height:76%"></i><span>五</span></div><div class="bar-col"><i style="height:82%"></i><i class="alt" style="height:90%"></i><span>六</span></div><div class="bar-col"><i style="height:72%"></i><i class="alt" style="height:88%"></i><span>日</span></div></div><div class="chart-foot"><span><b style="color:var(--brand)">■</b> 已完成</span><span><b style="color:#a9aae9">■</b> 计划</span></div></section><section class="card"><div class="card-head"><div><h2>任务分布</h2><span class="subtle">按任务类型</span></div></div><div class="distribution"><div class="dist-row"><span>算法</span><div class="dist-bar"><span class="purple" style="width:68%"></span></div><b>18</b></div><div class="dist-row"><span>八股</span><div class="dist-bar"><span class="green" style="width:48%"></span></div><b>12</b></div><div class="dist-row"><span>工程</span><div class="dist-bar"><span class="orange" style="width:34%"></span></div><b>7</b></div><div class="dist-row"><span>复盘</span><div class="dist-bar"><span class="blue" style="width:24%"></span></div><b>5</b></div></div></section></div><section class="card forecast" style="margin-top:18px"><div class="card-head"><div><h2>预测与风险</h2><span class="subtle">基于剩余任务和最近 14 天实际吞吐</span></div><span class="flag">需关注顺延</span></div><div class="forecast-body"><div class="forecast-date">12 月 04 日<span>当前目标日期：12 月 03 日 · 预计晚 1 天</span></div><button class="secondary" data-toast="已打开路线调整入口。">调整路线</button></div><div class="task-foot" style="padding:17px 21px 0">今日有效容量 192 分钟；最近 14 天平均完成 168 分钟。建议本周暂时维持当前任务量。</div></section></section>
+            <div class="auth-form-wrap">
+              <div class="auth-card">
+                <div class="auth-tabs" role="tablist" aria-label="登录或注册">
+                  <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-tab="login">登录</button>
+                  <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-tab="register">注册</button>
+                </div>
+                <h2 id="auth-title">继续你的执行节奏</h2>
+                <p id="auth-sub">今天的计划还在等你，登录后从顺延任务开始。</p>
 
-      <section class="page" id="view-settings"><div class="page-heading"><div><div class="eyebrow">Settings</div><h1>设置</h1><p>调整个人档案、每日容量和企业微信推送。</p></div></div><div class="settings-layout"><section class="card settings-nav"><button class="active">档案与容量</button><button data-toast="通知设置已打开。">企业微信推送</button><button>AI 授权</button><button>数据与账号</button></section><section class="card settings-form"><div class="card-head" style="padding:0 0 18px"><div><h2>档案与每日容量</h2><div class="subtle" style="margin-top:6px">计划只使用这个时间预算，不会把每一天排满。</div></div><button class="primary" data-toast="设置已保存。">保存设置</button></div><div class="form-row"><div class="field"><label>当前目标岗位</label><input value="Java 后端实习" /></div><div class="field"><label>目标日期</label><input value="2026-12-03" /></div></div><div class="form-row"><div class="field"><label>每日可投入时间（分钟）</label><input value="240" /></div><div class="field"><label>计划容量系数</label><select><option>80% · 推荐</option><option>90%</option><option>100%</option><option>60%</option></select></div></div><div class="toggle-row"><div><strong>允许自动顺延未完成任务</strong><span>日界线后把未完成任务放入下一天，并更新预测日期。</span></div><button class="toggle on" type="button"><i></i></button></div><div class="toggle-row"><div><strong>显示空计划日</strong><span>没有任务时仍创建今日计划，便于推送和记录。</span></div><button class="toggle on" type="button"><i></i></button></div><div class="toggle-row"><div><strong>记录实际分钟</strong><span>完成任务时询问实际用时，用于后续预测。</span></div><button class="toggle on" type="button"><i></i></button></div><div class="push-card" style="margin-top:20px"><div class="push-head"><div class="push-title">WeCom group bot</div><span class="route-status active">已连接</span></div><h3>企业微信群机器人</h3><p>Webhook：••••••••••••••••••••••••7a2f · 早报 07:30 · 晚报 20:30</p><div class="push-status"><i></i><span>最近测试发送：今天 07:31</span><button class="link-btn" style="margin-left:auto;color:#dfe1ff" data-toast="测试消息已进入发送队列。">发送测试</button></div></div></section></div></section>
-    </main>
+                <form class="auth-form" id="auth-form">
+                  <div class="field">
+                    <label for="auth-account">邮箱或手机号</label>
+                    <input id="auth-account" name="account" type="text" value="lin@example.com" autocomplete="username" />
+                  </div>
+                  <div class="field">
+                    <label for="auth-password">密码 <a href="#/login" data-toast="密码找回将在正式版接入邮件服务。">忘记密码？</a></label>
+                    <input id="auth-password" name="password" type="password" value="persistlog" autocomplete="current-password" />
+                  </div>
+                  <div id="register-fields" hidden>
+                    <div class="field" style="margin-bottom:13px">
+                      <label for="auth-name">怎么称呼你</label>
+                      <input id="auth-name" name="name" type="text" placeholder="例如：林同学" autocomplete="nickname" />
+                    </div>
+                    <div class="field">
+                      <label for="auth-confirm">确认密码</label>
+                      <input id="auth-confirm" name="confirm" type="password" placeholder="再输入一次密码" autocomplete="new-password" />
+                    </div>
+                  </div>
+                  <div class="auth-row">
+                    <label class="check-row" style="margin-top:0">
+                      <input type="checkbox" checked />
+                      <span>保持登录 30 天</span>
+                    </label>
+                    <span>Refresh Token 存在 HttpOnly Cookie</span>
+                  </div>
+                  <button class="btn btn--primary btn--block" type="submit" id="auth-submit">登录</button>
+                </form>
+
+                <div class="auth-hint"><strong>原型提示：</strong>无需真实账号。点击「登录」进入今日页，点击「注册」进入首次引导。</div>
+                <div class="auth-divider"><span>或</span></div>
+                <a class="btn btn--secondary btn--block" href="#/onboarding">先看首次使用引导</a>
+                <p class="auth-legal">继续即表示同意《服务条款》与《隐私政策》。计划文本发送第三方 AI 解析前，会单独请求授权。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =====================================================
+             首次引导
+             ===================================================== -->
+        <section class="view" id="view-onboarding" hidden>
+          <div class="onboarding-shell">
+            <header class="onboarding-top">
+              <a class="brand" href="#/onboarding" aria-label="恒序 persistLog">
+                <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></span>
+                <span>
+                  <span class="brand-name">恒序</span>
+                  <span class="brand-sub">persistLog</span>
+                </span>
+              </a>
+              <div class="onboarding-top__right">
+                <span class="muted" style="font-size:10px">约 2 分钟</span>
+                <a class="btn btn--ghost btn--sm" href="#/today">稍后再说</a>
+              </div>
+            </header>
+
+            <div class="stepper" id="onboarding-stepper" aria-label="引导进度">
+              <div class="stepper-step is-active" data-onb-indicator="1">
+                <span class="stepper-dot">1</span>
+                <p class="stepper-label">档案与容量</p>
+              </div>
+              <div class="stepper-step" data-onb-indicator="2">
+                <span class="stepper-dot">2</span>
+                <p class="stepper-label">求职目标</p>
+              </div>
+              <div class="stepper-step" data-onb-indicator="3">
+                <span class="stepper-dot">3</span>
+                <p class="stepper-label">导入计划</p>
+              </div>
+              <div class="stepper-step" data-onb-indicator="4">
+                <span class="stepper-dot">4</span>
+                <p class="stepper-label">企业微信</p>
+              </div>
+            </div>
+
+            <div class="onboarding-grid">
+              <section class="card onboarding-card">
+                <!-- Step 1 -->
+                <div class="onboarding-step" data-onb-step="1">
+                  <span class="onboarding-step__eyebrow">Step 01 · 档案</span>
+                  <h1>先告诉恒序，你每天有多少时间。</h1>
+                  <p>这决定每日计划的上限。计划会留出缓冲，不把每一天排满。</p>
+                  <div class="form-grid">
+                    <div class="field">
+                      <label for="onb-timezone">时区 <small>用于计算“今天”</small></label>
+                      <select id="onb-timezone">
+                        <option>Asia/Shanghai · 中国标准时间</option>
+                        <option>Asia/Tokyo · 日本标准时间</option>
+                        <option>Asia/Singapore · 新加坡时间</option>
+                        <option>Europe/London · 伦敦时间</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="onb-boundary">日界线 <small>默认 04:00</small></label>
+                      <select id="onb-boundary">
+                        <option>04:00 · 推荐，熬夜也算今天</option>
+                        <option>00:00 · 自然日</option>
+                        <option>06:00</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="onb-minutes">每日可投入时间 <small>分钟</small></label>
+                      <input id="onb-minutes" type="number" min="30" max="720" step="15" value="300" />
+                      <p class="field__hint">包含学习、练习和复盘，不含通勤与休息。</p>
+                    </div>
+                    <div class="field">
+                      <label for="onb-factor">计划容量系数 <small>0.6–1.0</small></label>
+                      <div class="range-row">
+                        <input id="onb-factor" type="range" min="60" max="100" step="5" value="80" />
+                        <output class="range-value" id="onb-factor-value" for="onb-factor">80%</output>
+                      </div>
+                      <p class="field__hint">给突发情况留出余量，推荐 80%。</p>
+                    </div>
+                  </div>
+                  <div class="capacity-callout">
+                    <svg class="icon" aria-hidden="true"><use href="#i-target"></use></svg>
+                    <p>有效日容量 = 300 分钟 × 80% = <b>240 分钟</b>。每日计划最多排入 3–6 项。</p>
+                  </div>
+                  <div class="onboarding-step__note">
+                    <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                    <span>之后可在「设置 → 档案与容量」随时调整。调整只影响未来的每日计划，不改写历史记录。</span>
+                  </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="onboarding-step" data-onb-step="2" hidden>
+                  <span class="onboarding-step__eyebrow">Step 02 · 目标</span>
+                  <h1>给这段准备一个明确的目标岗位。</h1>
+                  <p>目标只用于给路线定方向和判断风险，不会替你投递，也不做账号数据交换。</p>
+                  <div class="form-grid">
+                    <div class="field">
+                      <label for="onb-job">目标岗位</label>
+                      <input id="onb-job" type="text" value="Java 后端实习" />
+                    </div>
+                    <div class="field">
+                      <label for="onb-city">目标城市</label>
+                      <input id="onb-city" type="text" value="杭州 / 上海" />
+                    </div>
+                    <div class="field">
+                      <label for="onb-industry">行业</label>
+                      <select id="onb-industry">
+                        <option>互联网 / 软件</option>
+                        <option>金融科技</option>
+                        <option>企业服务</option>
+                        <option>智能制造</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="onb-company">公司类型</label>
+                      <select id="onb-company">
+                        <option>不限</option>
+                        <option>大厂</option>
+                        <option>中型技术公司</option>
+                        <option>初创公司</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="onb-target-date">目标日期</label>
+                      <input id="onb-target-date" type="date" value="2026-11-10" />
+                    </div>
+                    <div class="field">
+                      <label for="onb-priority">优先级</label>
+                      <select id="onb-priority">
+                        <option>P0 · 最高</option>
+                        <option>P1 · 高</option>
+                        <option>P2 · 普通</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label class="check-row" style="margin-top:16px">
+                    <input type="checkbox" checked />
+                    <span>设为主目标（同一时间只启用一个主目标；其他目标可归档）</span>
+                  </label>
+                  <div class="onboarding-step__note">
+                    <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                    <span>Phase 1 不生成 AI 路线。你可以导入已有计划，或先创建一条空路线手动添加任务。</span>
+                  </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="onboarding-step" data-onb-step="3" hidden>
+                  <span class="onboarding-step__eyebrow">Step 03 · 计划</span>
+                  <h1>有现成计划？导入一份 Markdown。</h1>
+                  <p>恒序会把它拆成阶段、周和任务，并在确认前给你一份可编辑的预览。</p>
+
+                  <div class="upload-mini">
+                    <span class="upload-mini__icon"><svg class="icon" aria-hidden="true"><use href="#i-file"></use></svg></span>
+                    <div class="upload-mini__copy">
+                      <strong id="onb-file-name">尚未选择文件</strong>
+                      <span>.md / .markdown · 单文件 ≤ 5MB · UTF-8</span>
+                    </div>
+                    <button class="btn btn--secondary btn--sm" type="button" id="onb-sample">使用示例</button>
+                  </div>
+
+                  <label class="check-row" style="margin-top:14px">
+                    <input type="checkbox" id="onb-consent" checked />
+                    <span>我同意将计划文本发送给第三方 AI 进行结构化解析（scope <code style="font-family:var(--mono);font-size:9px">ai_import</code>，version v1）。可在设置中随时撤销。</span>
+                  </label>
+
+                  <div class="onboarding-step__note">
+                    <svg class="icon" aria-hidden="true"><use href="#i-warning"></use></svg>
+                    <span>如果你还没有计划，也可以先跳过。今日页会引导你手动创建第一个任务。</span>
+                  </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="onboarding-step" data-onb-step="4" hidden>
+                  <span class="onboarding-step__eyebrow">Step 04 · 推送</span>
+                  <h1>让今天从一条企业微信消息开始。</h1>
+                  <p>企业微信群机器人是单向 Webhook。消息里的操作会链接回网页，不会在群里执行。</p>
+
+                  <div class="field" style="margin-top:18px">
+                    <label for="onb-webhook">群机器人 Webhook <small>可稍后配置</small></label>
+                    <input id="onb-webhook" type="password" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..." autocomplete="off" />
+                    <p class="field__hint">仅接受 HTTPS、固定企业微信域名；密钥加密存储，页面只显示掩码。</p>
+                  </div>
+
+                  <div style="margin-top:15px">
+                    <div class="toggle-row">
+                      <div><strong>早报 · 07:30</strong><p>今日计划和重点任务，附 today_link。</p></div>
+                      <button class="toggle is-on" type="button" aria-label="开启早报" aria-pressed="true"><i></i></button>
+                    </div>
+                    <div class="toggle-row">
+                      <div><strong>晚报 · 20:30</strong><p>今日完成率、未完成任务和顺延提示。</p></div>
+                      <button class="toggle is-on" type="button" aria-label="开启晚报" aria-pressed="true"><i></i></button>
+                    </div>
+                    <div class="toggle-row">
+                      <div><strong>逾期与顺延</strong><p>20:00 提醒逾期；日界线后提示顺延与新的预计完成日期。</p></div>
+                      <button class="toggle is-on" type="button" aria-label="开启逾期与顺延" aria-pressed="true"><i></i></button>
+                    </div>
+                  </div>
+
+                  <div class="onboarding-step__note">
+                    <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                    <span>未配置推送不影响使用。今日页和执行看板始终可用。</span>
+                  </div>
+                </div>
+
+                <footer class="onboarding-actions">
+                  <button class="btn btn--ghost btn--sm" type="button" id="onb-back" hidden>
+                    <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"></use></svg>
+                    上一步
+                  </button>
+                  <span id="onb-back-placeholder"></span>
+                  <div class="onboarding-actions__right">
+                    <a class="btn btn--ghost btn--sm" href="#/today">跳过</a>
+                    <button class="btn btn--primary btn--sm" type="button" id="onb-next">
+                      下一步
+                      <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
+                    </button>
+                  </div>
+                </footer>
+              </section>
+
+              <aside class="onboarding-aside">
+                <section class="card aside-card">
+                  <h3>为什么先问时间？</h3>
+                  <p>大多数计划失败不是因为不努力，而是第一天就排了 6 小时。恒序用容量约束把“想做”变成“今天做得到”。</p>
+                  <div class="aside-formula">有效容量 = 每日可用 × 容量系数<br />300 × 80% = 240 分钟/天</div>
+                </section>
+                <section class="card aside-card">
+                  <h3>完成后你会得到</h3>
+                  <ul class="aside-list">
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>一份可执行的路线，带阶段、周和任务</span></li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>每天自动生成的 3–6 项今日任务</span></li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>执行看板：完成率、顺延率、预计完成日</span></li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>企微早报/晚报，不用打开系统也知道做什么</span></li>
+                  </ul>
+                </section>
+                <section class="card aside-card" style="background:linear-gradient(135deg,#fbfbff,#f6f6ff)">
+                  <h3>随时可以改</h3>
+                  <p>时区、日界线、每日时间、容量系数和推送都能在设置里调整。调整不会改写已产生的执行记录。</p>
+                </section>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <!-- =====================================================
+             今日
+             ===================================================== -->
+        <section class="view" id="view-today" hidden>
+          <header class="page-head">
+            <div>
+              <span class="eyebrow">Today · 2026 年 10 月 19 日 周一</span>
+              <h1>今天先做什么？</h1>
+              <p id="today-greeting">计划已经排好。今天只需要确认、执行和记录，不用重新整理待办。</p>
+            </div>
+            <div class="page-head__side">
+              <span class="goal-pill"><i></i>Java 后端实习 · 距目标 22 天</span>
+            </div>
+          </header>
+
+          <section class="focus-hero" aria-labelledby="hero-title">
+            <div class="hero-left">
+              <div class="ring" role="img" aria-label="今日完成度">
+                <svg viewBox="0 0 108 108" aria-hidden="true">
+                  <circle cx="54" cy="54" r="44" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="7"></circle>
+                  <circle id="today-ring" cx="54" cy="54" r="44" fill="none" stroke="#79d9cb" stroke-width="7" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="165.9"></circle>
+                </svg>
+                <div class="ring__center">
+                  <strong id="today-percent">40%</strong>
+                  <span>今日完成</span>
+                </div>
+              </div>
+              <div class="hero-copy">
+                <span class="eyebrow eyebrow--light">Monday focus</span>
+                <h2 id="hero-title">先把顺延的缓存方案做掉，今天就能回到节奏里。</h2>
+                <p id="hero-sub">有效容量 240 分钟 · 已排入 220 分钟 · 剩余缓冲 20 分钟</p>
+                <div class="hero-metrics">
+                  <div class="hero-metric"><strong id="done-metric">2 / 5</strong><span>任务完成</span></div>
+                  <div class="hero-metric"><strong id="carry-metric">1</strong><span>项自动顺延</span></div>
+                  <div class="hero-metric"><strong id="active-metric">12 天</strong><span>累计活跃</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn--light" type="button" id="start-next">
+                <svg class="icon" aria-hidden="true"><use href="#i-play"></use></svg>
+                开始下一项
+              </button>
+              <button class="btn btn--on-dark" type="button" data-open="adjust-plan">调整计划</button>
+            </div>
+          </section>
+
+          <section class="capacity-card" aria-label="今日容量">
+            <div>
+              <p class="capacity-card__label">今日容量</p>
+              <p class="capacity-card__value"><b id="capacity-planned-total">220</b> / 240 分钟已排入</p>
+            </div>
+            <div class="capacity-card__bar">
+              <div class="capacity-bar" role="img" aria-label="已完成 95 分钟，待完成 125 分钟，缓冲 20 分钟">
+                <span class="capacity-bar__done" id="cap-done" style="width:39.6%"></span>
+                <span class="capacity-bar__planned" id="cap-planned" style="width:52.1%"></span>
+                <span class="capacity-bar__buffer" id="cap-buffer" style="width:8.3%"></span>
+              </div>
+              <div class="capacity-legend">
+                <span><i style="background:var(--teal-600)"></i>已完成 <b id="cap-done-label">95 分钟</b></span>
+                <span><i style="background:#c7c8f0"></i>待完成 <b id="cap-planned-label">125 分钟</b></span>
+                <span><i style="background:#eef0f7"></i>缓冲 <b id="cap-buffer-label">20 分钟</b></span>
+              </div>
+            </div>
+            <div class="capacity-card__buffer">
+              <b id="capacity-buffer">20</b>
+              <span>分钟缓冲 · 不建议再加任务</span>
+            </div>
+          </section>
+
+          <div class="today-grid">
+            <div class="stack">
+              <section class="card carry-card" id="carry-card">
+                <div class="carry-card__body">
+                  <span class="carry-icon"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg></span>
+                  <div class="carry-copy">
+                    <strong id="carry-title">1 项任务从昨天顺延 · 连续顺延 1 次</strong>
+                    <span id="carry-meta">完成订单系统缓存方案 · 70 分钟 · 今天优先做</span>
+                  </div>
+                  <button class="btn btn--secondary btn--sm" type="button" id="carry-start">优先开始</button>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="today-tasks-title">
+                <div class="card__head">
+                  <div>
+                    <h2 id="today-tasks-title">今日任务 <span class="faint" style="font-size:10px;font-weight:500" id="task-count-label">2 / 5 已完成</span></h2>
+                    <p>点击任务查看产出、验收标准和状态操作。</p>
+                  </div>
+                  <button class="card__link" type="button" data-open="add-task">
+                    <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg>
+                    添加任务
+                  </button>
+                </div>
+                <div class="tabs" role="tablist" aria-label="任务筛选">
+                  <button class="tab is-active" type="button" role="tab" aria-selected="true" data-task-filter="all">全部 <span class="tab__count" id="count-all">5</span></button>
+                  <button class="tab" type="button" role="tab" aria-selected="false" data-task-filter="pending">待完成 <span class="tab__count" id="count-pending">3</span></button>
+                  <button class="tab" type="button" role="tab" aria-selected="false" data-task-filter="done">已完成 <span class="tab__count" id="count-done">2</span></button>
+                </div>
+                <div class="task-list" id="today-task-list"></div>
+                <div class="card__foot">
+                  <span>完成任务后，路线进度和预计完成日期会立即更新。</span>
+                  <button class="card__link" type="button" data-go="#/routes/1">查看路线</button>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="next-title">
+                <div class="card__head">
+                  <div>
+                    <h2 id="next-title">接下来</h2>
+                    <p>明天与今晚的固定动作。</p>
+                  </div>
+                </div>
+                <div class="next-card__body">
+                  <div class="next-item"><span class="next-date">10/20</span><p>区间 DP：3 道中等题</p><b>60 分钟</b></div>
+                  <div class="next-item"><span class="next-date">10/20</span><p>JVM 垃圾收集器复盘</p><b>35 分钟</b></div>
+                  <div class="next-item"><span class="next-date">今晚</span><p>20:30 晚报：汇总完成与顺延</p><b>企微</b></div>
+                </div>
+              </section>
+            </div>
+
+            <aside class="stack">
+              <section class="push-card" aria-labelledby="push-title">
+                <div class="push-head">
+                  <span class="push-title">WeCom · 已连接</span>
+                  <span class="push-icon"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg></span>
+                </div>
+                <h3 id="push-title">今日早报已送达</h3>
+                <p>07:30 已推送 5 项任务，预计 3 小时 40 分。晚报会在 20:30 汇总完成情况。</p>
+                <div class="push-preview">【恒序 · 今日】10/19 周一<br />今日 5 项，预计 3h40m<br />重点：缓存方案 + JVM 三问<br /><b>完成 2/5 即达标</b></div>
+                <div class="push-status">
+                  <i></i>
+                  <span>企业微信群机器人运行正常</span>
+                  <a class="card__link" href="#/settings/notifications">设置</a>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="summary-title">
+                <div class="card__head">
+                  <div><h2 id="summary-title">执行摘要</h2><p>近 7 天与当前路线。</p></div>
+                  <button class="card__link" type="button" data-go="#/dashboard">看板</button>
+                </div>
+                <div class="summary-list">
+                  <div class="summary-row"><span>近 7 天完成率</span><b class="text-good">74% · 28/38</b></div>
+                  <div class="summary-row"><span>计划 / 实际分钟</span><b>620 / 578</b></div>
+                  <div class="summary-row"><span>顺延任务</span><b class="text-warn">5 项 · 13%</b></div>
+                  <div class="summary-row"><span>路线进度</span><b id="today-route-progress">62% · 26/42</b></div>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="insight-title">
+                <div class="card__head">
+                  <div><h2 id="insight-title">执行提示</h2><p>基于当前计划状态的规则提示，不是 AI 评分。</p></div>
+                </div>
+                <div class="insight-list">
+                  <div class="insight insight--warn" id="carry-insight">
+                    <svg class="icon" aria-hidden="true"><use href="#i-warning"></use></svg>
+                    <span>1 项任务从昨天顺延。连续顺延 3 次会提示拆分、降级或放弃，避免一项任务拖住整条路线。</span>
+                  </div>
+                  <div class="insight insight--good">
+                    <svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg>
+                    <span>本周已活跃 3 天。今晚 20:30 晚报会汇总未完成项和新的预计完成日期。</span>
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </div>
+
+          <section class="card forecast-card" aria-labelledby="forecast-title">
+            <div class="card__head">
+              <div>
+                <h2 id="forecast-title">路线预测 <span class="faint" style="font-size:10px;font-weight:500">第 18 / 36 天</span></h2>
+                <p>按当前剩余工作量和近期吞吐估算，不使用主观能力评分。</p>
+              </div>
+              <button class="card__link" type="button" data-go="#/routes/1">查看路线</button>
+            </div>
+            <div class="forecast-grid">
+              <div>
+                <div class="forecast-date" id="forecast-date">11 月 12 日<span>预计完成当前 Java 后端准备路线</span></div>
+                <span class="status status--risk forecast-flag" id="forecast-flag">晚于目标 2 天</span>
+              </div>
+              <div class="timeline" aria-label="路线阶段">
+                <div class="timeline-step is-done"><div class="timeline-dot"></div><div class="timeline-label">基础夯实</div></div>
+                <div class="timeline-step is-done"><div class="timeline-dot"></div><div class="timeline-label">算法与八股</div></div>
+                <div class="timeline-step is-current"><div class="timeline-dot"></div><div class="timeline-label">工程与项目</div></div>
+                <div class="timeline-step"><div class="timeline-dot"></div><div class="timeline-label">简历与冲刺</div></div>
+              </div>
+              <div class="forecast-risk">
+                <strong><svg class="icon" aria-hidden="true"><use href="#i-warning"></use></svg>目标日 11/10，预测晚 2 天</strong>
+                <p id="forecast-risk-text">剩余 16 项 / 约 18.5 小时。本周容量已接近上限，建议优先顺延任务，或拆分 1 项工程任务。</p>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- =====================================================
+             学习路线
+             ===================================================== -->
+        <section class="view" id="view-routes" hidden>
+          <header class="page-head">
+            <div>
+              <span class="eyebrow">Plans · Phase 1</span>
+              <h1>学习路线</h1>
+              <p>路线、阶段、周目标和任务保持清晰的层级关系。删除是归档，历史执行记录不会被物理删除。</p>
+            </div>
+            <div class="page-head__side">
+              <button class="btn btn--secondary btn--sm" type="button" data-open="new-route">
+                <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg>
+                新建路线
+              </button>
+              <a class="btn btn--primary btn--sm" href="#/import">
+                <svg class="icon" aria-hidden="true"><use href="#i-import"></use></svg>
+                导入 Markdown
+              </a>
+            </div>
+          </header>
+
+          <div class="metric-grid metric-grid--3">
+            <div class="card metric-card">
+              <div class="metric-card__top"><span class="metric-card__label">当前执行路线</span><span class="metric-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg></span></div>
+              <div class="metric-card__value" id="route-summary-active">1</div>
+              <div class="metric-card__foot"><span class="delta">正在执行</span><span>另有 1 条草稿、1 条暂停</span></div>
+            </div>
+            <div class="card metric-card">
+              <div class="metric-card__top"><span class="metric-card__label">路线任务</span><span class="metric-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-today"></use></svg></span></div>
+              <div class="metric-card__value" id="route-summary-tasks">42<small>项</small></div>
+              <div class="metric-card__foot"><span class="delta">已完成 26 项</span><span>按任务去重</span></div>
+            </div>
+            <div class="card metric-card">
+              <div class="metric-card__top"><span class="metric-card__label">预计完成</span><span class="metric-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg></span></div>
+              <div class="metric-card__value" id="route-summary-forecast">11.12</div>
+              <div class="metric-card__foot"><span class="delta delta--risk">晚于目标 2 天</span><span>目标 11.10</span></div>
+            </div>
+          </div>
+
+          <section class="route-list" id="route-list" aria-label="路线列表">
+            <article class="route-item route-item--active" data-route-id="1">
+              <div class="route-item__copy">
+                <div class="route-title-row">
+                  <h3>Java 后端实习准备 · 36 天</h3>
+                  <span class="status status--active" id="route-1-status">执行中</span>
+                  <span class="tag tag--brand">当前主目标</span>
+                </div>
+                <p>目标：Java 后端实习 · 2026-11-10 · 阶段 2 / 4 · 第 18 天</p>
+                <div class="route-progress">
+                  <div class="progress-track"><span id="route-1-progress" style="width:62%"></span></div>
+                  <b id="route-1-percent">62%</b>
+                </div>
+                <div class="route-meta"><span><b>42</b> 个任务</span><span>已完成 <b id="route-1-done">26</b></span><span>计划 <b>3,840</b> 分钟</span><span class="text-risk">预测 11/12 · 晚 2 天</span></div>
+              </div>
+              <div class="route-actions">
+                <a class="btn btn--secondary btn--sm" href="#/routes/1">查看详情</a>
+                <button class="btn btn--ghost btn--sm" type="button" id="route-1-action" data-route-action="pause" data-route-id="1">暂停</button>
+                <button class="icon-button" type="button" aria-label="更多路线操作" data-toast="更多操作：调整开始日期、查看版本、归档路线。"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button>
+              </div>
+            </article>
+
+            <article class="route-item" data-route-id="2">
+              <div class="route-item__copy">
+                <div class="route-title-row">
+                  <h3>秋招算法基础补齐 · 21 天</h3>
+                  <span class="status status--draft">待确认</span>
+                </div>
+                <p>已解析，等待确认计划日期 · 2026-10-19 导入</p>
+                <div class="route-progress">
+                  <div class="progress-track"><span style="width:18%;background:#aaaaf0"></span></div>
+                  <b>18%</b>
+                </div>
+                <div class="route-meta"><span><b>18</b> 个任务</span><span>草稿</span><span>预计 <b>1,260</b> 分钟</span><span>尚未生成每日计划</span></div>
+              </div>
+              <div class="route-actions">
+                <a class="btn btn--primary btn--sm" href="#/import?state=preview">继续配置</a>
+                <button class="btn btn--ghost btn--sm" type="button" data-toast="草稿路线不会进入今日计划，确认后才会激活。">说明</button>
+              </div>
+            </article>
+
+            <article class="route-item" data-route-id="3">
+              <div class="route-item__copy">
+                <div class="route-title-row">
+                  <h3>Redis 与 MySQL 专项</h3>
+                  <span class="status status--paused">已暂停</span>
+                </div>
+                <p>用户主动暂停 · 2026-10-11 · 暂停期间不生成今日任务</p>
+                <div class="route-progress">
+                  <div class="progress-track"><span style="width:42%;background:#d9a24a"></span></div>
+                  <b>42%</b>
+                </div>
+                <div class="route-meta"><span><b>12</b> 个任务</span><span>已完成 <b>5</b></span><span>计划 <b>960</b> 分钟</span><span>恢复后从当前进度继续</span></div>
+              </div>
+              <div class="route-actions">
+                <a class="btn btn--secondary btn--sm" href="#/routes/1">查看结构</a>
+                <button class="btn btn--ghost btn--sm" type="button" data-route-action="resume" data-route-id="3">恢复</button>
+              </div>
+            </article>
+          </section>
+
+          <section class="card" id="routes-empty" hidden>
+            <div class="empty-state">
+              <span class="empty-state__icon"><svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg></span>
+              <h3>还没有学习路线</h3>
+              <p>导入一份 Markdown 计划，或者新建空路线手动添加阶段与任务。导入失败不会影响已有路线。</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+                <a class="btn btn--primary btn--sm" href="#/import">导入 Markdown</a>
+                <button class="btn btn--secondary btn--sm" type="button" data-open="new-route">新建空路线</button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- =====================================================
+             路线详情
+             ===================================================== -->
+        <section class="view" id="view-route-detail" hidden>
+          <a class="back-link" href="#/routes">
+            <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"></use></svg>
+            返回路线列表
+          </a>
+
+          <section class="route-hero">
+            <div>
+              <span class="eyebrow">Route · 36 天</span>
+              <h1>Java 后端实习准备</h1>
+              <div class="route-hero__meta">
+                <span>目标：Java 后端实习 · 2026-11-10</span>
+                <span>路线周期：2026-10-02 → 2026-11-06</span>
+                <span class="status status--active" id="route-detail-status">执行中</span>
+                <span class="tag tag--outline">版本 v3</span>
+              </div>
+            </div>
+            <div class="route-hero__actions">
+              <button class="btn btn--secondary btn--sm" type="button" data-open="adjust-route">
+                <svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg>
+                调整日期 / 容量
+              </button>
+              <button class="btn btn--secondary btn--sm" type="button" id="route-detail-action" data-route-action="pause" data-route-id="1">
+                <svg class="icon" aria-hidden="true"><use href="#i-pause"></use></svg>
+                暂停路线
+              </button>
+              <button class="icon-button" type="button" aria-label="更多路线操作" data-toast="更多操作：归档路线、查看版本、导出路线。"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button>
+            </div>
+          </section>
+
+          <div class="summary-strip">
+            <div class="summary-strip__item"><span>路线周期</span><b>36 <small>天</small></b></div>
+            <div class="summary-strip__item"><span>任务 / 已完成</span><b id="route-detail-done">42 <small>/ 26 项</small></b></div>
+            <div class="summary-strip__item"><span>路线进度</span><b id="route-detail-progress">62 <small>%</small></b></div>
+            <div class="summary-strip__item"><span>预计完成</span><b class="text-risk">11/12 <small>晚 2 天</small></b></div>
+          </div>
+
+          <div class="detail-tabs" role="tablist" aria-label="路线详情">
+            <button class="detail-tab is-active" type="button" role="tab" aria-selected="true" data-detail-tab="structure">阶段与任务</button>
+            <button class="detail-tab" type="button" role="tab" aria-selected="false" data-detail-tab="versions">版本记录</button>
+            <button class="detail-tab" type="button" role="tab" aria-selected="false" data-detail-tab="settings">路线设置</button>
+          </div>
+
+          <div class="detail-panel" data-detail-panel="structure">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 12px">
+              <p class="muted" style="font-size:10px">原型展示 19 / 42 项关键任务；其余任务按同样结构折叠。</p>
+              <div style="display:flex;gap:7px">
+                <button class="btn btn--secondary btn--xs" type="button" data-toast="新增阶段：填写名称、开始日期和目标。">+ 阶段</button>
+                <button class="btn btn--secondary btn--xs" type="button" data-toast="新增周目标：归属于当前阶段，可设置日期范围。">+ 周</button>
+                <button class="btn btn--primary btn--xs" type="button" data-toast="新增任务：标题、类型、时长、产出和验收标准为必填。">+ 任务</button>
+              </div>
+            </div>
+
+            <details class="stage" open>
+              <summary>
+                <span class="stage__chevron"><svg class="icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg></span>
+                <span class="stage__title"><strong>阶段一 · 基础夯实</strong><span>10/02 – 10/12 · 12 个任务</span></span>
+                <span class="stage__progress"><span class="progress-track"><span style="width:100%"></span></span><span>12 / 12 · 100%</span></span>
+              </summary>
+              <div class="stage__body">
+                <details class="week" open>
+                  <summary><span class="week__title">第 1 周 · 网络基础</span><span class="week__meta">10/02 – 10/05 · 5 项</span></summary>
+                  <div class="task-table">
+                    <div class="task-table__row task-table__row--head"><span>任务</span><span>类型</span><span>时长</span><span>计划日</span><span></span></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>TCP 三次握手与状态机</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">45 分钟</span><span class="task-table__meta">10/02</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="已完成任务仍可编辑描述，但不会回退执行记录。"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>HTTP 强缓存与协商缓存</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">45 分钟</span><span class="task-table__meta">10/03</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="已完成任务仍可编辑描述，但不会回退执行记录。"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>HTTPS 握手与证书链</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">40 分钟</span><span class="task-table__meta">10/04</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="已完成任务仍可编辑描述，但不会回退执行记录。"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                  </div>
+                </details>
+                <details class="week">
+                  <summary><span class="week__title">第 2 周 · JVM 与集合</span><span class="week__meta">10/06 – 10/12 · 7 项</span></summary>
+                  <div class="task-table">
+                    <div class="task-table__row task-table__row--head"><span>任务</span><span>类型</span><span>时长</span><span>计划日</span><span></span></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>JVM 内存区域</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">50 分钟</span><span class="task-table__meta">10/06</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>GC 收集器对比</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">45 分钟</span><span class="task-table__meta">10/08</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>HashMap 扩容与红黑树</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">45 分钟</span><span class="task-table__meta">10/10</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="stage" open>
+              <summary>
+                <span class="stage__chevron"><svg class="icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg></span>
+                <span class="stage__title"><strong>阶段二 · 算法与八股</strong><span>10/13 – 10/26 · 14 个任务 · 当前阶段</span></span>
+                <span class="stage__progress"><span class="progress-track"><span style="width:64%"></span></span><span>9 / 14 · 64%</span></span>
+              </summary>
+              <div class="stage__body">
+                <details class="week" open>
+                  <summary><span class="week__title">第 3 周 · 树与图</span><span class="week__meta">10/13 – 10/19 · 6 项</span></summary>
+                  <div class="task-table">
+                    <div class="task-table__row task-table__row--head"><span>任务</span><span>类型</span><span>时长</span><span>计划日</span><span></span></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>二叉树遍历与复杂度</span></span><span class="task-table__meta">算法</span><span class="task-table__meta">60 分钟</span><span class="task-table__meta">10/14</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row" data-route-task-id="t1"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>完成 2 道二叉树中等题</span></span><span class="task-table__meta">算法</span><span class="task-table__meta">60 分钟</span><span class="task-table__meta">10/19</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row" data-route-task-id="t4"><span class="task-table__title"><i class="status-dot status-dot--pending"></i><span>回答 3 道 JVM 高频问题</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">35 分钟</span><span class="task-table__meta">10/19</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--blocked"></i><span>图的最短路径 · Dijkstra</span></span><span class="task-table__meta">算法</span><span class="task-table__meta">60 分钟</span><span class="task-table__meta">10/18</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                  </div>
+                </details>
+                <details class="week">
+                  <summary><span class="week__title">第 4 周 · 动态规划</span><span class="week__meta">10/20 – 10/26 · 5 项</span></summary>
+                  <div class="task-table">
+                    <div class="task-table__row task-table__row--head"><span>任务</span><span>类型</span><span>时长</span><span>计划日</span><span></span></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--pending"></i><span>区间 DP · 3 道中等题</span></span><span class="task-table__meta">算法</span><span class="task-table__meta">60 分钟</span><span class="task-table__meta">10/20</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--pending"></i><span>背包问题 · 状态转移</span></span><span class="task-table__meta">算法</span><span class="task-table__meta">60 分钟</span><span class="task-table__meta">10/22</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="stage">
+              <summary>
+                <span class="stage__chevron"><svg class="icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg></span>
+                <span class="stage__title"><strong>阶段三 · 工程与项目</strong><span>10/27 – 11/02 · 10 个任务</span></span>
+                <span class="stage__progress"><span class="progress-track"><span style="width:50%"></span></span><span>5 / 10 · 50%</span></span>
+              </summary>
+              <div class="stage__body">
+                <details class="week">
+                  <summary><span class="week__title">第 5 周 · 缓存与订单</span><span class="week__meta">10/27 – 11/02 · 10 项</span></summary>
+                  <div class="task-table">
+                    <div class="task-table__row task-table__row--head"><span>任务</span><span>类型</span><span>时长</span><span>计划日</span><span></span></div>
+                    <div class="task-table__row" data-route-task-id="t3"><span class="task-table__title"><i class="status-dot status-dot--postponed"></i><span>完成订单系统缓存方案</span></span><span class="task-table__meta">工程</span><span class="task-table__meta">70 分钟</span><span class="task-table__meta">10/18 → 10/19</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--done"></i><span>缓存穿透 / 击穿 / 雪崩</span></span><span class="task-table__meta">八股</span><span class="task-table__meta">45 分钟</span><span class="task-table__meta">10/18</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--pending"></i><span>压测报告与容量结论</span></span><span class="task-table__meta">工程</span><span class="task-table__meta">60 分钟</span><span class="task-table__meta">11/01</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            <details class="stage">
+              <summary>
+                <span class="stage__chevron"><svg class="icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg></span>
+                <span class="stage__title"><strong>阶段四 · 简历与冲刺</strong><span>11/03 – 11/06 · 6 个任务</span></span>
+                <span class="stage__progress"><span class="progress-track"><span style="width:0%"></span></span><span>0 / 6 · 0%</span></span>
+              </summary>
+              <div class="stage__body">
+                <details class="week">
+                  <summary><span class="week__title">第 6 周 · 简历与模拟面试</span><span class="week__meta">11/03 – 11/06 · 6 项</span></summary>
+                  <div class="task-table">
+                    <div class="task-table__row task-table__row--head"><span>任务</span><span>类型</span><span>时长</span><span>计划日</span><span></span></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--pending"></i><span>简历项目重写 · 订单系统</span></span><span class="task-table__meta">简历</span><span class="task-table__meta">60 分钟</span><span class="task-table__meta">11/03</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                    <div class="task-table__row"><span class="task-table__title"><i class="status-dot status-dot--pending"></i><span>3 次模拟面试 · 项目追问</span></span><span class="task-table__meta">面试</span><span class="task-table__meta">90 分钟</span><span class="task-table__meta">11/05</span><button class="icon-button" type="button" aria-label="任务操作" data-toast="任务操作"><svg class="icon" aria-hidden="true"><use href="#i-more"></use></svg></button></div>
+                  </div>
+                </details>
+              </div>
+            </details>
+          </div>
+
+          <div class="detail-panel" data-detail-panel="versions" hidden>
+            <section class="card">
+              <div class="card__head">
+                <div><h2>版本记录</h2><p>每次确认导入、调整日期或容量都会生成快照；历史执行记录不随版本回滚。</p></div>
+                <span class="tag tag--brand">当前 v3</span>
+              </div>
+              <div class="version-list">
+                <div class="version-item">
+                  <time>2026-10-19 08:02</time>
+                  <div><strong>v3 · 调整每日容量</strong><p>每日可用 300 分钟，容量系数 80%，有效容量 240 分钟；阶段日期不变。</p></div>
+                  <button class="btn btn--secondary btn--xs" type="button" data-toast="正在查看 v3 快照（原型）。">查看</button>
+                </div>
+                <div class="version-item">
+                  <time>2026-10-12 21:10</time>
+                  <div><strong>v2 · 顺延后重排</strong><p>3 项未完成任务进入下一日；路线预计完成日期由 11/06 调整为 11/08。</p></div>
+                  <button class="btn btn--secondary btn--xs" type="button" data-toast="正在查看 v2 快照（原型）。">查看</button>
+                </div>
+                <div class="version-item">
+                  <time>2026-10-02 09:31</time>
+                  <div><strong>v1 · 导入确认</strong><p>从「后端冲刺计划.md」创建 4 个阶段、6 个周目标、42 个任务。</p></div>
+                  <button class="btn btn--secondary btn--xs" type="button" data-toast="正在查看 v1 快照（原型）。">查看</button>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="detail-panel" data-detail-panel="settings" hidden>
+            <section class="card settings-panel">
+              <div class="settings-panel__head">
+                <div><h2>路线设置</h2><p>调整开始日期或每日容量，会平移未完成阶段和任务的日期，并生成新版本。</p></div>
+                <button class="btn btn--primary btn--sm" type="button" data-toast="路线设置已保存，未完成阶段日期已按新容量重排。">保存并重排</button>
+              </div>
+              <div class="settings-section">
+                <div class="form-grid">
+                  <div class="field"><label for="route-start">开始日期</label><input id="route-start" type="date" value="2026-10-02" /></div>
+                  <div class="field"><label for="route-capacity">每日可用分钟</label><input id="route-capacity" type="number" value="300" /></div>
+                  <div class="field"><label for="route-factor">容量系数</label><select id="route-factor"><option>80% · 推荐</option><option>90%</option><option>60%</option><option>100%</option></select></div>
+                  <div class="field"><label>有效日容量</label><input value="240 分钟" disabled /></div>
+                </div>
+                <div class="impact-box" style="margin-top:14px">
+                  <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                  <span>预览：未完成的 3 个阶段整体后移 <b>2 天</b>，预计完成日期由 11/08 变为 <b>11/10</b>；已完成任务的日期不变。</span>
+                </div>
+              </div>
+              <div class="settings-section">
+                <div class="settings-section__title"><h3>路线状态</h3></div>
+                <div class="danger-zone">
+                  <div class="danger-row">
+                    <div><strong>归档路线</strong><p>归档后不再生成每日任务，历史记录与看板数据保留。</p></div>
+                    <button class="btn btn--danger btn--xs" type="button" data-confirm="archive-route">归档</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- =====================================================
+             导入计划
+             ===================================================== -->
+        <section class="view" id="view-import" hidden>
+          <header class="page-head">
+            <div>
+              <span class="eyebrow">Import · Markdown only</span>
+              <h1>导入一份计划</h1>
+              <p>把你已有的学习计划变成可以每天执行的路线。Phase 1 只支持 Markdown；解析、校验和确认前都可取消。</p>
+            </div>
+            <div class="page-head__side">
+              <span class="goal-pill"><i></i>AI 只负责结构化与校验</span>
+            </div>
+          </header>
+
+          <div class="import-layout">
+            <section class="card upload-card">
+              <div class="card__head">
+                <div><h2>上传计划</h2><p>支持 .md / .markdown，UTF-8，单文件 ≤ 5MB。</p></div>
+              </div>
+              <div class="dropzone" id="dropzone">
+                <span class="dropzone__icon"><svg class="icon" aria-hidden="true"><use href="#i-upload"></use></svg></span>
+                <h2>拖入 Markdown 文件</h2>
+                <p>也可以点击选择。解析后会先进入预览，不会直接创建路线。</p>
+                <button class="btn btn--primary btn--sm" type="button" id="choose-file">选择文件</button>
+                <span class="dropzone__file">或 <button class="card__link" type="button" id="load-sample">载入示例计划</button></span>
+                <input id="import-file" type="file" accept=".md,.markdown,text/markdown" hidden />
+              </div>
+
+              <div class="consent-box" id="import-consent-box">
+                <div class="consent-head"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg>首次导入授权</div>
+                <p>计划文本会发送给第三方 AI 做结构化。恒序只发送计划内容，不发送账号、简历或面试记录。</p>
+                <label class="check-row">
+                  <input type="checkbox" id="import-consent" />
+                  <span>我同意将计划文本用于 <code style="font-family:var(--mono);font-size:9px">ai_import</code> v1 解析</span>
+                </label>
+              </div>
+
+              <div class="upload-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                <span>导入失败不会影响已有路线。确认后生成路线 v1；在产生执行记录前可回滚。</span>
+              </div>
+            </section>
+
+            <section class="card import-panel" aria-live="polite">
+              <div class="import-pane" data-import-pane="empty">
+                <div class="empty-state">
+                  <span class="empty-state__icon"><svg class="icon" aria-hidden="true"><use href="#i-file"></use></svg></span>
+                  <h3>上传后在这里预览</h3>
+                  <p>会先展示阶段 / 周 / 任务树、问题清单和总容量。你可以逐项编辑，再确认创建路线。</p>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px">
+                    <button class="btn btn--primary btn--sm" type="button" data-load-sample>载入示例计划</button>
+                    <button class="btn btn--secondary btn--sm" type="button" id="download-template">
+                      <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
+                      下载 Markdown 模板
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="import-pane" data-import-pane="processing" hidden>
+                <div class="import-pane__head">
+                  <div><h2>正在解析计划</h2><p id="processing-file">后端冲刺计划.md · 上传完成</p></div>
+                  <span class="tag tag--brand">Job 运行中</span>
+                </div>
+                <div class="processing-steps">
+                  <div class="processing-step is-done">
+                    <span class="step-dot"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"></use></svg></span>
+                    <div><strong>上传文件</strong><span>已保存到本地存储</span></div>
+                  </div>
+                  <div class="processing-step is-active" data-processing-step="1">
+                    <span class="step-dot">2</span>
+                    <div><strong>规则抽取</strong><span>识别标题、列表、表格和日期</span></div>
+                  </div>
+                  <div class="processing-step" data-processing-step="2">
+                    <span class="step-dot">3</span>
+                    <div><strong>AI 标准化</strong><span>补齐类型、时长、产出和验收标准</span></div>
+                  </div>
+                  <div class="processing-step" data-processing-step="3">
+                    <span class="step-dot">4</span>
+                    <div><strong>校验与容量检查</strong><span>检查重复任务、单日容量和日期</span></div>
+                  </div>
+                </div>
+                <div class="processing-bar"><span id="processing-bar"></span></div>
+                <div class="processing-meta"><span id="processing-job">job_01J9F3K2 · 可离开页面，稍后回来</span><span id="processing-percent">5%</span></div>
+                <div class="preview-actions" style="margin:18px -21px -22px;position:static">
+                  <span class="preview-actions__hint">解析通常需要 10–30 秒</span>
+                  <button class="btn btn--secondary btn--sm" type="button" id="cancel-processing">取消解析</button>
+                </div>
+              </div>
+
+              <div class="import-pane" data-import-pane="error" hidden>
+                <div class="error-state">
+                  <span class="error-state__icon"><svg class="icon" aria-hidden="true"><use href="#i-alert-circle"></use></svg></span>
+                  <h2>没有识别到可执行任务</h2>
+                  <p>文件能读取，但没有找到任务列表或表格。请检查 Markdown 是否使用标题、无序列表或表格，或下载模板对照结构。</p>
+                  <span class="error-code">IMPORT_PARSE_FAILED · request_id 9f2c…</span>
+                  <div class="error-state__actions">
+                    <button class="btn btn--primary btn--sm" type="button" id="retry-error">重新上传</button>
+                    <button class="btn btn--secondary btn--sm" type="button" id="download-template-error">下载模板</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="import-pane import-pane--preview" data-import-pane="preview" hidden>
+                <div class="import-pane__head">
+                  <div>
+                    <h2>解析预览</h2>
+                    <p id="preview-file-name">后端冲刺计划.md · 已完成结构化，等待确认</p>
+                  </div>
+                  <div class="import-stats" id="preview-stats">
+                    <span><b>3</b> 阶段</span><span><b>6</b> 周</span><span><b>42</b> 任务</span><span><b>1,260</b> 分钟</span>
+                  </div>
+                </div>
+
+                <div class="issue-summary">
+                  <span class="issue-chip issue-chip--error"><b>0</b> 错误</span>
+                  <span class="issue-chip"><b>2</b> 警告</span>
+                  <span class="issue-chip issue-chip--info"><b>1</b> 提示</span>
+                  <span class="muted" style="font-size:9px">错误会阻止确认；警告可逐项处理。</span>
+                </div>
+
+                <div class="issue-list" id="issue-list">
+                  <div class="issue-item">
+                    <svg class="icon" aria-hidden="true"><use href="#i-warning"></use></svg>
+                    <p>「第 4 周」的「完成 3 道中等题」缺少验收标准。AI 建议：能独立说明每道题的时间/空间复杂度。</p>
+                    <button class="issue-action" type="button" data-edit-preview-task="3">去编辑</button>
+                  </div>
+                  <div class="issue-item">
+                    <svg class="icon" aria-hidden="true"><use href="#i-warning"></use></svg>
+                    <p>检测到 2 个重复任务：「TCP 三次握手」在 10/20 和 10/21 各出现一次。请选择保留、合并或跳过。</p>
+                    <button class="issue-action" type="button" data-toast="重复任务已保留较早的一天，后一天标记为跳过。">合并</button>
+                  </div>
+                  <div class="issue-item">
+                    <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                    <p>开始日期 10/02 早于今天。默认整体平移到今天，并保留历史任务为归档状态。</p>
+                    <button class="issue-action" type="button" data-toast="已选择「整体平移到今天」，所有未完成任务日期后移 17 天。">查看规则</button>
+                  </div>
+                </div>
+
+                <div class="preview-tree" id="preview-tree">
+                  <div class="preview-stage">
+                    <div class="preview-stage__title">阶段一 · 基础夯实 <span>12 任务 · 10/20 – 10/30</span></div>
+                    <div class="preview-week">第 1 周 · 网络基础</div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>TCP 三次握手</span></span>
+                      <b>45 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="1">编辑</button>
+                    </div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>HTTP 缓存</span></span>
+                      <b>45 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="2">编辑</button>
+                    </div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--warn" aria-hidden="true"><use href="#i-warning"></use></svg><span>HTTPS 握手与证书链</span></span>
+                      <b>40 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="4">编辑</button>
+                    </div>
+                    <div class="preview-week">第 2 周 · JVM 与集合</div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>JVM 内存区域</span></span>
+                      <b>50 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="5">编辑</button>
+                    </div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>GC 收集器对比</span></span>
+                      <b>45 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="6">编辑</button>
+                    </div>
+                  </div>
+
+                  <div class="preview-stage">
+                    <div class="preview-stage__title">阶段二 · 算法强化 <span>14 任务 · 10/31 – 11/13</span></div>
+                    <div class="preview-week">第 3 周 · 树与图</div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>二叉树遍历与复杂度</span></span>
+                      <b>60 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="7">编辑</button>
+                    </div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--warn" aria-hidden="true"><use href="#i-warning"></use></svg><span>完成 3 道中等题</span></span>
+                      <b>90 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="3">编辑</button>
+                    </div>
+                    <div class="preview-week">第 4 周 · 动态规划</div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>区间 DP</span></span>
+                      <b>60 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="8">编辑</button>
+                    </div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>背包问题</span></span>
+                      <b>60 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="9">编辑</button>
+                    </div>
+                  </div>
+
+                  <div class="preview-stage">
+                    <div class="preview-stage__title">阶段三 · 工程与项目 <span>16 任务 · 11/14 – 11/30</span></div>
+                    <div class="preview-week">第 5 周 · 缓存与订单</div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>订单系统缓存方案</span></span>
+                      <b>70 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="10">编辑</button>
+                    </div>
+                    <div class="preview-task">
+                      <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>缓存穿透 / 击穿 / 雪崩</span></span>
+                      <b>45 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="11">编辑</button>
+                    </div>
+                    <div id="preview-more-tasks" hidden>
+                      <div class="preview-week">第 6 周 · 简历与模拟面试</div>
+                      <div class="preview-task">
+                        <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>项目复盘：订单系统</span></span>
+                        <b>60 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="12">编辑</button>
+                      </div>
+                      <div class="preview-task">
+                        <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>简历项目重写</span></span>
+                        <b>60 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="13">编辑</button>
+                      </div>
+                      <div class="preview-task">
+                        <span class="preview-task__title"><svg class="icon icon--ok" aria-hidden="true"><use href="#i-check-circle"></use></svg><span>3 次模拟面试</span></span>
+                        <b>90 分钟</b><button class="preview-task__edit" type="button" data-edit-preview-task="14">编辑</button>
+                      </div>
+                    </div>
+                    <button class="card__link preview-more" type="button" id="toggle-preview-more">展开全部 42 项</button>
+                  </div>
+                </div>
+
+                <div class="preview-actions">
+                  <span class="preview-actions__hint">确认后生成路线 v1 · 可在 24 小时内回滚</span>
+                  <div class="preview-actions__buttons">
+                    <button class="btn btn--ghost btn--sm" type="button" id="cancel-import">取消</button>
+                    <button class="btn btn--secondary btn--sm" type="button" id="reparse-import">重新解析</button>
+                    <button class="btn btn--primary btn--sm" type="button" id="confirm-import" disabled>确认并创建路线</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="import-pane" data-import-pane="done" hidden>
+                <div class="import-success">
+                  <span class="success-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>
+                  <h2>路线已创建</h2>
+                  <p>42 个任务、6 个周目标、3 个阶段已进入路线。今日计划会在下一次生成时纳入这些任务。</p>
+                  <div class="import-success__stats">
+                    <div><b>42</b><span>任务</span></div>
+                    <div><b>3</b><span>阶段</span></div>
+                    <div><b>6</b><span>周目标</span></div>
+                    <div><b>v1</b><span>路线版本</span></div>
+                  </div>
+                  <div class="import-success__actions">
+                    <a class="btn btn--primary btn--sm" href="#/routes/1">查看路线</a>
+                    <button class="btn btn--secondary btn--sm" type="button" id="rollback-import">回滚本次导入</button>
+                    <button class="btn btn--ghost btn--sm" type="button" id="import-again">再导入一份</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- =====================================================
+             执行看板
+             ===================================================== -->
+        <section class="view" id="view-dashboard" hidden>
+          <header class="page-head">
+            <div>
+              <span class="eyebrow">Execution dashboard · Phase 1</span>
+              <h1>执行看板</h1>
+              <p>看计划有没有落地、时间花在哪里，以及路线什么时候完成。Phase 1 只看执行，不显示能力评分。</p>
+            </div>
+            <div class="page-head__side">
+              <div class="segmented" role="group" aria-label="统计区间">
+                <button class="is-active" type="button" data-period="7">近 7 天</button>
+                <button type="button" data-period="30">近 30 天</button>
+              </div>
+            </div>
+          </header>
+
+          <div id="dashboard-content">
+            <div class="metric-grid">
+              <div class="card metric-card">
+                <div class="metric-card__top"><span class="metric-card__label">计划完成率</span><span class="metric-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg></span></div>
+                <div class="metric-card__value" id="kpi-rate">74%</div>
+                <div class="metric-card__foot"><span class="delta" id="kpi-rate-delta">+6pt 较前 7 天</span><span id="kpi-rate-sub">28 / 38 项</span></div>
+              </div>
+              <div class="card metric-card">
+                <div class="metric-card__top"><span class="metric-card__label">计划 / 实际分钟</span><span class="metric-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-clock"></use></svg></span></div>
+                <div class="metric-card__value" id="kpi-minutes">620<small>/ 578 分钟</small></div>
+                <div class="metric-card__foot"><span class="delta delta--neutral" id="kpi-minutes-delta">时间偏差 93.2%</span><span>实际少于计划 42 分钟</span></div>
+              </div>
+              <div class="card metric-card">
+                <div class="metric-card__top"><span class="metric-card__label">顺延率</span><span class="metric-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg></span></div>
+                <div class="metric-card__value" id="kpi-carry">13%</div>
+                <div class="metric-card__foot"><span class="delta delta--warn" id="kpi-carry-delta">5 / 38 项</span><span>目标 ≤ 20%</span></div>
+              </div>
+              <div class="card metric-card">
+                <div class="metric-card__top"><span class="metric-card__label">累计活跃天数</span><span class="metric-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg></span></div>
+                <div class="metric-card__value" id="kpi-active">12<small>天</small></div>
+                <div class="metric-card__foot"><span class="delta" id="kpi-active-delta">近 7 天活跃 5 天</span><span>中断不清零</span></div>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              <section class="card" aria-labelledby="trend-title">
+                <div class="card__head">
+                  <div><h2 id="trend-title">执行趋势</h2><p id="trend-sub">近 7 天：计划任务数 / 完成任务数 / 顺延数</p></div>
+                  <span class="tag tag--neutral" id="trend-tag">按天</span>
+                </div>
+                <div class="chart-wrap">
+                  <div class="trend-chart" id="trend-chart" role="img" aria-label="近 7 天执行趋势柱状图"></div>
+                </div>
+                <div class="chart-legend">
+                  <span><i style="background:#dcdef5"></i>计划任务</span>
+                  <span><i style="background:var(--brand-600)"></i>完成任务</span>
+                  <span><i style="background:var(--amber-600)"></i>顺延</span>
+                  <span style="margin-left:auto" id="trend-total">计划 38 · 完成 28 · 顺延 5</span>
+                </div>
+                <div class="chart-note">
+                  <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                  <span>完成率按 occurrence 统计；skip 进入分母但不计完成，abandoned 不计入分母。</span>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="dist-title">
+                <div class="card__head">
+                  <div><h2 id="dist-title">任务分布</h2><p>按类型与状态拆解，和今日页数据对账。</p></div>
+                </div>
+                <div class="dist-body" id="type-distribution"></div>
+                <div class="donut-wrap">
+                  <div class="donut" id="status-donut" role="img" aria-label="完成 28 项、顺延 5 项、跳过 3 项、阻塞 2 项">
+                    <div class="donut__center"><b>74%</b><span>完成率</span></div>
+                  </div>
+                  <div class="legend-list" id="status-legend">
+                    <div class="legend-item"><i style="background:var(--teal-600)"></i>完成 <b>28</b></div>
+                    <div class="legend-item"><i style="background:var(--amber-600)"></i>顺延 <b>5</b></div>
+                    <div class="legend-item"><i style="background:#c7ccda"></i>跳过 <b>3</b></div>
+                    <div class="legend-item"><i style="background:var(--coral-600)"></i>阻塞 <b>2</b></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="dashboard-grid dashboard-grid--bottom">
+              <section class="card" aria-labelledby="route-progress-title">
+                <div class="card__head">
+                  <div><h2 id="route-progress-title">路线进度</h2><p>按任务去重：一个任务有任一 completed 即算完成。</p></div>
+                  <a class="card__link" href="#/routes">管理路线</a>
+                </div>
+                <div class="route-mini-list" id="dashboard-route-list">
+                  <div class="route-mini">
+                    <div class="route-mini__top"><b>Java 后端实习准备</b><span id="dash-route-1-percent">62% · 26/42</span></div>
+                    <div class="progress-track"><span id="dash-route-1-progress" style="width:62%"></span></div>
+                    <div class="route-mini__foot"><span>预测 11/12 · 晚于目标 2 天</span><span>执行中</span></div>
+                  </div>
+                  <div class="route-mini">
+                    <div class="route-mini__top"><b>秋招算法基础补齐</b><span>18% · 3/18</span></div>
+                    <div class="progress-track"><span style="width:18%;background:#aaaaf0"></span></div>
+                    <div class="route-mini__foot"><span>待确认计划日期</span><span>草稿</span></div>
+                  </div>
+                  <div class="route-mini">
+                    <div class="route-mini__top"><b>Redis 与 MySQL 专项</b><span>42% · 5/12</span></div>
+                    <div class="progress-track"><span style="width:42%;background:#d9a24a"></span></div>
+                    <div class="route-mini__foot"><span>暂停于 10/11</span><span>已暂停</span></div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="forecast-kpi-title">
+                <div class="card__head">
+                  <div><h2 id="forecast-kpi-title">预测与风险</h2><p>预测只基于剩余工作量和吞吐，不冒充能力评估。</p></div>
+                  <span class="status status--risk" id="forecast-kpi-risk">晚 2 天</span>
+                </div>
+                <div class="forecast-panel">
+                  <div class="forecast-panel__date" id="forecast-kpi-date">11 月 12 日 <span>预计完成</span></div>
+                  <div class="forecast-panel__rows">
+                    <div class="forecast-panel__row"><span>目标日期</span><b>2026-11-10</b></div>
+                    <div class="forecast-panel__row"><span>剩余任务 / 预计分钟</span><b>16 项 / 1,110 分钟</b></div>
+                    <div class="forecast-panel__row"><span>近 14 天吞吐</span><b>3.1 项/天</b></div>
+                    <div class="forecast-panel__row"><span>风险</span><b class="text-risk">预测晚于目标 2 天</b></div>
+                  </div>
+                  <div class="insight insight--warn" style="margin-top:12px">
+                    <svg class="icon" aria-hidden="true"><use href="#i-warning"></use></svg>
+                    <span>未来 3 天优先顺延任务；若仍无改善，建议拆分 1 项工程任务或把目标日期外移。</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <section class="card lock-card" style="margin-top:18px">
+              <div class="card__head">
+                <div><h2>后续能力</h2><p>没有证据的能力一律显示未评估，不编造分数。</p></div>
+                <span class="tag tag--neutral">Phase 2 / 3</span>
+              </div>
+              <div class="lock-card__body">
+                <div class="lock-item">
+                  <span class="lock-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg></span>
+                  <div><strong>代码评分趋势 <span class="tag tag--brand">Phase 2</span></strong><p>提交代码后的静态评审总分、维度趋势和改进项完成率。不执行代码、不做沙箱。</p></div>
+                </div>
+                <div class="lock-item">
+                  <span class="lock-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg></span>
+                  <div><strong>完整能力与准备度 <span class="tag tag--neutral">Phase 3</span></strong><p>按证据计算掌握度、目标达成度与准备度；证据不足时显示未评估，覆盖率单独展示。</p></div>
+                </div>
+              </div>
+            </section>
+
+            <details class="metric-notes">
+              <summary><svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>指标口径与数据来源</summary>
+              <div class="metric-notes__body">
+                <p><b>完成率</b> = 完成 occurrence / 计划 occurrence；abandoned 不进分母，skipped 进分母但不计完成。</p>
+                <p><b>顺延率</b> = carry_over_from_id 非空的 occurrence / 计划 occurrence。</p>
+                <p><b>路线进度</b> = 已完成任务数 / 路线总任务数（按 task 去重）。</p>
+                <p><b>累计活跃天数</b> = 历史有完成记录的天数，不清零，不是连续打卡。</p>
+                <p><b>预测完成日期</b> = 剩余分钟 / 近 14 天吞吐，按用户容量和日界线换算。</p>
+                <p><b>数据来源</b> = 今日页、路线详情和数据库同一口径；看板数字必须能对账。</p>
+              </div>
+            </details>
+          </div>
+
+          <section class="card" id="dashboard-empty" hidden>
+            <div class="empty-state">
+              <span class="empty-state__icon"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg></span>
+              <h3>还没有可统计的执行记录</h3>
+              <p>导入路线并生成第一份今日计划后，这里会展示完成率、趋势、分布和预测。</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+                <a class="btn btn--primary btn--sm" href="#/import">导入计划</a>
+                <a class="btn btn--secondary btn--sm" href="#/today">去今日页</a>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- =====================================================
+             设置
+             ===================================================== -->
+        <section class="view" id="view-settings" hidden>
+          <header class="page-head">
+            <div>
+              <span class="eyebrow">Settings</span>
+              <h1>设置</h1>
+              <p>调整档案、每日容量、企业微信推送和 AI 授权。变更只影响未来计划，不改写历史记录。</p>
+            </div>
+            <div class="page-head__side">
+              <span class="goal-pill"><i></i>当前主目标：Java 后端实习</span>
+            </div>
+          </header>
+
+          <div class="settings-layout">
+            <nav class="card settings-nav" aria-label="设置导航">
+              <a href="#/settings/profile" data-settings-tab="profile" class="is-active"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>档案与容量</a>
+              <a href="#/settings/notifications" data-settings-tab="notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg>企业微信推送</a>
+              <a href="#/settings/ai" data-settings-tab="ai"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"></use></svg>AI 授权</a>
+              <a href="#/settings/data" data-settings-tab="data"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg>数据与账号</a>
+            </nav>
+
+            <div>
+              <!-- 档案 -->
+              <section class="card settings-panel" data-settings-panel="profile">
+                <div class="settings-panel__head">
+                  <div><h2>档案与容量</h2><p>决定每日计划的时间预算和“今天”的边界。</p></div>
+                  <button class="btn btn--primary btn--sm" type="button" data-save="档案设置已保存。">保存更改</button>
+                </div>
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>时间与容量</h3><span>影响每日计划生成</span></div>
+                  <div class="form-grid form-grid--3">
+                    <div class="field"><label for="set-timezone">时区</label><select id="set-timezone"><option>Asia/Shanghai</option><option>Asia/Tokyo</option><option>Europe/London</option></select></div>
+                    <div class="field"><label for="set-boundary">日界线</label><select id="set-boundary"><option>04:00 · 推荐</option><option>00:00</option><option>06:00</option></select></div>
+                    <div class="field"><label for="set-minutes">每日可用分钟</label><input id="set-minutes" type="number" value="300" /></div>
+                  </div>
+                  <div class="field" style="margin-top:15px">
+                    <label for="set-factor">容量系数 <small>0.6–1.0</small></label>
+                    <div class="range-row">
+                      <input id="set-factor" type="range" min="60" max="100" step="5" value="80" />
+                      <output class="range-value" id="set-factor-value" for="set-factor">80%</output>
+                    </div>
+                  </div>
+                  <div class="capacity-callout">
+                    <svg class="icon" aria-hidden="true"><use href="#i-target"></use></svg>
+                    <p>有效日容量 = 300 分钟 × 80% = <b id="set-effective">240 分钟</b>。这是每日计划的上限，不是必须排满的目标。</p>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>求职目标</h3><span class="status status--active">当前主目标</span></div>
+                  <div class="form-grid form-grid--3">
+                    <div class="field"><label for="set-job">目标岗位</label><input id="set-job" value="Java 后端实习" /></div>
+                    <div class="field"><label for="set-city">目标城市</label><input id="set-city" value="杭州 / 上海" /></div>
+                    <div class="field"><label for="set-target-date">目标日期</label><input id="set-target-date" type="date" value="2026-11-10" /></div>
+                  </div>
+                  <div class="form-grid" style="margin-top:15px">
+                    <div class="field"><label for="set-industry">行业</label><select id="set-industry"><option>互联网 / 软件</option><option>金融科技</option><option>企业服务</option></select></div>
+                    <div class="field"><label for="set-priority">优先级</label><select id="set-priority"><option>P0 · 最高</option><option>P1 · 高</option><option>P2 · 普通</option></select></div>
+                  </div>
+                  <p class="field__hint" style="margin-top:10px">同一时间只启用一个主目标。其他目标可归档；目标变化后可调整路线，但不会自动覆盖执行中的路线。</p>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>计划与记录偏好</h3></div>
+                  <div class="toggle-row">
+                    <div><strong>自动顺延未完成任务</strong><p>日界线后把 pending / in_progress / blocked 实例放入下一天，并更新预测日期。</p></div>
+                    <button class="toggle is-on" type="button" aria-label="自动顺延" aria-pressed="true"><i></i></button>
+                  </div>
+                  <div class="toggle-row">
+                    <div><strong>没有任务也创建空计划</strong><p>便于推送、看板和活跃天数记录；空计划不会计入未完成。</p></div>
+                    <button class="toggle is-on" type="button" aria-label="创建空计划" aria-pressed="true"><i></i></button>
+                  </div>
+                  <div class="toggle-row">
+                    <div><strong>完成任务时询问实际分钟</strong><p>实际分钟用于时间偏差和预测；不填写时按计划分钟估算并标注。</p></div>
+                    <button class="toggle is-on" type="button" aria-label="询问实际分钟" aria-pressed="true"><i></i></button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 通知 -->
+              <section class="card settings-panel" data-settings-panel="notifications" hidden>
+                <div class="settings-panel__head">
+                  <div><h2>企业微信推送</h2><p>单向群机器人 Webhook。未配置不影响今日页和看板。</p></div>
+                  <button class="btn btn--primary btn--sm" type="button" data-save="通知设置已保存。">保存更改</button>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>推送渠道</h3><span class="status status--active">已连接</span></div>
+                  <div class="channel-card">
+                    <span class="channel-icon"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg></span>
+                    <div class="channel-copy">
+                      <div class="channel-copy__title"><strong>企业微信群机器人</strong><span class="tag tag--teal">生产配置</span></div>
+                      <p>Webhook：<code id="webhook-masked">https://qyapi.weixin.qq.com/…/send?key=••••••7a2f</code></p>
+                      <p>最近测试发送：<span id="last-test">今天 07:31 · 成功</span></p>
+                      <div class="channel-actions">
+                        <button class="btn btn--secondary btn--xs" type="button" id="test-send">发送测试消息</button>
+                        <button class="btn btn--ghost btn--xs" type="button" data-open="edit-webhook">更换 Webhook</button>
+                        <button class="btn btn--ghost btn--xs" type="button" data-confirm="disconnect-channel">断开</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>通知事件</h3><span>时间按用户时区</span></div>
+                  <div class="event-table">
+                    <div class="event-row event-row--head"><span>事件</span><span>发送时间</span><span>开启</span></div>
+                    <div class="event-row">
+                      <div class="event-name"><strong>早报</strong><span>今日计划已生成 · 必须带 today_link</span></div>
+                      <input type="time" value="07:30" aria-label="早报时间" />
+                      <button class="toggle is-on" type="button" aria-label="开启早报" aria-pressed="true"><i></i></button>
+                    </div>
+                    <div class="event-row">
+                      <div class="event-name"><strong>晚报</strong><span>今日有未完成任务 · 汇总完成与顺延</span></div>
+                      <input type="time" value="20:30" aria-label="晚报时间" />
+                      <button class="toggle is-on" type="button" aria-label="开启晚报" aria-pressed="true"><i></i></button>
+                    </div>
+                    <div class="event-row">
+                      <div class="event-name"><strong>逾期</strong><span>有逾期任务 · 可被免打扰丢弃</span></div>
+                      <input type="time" value="20:00" aria-label="逾期时间" />
+                      <button class="toggle is-on" type="button" aria-label="开启逾期提醒" aria-pressed="true"><i></i></button>
+                    </div>
+                    <div class="event-row">
+                      <div class="event-name"><strong>顺延</strong><span>日界线后发生顺延 · 附新的预测日期</span></div>
+                      <input type="time" value="04:10" aria-label="顺延时间" />
+                      <button class="toggle is-on" type="button" aria-label="开启顺延提醒" aria-pressed="true"><i></i></button>
+                    </div>
+                    <div class="event-row">
+                      <div class="event-name"><strong>周总结</strong><span>周日 20:00 · 本周有任务才发送</span></div>
+                      <input type="time" value="20:00" aria-label="周总结时间" />
+                      <button class="toggle is-on" type="button" aria-label="开启周总结" aria-pressed="true"><i></i></button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>免打扰</h3><span>静默时段内按策略延迟或丢弃</span></div>
+                  <div class="dnd-grid">
+                    <div class="field"><label for="dnd-start">开始</label><input id="dnd-start" type="time" value="23:00" /></div>
+                    <div class="field"><label for="dnd-end">结束</label><input id="dnd-end" type="time" value="07:00" /></div>
+                  </div>
+                  <div class="toggle-row">
+                    <div><strong>开启免打扰</strong><p>早报 / 晚报 / 周总结延迟到静默结束；逾期 / 顺延可直接丢弃。</p></div>
+                    <button class="toggle is-on" type="button" aria-label="开启免打扰" aria-pressed="true"><i></i></button>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>最近发送</h3><a class="card__link" href="#/settings/notifications">查看全部</a></div>
+                  <div class="outbox" id="outbox-list">
+                    <div class="outbox-row">
+                      <div><strong>早报 · 10/19 周一</strong><span>07:30 · 送达 1 个群</span></div>
+                      <span class="status status--active">已发送</span>
+                      <span></span>
+                    </div>
+                    <div class="outbox-row">
+                      <div><strong>逾期提醒 · 2 项</strong><span>昨天 20:00 · 第 1 次重试</span></div>
+                      <span class="status status--paused">重试中</span>
+                      <button class="btn btn--ghost btn--xs" type="button" data-toast="已手动重发，1 分钟后再次尝试。">重发</button>
+                    </div>
+                    <div class="outbox-row">
+                      <div><strong>周总结 · 第 17 周</strong><span>10/12 20:00 · 3 次重试后 dead</span></div>
+                      <span class="status status--risk">dead</span>
+                      <button class="btn btn--secondary btn--xs" type="button" data-toast="已重新入队，稍后查看发送结果。">重新入队</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- AI 授权 -->
+              <section class="card settings-panel" data-settings-panel="ai" hidden>
+                <div class="settings-panel__head">
+                  <div><h2>AI 授权</h2><p>AI 只把计划结构化，不替用户生成路线；Phase 1 不接入真实模型。</p></div>
+                  <span class="status status--active" id="consent-status">已授权</span>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>计划解析授权</h3><span>scope ai_import · version v1</span></div>
+                  <div class="consent-card">
+                    <div class="consent-card__head">
+                      <strong><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg>计划文本可用于 AI 结构化</strong>
+                      <button class="btn btn--danger btn--xs" type="button" id="revoke-consent" data-confirm="revoke-consent">撤销授权</button>
+                    </div>
+                    <p>只有在你上传 Markdown 并确认后，计划文本才会发送给第三方 AI。不会发送账号密码、简历、面试记录或通知配置。</p>
+                    <div class="consent-meta">
+                      <span>授权时间：<b>2026-10-19 09:12</b></span>
+                      <span>授权版本：<b>v1</b></span>
+                      <span>最近使用：<b>2026-10-19 09:15</b></span>
+                    </div>
+                  </div>
+                  <div class="insight" style="margin-top:12px">
+                    <svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg>
+                    <span>撤销后不能导入新的 Markdown；已有路线、任务和今日页不受影响，也可以继续手动创建任务。</span>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>当前 AI Provider</h3><span class="tag tag--neutral">Stub</span></div>
+                  <div class="channel-card" style="border-color:var(--line);background:#fbfcff">
+                    <span class="channel-icon" style="color:var(--ink-600)"><svg class="icon" aria-hidden="true"><use href="#i-server"></use></svg></span>
+                    <div class="channel-copy">
+                      <div class="channel-copy__title"><strong>本地 Stub Provider</strong><span class="tag tag--neutral">未配置真实模型</span></div>
+                      <p>当前用于开发与验收，不访问外网。正式接入前，非 stub Provider 会明确返回未配置错误，不会静默降级。</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>数据处理边界</h3></div>
+                  <ul class="aside-list">
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>只发送当前上传的计划文本，不发送历史路线或执行记录。</span></li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>AI 输出必须经过规则校验和用户确认，才能创建路线。</span></li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span>AI 不执行代码、不做沙箱判题、不生成能力分数。</span></li>
+                  </ul>
+                </div>
+              </section>
+
+              <!-- 数据 -->
+              <section class="card settings-panel" data-settings-panel="data" hidden>
+                <div class="settings-panel__head">
+                  <div><h2>数据与账号</h2><p>数据属于用户。导出、删除账号和审计能力按阶段开放。</p></div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>账号</h3></div>
+                  <div class="form-grid">
+                    <div class="field"><label>登录账号</label><input value="lin@example.com" disabled /></div>
+                    <div class="field"><label>注册时间</label><input value="2026-10-02 09:08" disabled /></div>
+                  </div>
+                  <div class="channel-actions" style="margin-top:12px">
+                    <a class="btn btn--secondary btn--sm" href="#/login">退出登录</a>
+                    <button class="btn btn--ghost btn--sm" type="button" data-toast="会话已刷新；Access Token 保存在内存，Refresh Token 在 HttpOnly Cookie。">刷新会话</button>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>数据管理</h3><span>Phase 1 后续开放</span></div>
+                  <div class="danger-zone">
+                    <div class="danger-row">
+                      <div><strong>导出全部数据 <span class="tag tag--neutral">后续</span></strong><p>导出路线、任务、每日计划、执行记录和通知配置为 JSON。</p></div>
+                      <button class="btn btn--secondary btn--xs" type="button" disabled>导出</button>
+                    </div>
+                    <div class="danger-row">
+                      <div><strong>删除账号 <span class="tag tag--neutral">后续</span></strong><p>删除前需要二次确认和邮件验证；当前版本不提供。</p></div>
+                      <button class="btn btn--danger btn--xs" type="button" disabled>删除</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="settings-section">
+                  <div class="settings-section__title"><h3>安全与审计</h3></div>
+                  <div class="outbox">
+                    <div class="outbox-row">
+                      <div><strong>审计日志</strong><span>导入确认、路线调整、通知渠道变更</span></div>
+                      <span class="tag tag--neutral">Phase 1 内部</span>
+                      <button class="btn btn--ghost btn--xs" type="button" data-toast="审计日志接口已存在；Phase 1 不做管理后台，仅通过运维工具查看。">查看</button>
+                    </div>
+                    <div class="outbox-row">
+                      <div><strong>登录设备</strong><span>当前设备 · Windows · Chrome</span></div>
+                      <span class="status status--active">当前</span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
-  <div class="toast" id="toast" role="status"></div>
-  <script>
-    const toast=document.getElementById('toast');let toastTimer;
-    function showToast(message){toast.innerHTML=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2600)}
-    const labels={today:'今日',routes:'学习路线',import:'导入计划',dashboard:'执行看板',settings:'设置'};
-    function openView(view){if(view==='future'){showToast('<strong>该页面将在后续阶段开放。</strong>当前先把计划执行跑起来。');return}document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='view-'+view));document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));document.getElementById('crumb-sub').textContent=' / '+labels[view];window.scrollTo({top:0,behavior:'smooth'})}
-    document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>openView(el.dataset.view)));
-    document.querySelectorAll('[data-view-go]').forEach(el=>el.addEventListener('click',()=>openView(el.dataset.viewGo)));
-    document.querySelectorAll('[data-toast]').forEach(el=>el.addEventListener('click',()=>showToast('<strong>恒序：</strong>'+el.dataset.toast)));
-    const tasks=[...document.querySelectorAll('[data-task]')],count=document.getElementById('task-count'),ring=document.getElementById('today-ring'),percent=document.getElementById('today-percent'),metric=document.getElementById('done-metric');
-    function syncTasks(){const done=tasks.filter(t=>t.classList.contains('done')).length;const p=Math.round(done/tasks.length*100);count.textContent=done+' / '+tasks.length+' 已完成';metric.textContent=done+' / '+tasks.length;percent.textContent=p+'%';ring.style.strokeDashoffset=String(264-(264*p/100))}
-    tasks.forEach(task=>task.querySelector('.check').addEventListener('click',()=>{task.classList.toggle('done');const title=task.querySelector('.task-title').textContent.replace('顺延 · ','');showToast(task.classList.contains('done')?'<strong>已完成：</strong>'+title:'<strong>已恢复：</strong>'+title);syncTasks()}));syncTasks();
-    document.getElementById('choose-file').addEventListener('click',()=>showToast('<strong>选择文件：</strong>原型展示已准备好解析预览。'));
-    document.getElementById('confirm-import').addEventListener('click',()=>{showToast('<strong>路线已创建：</strong>42 项任务进入待确认状态。');openView('routes')});
-    document.querySelectorAll('.toggle').forEach(toggle=>toggle.addEventListener('click',()=>toggle.classList.toggle('on')));
-  </script>
+
+  <!-- 移动端底部导航 -->
+  <nav class="mobile-nav" aria-label="移动端导航">
+    <a href="#/today" data-nav="today"><svg class="icon" aria-hidden="true"><use href="#i-today"></use></svg>今日</a>
+    <a href="#/dashboard" data-nav="dashboard"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg>看板</a>
+    <a href="#/routes" data-nav="routes"><svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>路线</a>
+    <a href="#/settings/profile" data-nav="settings"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>我的</a>
+  </nav>
+
+  <!-- 浮层 -->
+  <div class="overlay" id="overlay" hidden></div>
+  <aside class="sheet" id="sheet" aria-hidden="true" aria-label="任务详情" inert></aside>
+  <div id="modal-root"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- 原型导航 -->
+  <aside class="proto-panel" id="proto-panel" aria-hidden="true" aria-label="原型导航" inert>
+    <div class="proto-panel__head">
+      <div><h2>原型导航</h2><p>Phase 1 设计初稿 · 2026-10-19 · v1.0</p></div>
+      <button class="icon-button" type="button" id="close-proto" aria-label="关闭原型导航"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    </div>
+
+    <div class="proto-group">
+      <h3>入口</h3>
+      <a class="proto-link" href="#/login"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>登录 / 注册<span>Auth</span></a>
+      <a class="proto-link" href="#/onboarding"><svg class="icon" aria-hidden="true"><use href="#i-flag"></use></svg>首次引导（4 步）<span>Onboarding</span></a>
+    </div>
+
+    <div class="proto-group">
+      <h3>核心流程</h3>
+      <a class="proto-link" href="#/today"><svg class="icon" aria-hidden="true"><use href="#i-today"></use></svg>今日执行<span>Today</span></a>
+      <a class="proto-link" href="#/dashboard"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg>执行看板<span>Dashboard</span></a>
+      <a class="proto-link" href="#/routes"><svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>学习路线<span>Routes</span></a>
+      <a class="proto-link" href="#/routes/1"><svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>路线详情 / 版本<span>Route detail</span></a>
+      <a class="proto-link" href="#/import"><svg class="icon" aria-hidden="true"><use href="#i-import"></use></svg>导入上传<span>Import</span></a>
+      <a class="proto-link" href="#/import?state=preview"><svg class="icon" aria-hidden="true"><use href="#i-file"></use></svg>导入预览与问题<span>Preview</span></a>
+    </div>
+
+    <div class="proto-group">
+      <h3>设置</h3>
+      <a class="proto-link" href="#/settings/profile"><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>档案与容量<span>Profile</span></a>
+      <a class="proto-link" href="#/settings/notifications"><svg class="icon" aria-hidden="true"><use href="#i-bell"></use></svg>企业微信推送<span>Notifications</span></a>
+      <a class="proto-link" href="#/settings/ai"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"></use></svg>AI 授权<span>Consent</span></a>
+      <a class="proto-link" href="#/settings/data"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg>数据与账号<span>Data</span></a>
+    </div>
+
+    <div class="proto-group">
+      <h3>状态演示</h3>
+      <a class="proto-link" href="#/today?state=done"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg>今日全部完成<span>Empty</span></a>
+      <a class="proto-link" href="#/import?state=error"><svg class="icon" aria-hidden="true"><use href="#i-alert-circle"></use></svg>导入解析失败<span>Error</span></a>
+      <a class="proto-link" href="#/routes?state=empty"><svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>路线空状态<span>Empty</span></a>
+      <a class="proto-link" href="#/dashboard?state=empty"><svg class="icon" aria-hidden="true"><use href="#i-dashboard"></use></svg>看板空状态<span>Empty</span></a>
+      <button class="proto-link" type="button" id="reset-demo" style="width:100%;border:0;background:transparent;text-align:left"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg>重置演示数据<span>Reset</span></button>
+    </div>
+
+    <div class="proto-group">
+      <h3>说明</h3>
+      <p>页面使用演示数据，交互用于确认信息架构、状态和文案，不代表最终实现。深链可直接分享，例如 <code>#/import?state=preview</code>。</p>
+    </div>
+  </aside>
+
+  <script src="prototype.js"></script>
 </body>
 </html>
