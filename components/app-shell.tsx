@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -296,7 +296,7 @@ function Topbar() {
           </div>
         </div>
         <div className="topbar-actions">
-          <span className="proto-badge">Next.js 基线</span>
+          <span className="proto-badge">Phase 1 · 执行层</span>
           <span className="date-chip">
             <Calendar className="icon" aria-hidden="true" />
             {DEMO_TODAY_LABEL}
@@ -364,3 +364,4 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+

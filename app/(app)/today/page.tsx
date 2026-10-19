@@ -1,18 +1,15 @@
-import { PageHeader } from "@/components/ui";
+import type { Metadata } from "next";
+import { TodayView } from "@/components/today/today-view";
 
-export default function TodayPage() {
-  return (
-    <div className="view">
-      <PageHeader
-        eyebrow="Today · Phase 1"
-        title="今天先做什么？"
-        description="今日模块正在接入数据层。"
-      />
-      <section className="card" style={{ padding: 28 }}>
-        <p className="muted" style={{ fontSize: 12 }}>
-          今日任务、容量和顺延模块将在下一个提交中落地。
-        </p>
-      </section>
-    </div>
-  );
+export const metadata: Metadata = {
+  title: "今日",
+};
+
+export default async function TodayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string }>;
+}) {
+  const { state } = await searchParams;
+  return <TodayView demoState={state} />;
 }
