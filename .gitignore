@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+env/
+deps/
+.python-deps/
+wheels/
+*.egg-info/
+dist/
+build/
+
+# Local runtime / dependency artifacts
+tmp/
+.tmp/
+.pip-cache/
+.acl-recovery/
+tools/
+storage/
+logs/
+*.log
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Test / local databases
+*.sqlite3
+*.db
+persistlog_test/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
