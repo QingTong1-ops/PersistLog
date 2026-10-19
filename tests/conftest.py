@@ -3,7 +3,7 @@ import os
 os.environ["APP_ENV"] = "test"
 
 import pytest
-from app.core.db import engine
+from app.core.db import SessionLocal, engine
 from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -36,6 +36,9 @@ def _clean_account_tables() -> None:
             "files",
             "ai_runs",
             "jobs",
+            "notification_outbox",
+            "notification_preferences",
+            "notification_channels",
             "user_consents",
             "refresh_tokens",
             "job_targets",
@@ -50,3 +53,12 @@ def _clean_account_tables() -> None:
 def client(clean_db):
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture()
+def db(clean_db):
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()

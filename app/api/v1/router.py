@@ -6,6 +6,7 @@ from app.api.v1 import (
     dashboard,
     imports,
     job_targets,
+    notifications,
     profile,
     routes,
     tasks,
@@ -24,6 +25,7 @@ router.include_router(routes.stage_router)
 router.include_router(tasks.router)
 router.include_router(today.router)
 router.include_router(dashboard.router)
+router.include_router(notifications.router)
 
 
 @router.get("/ping", tags=["meta"])

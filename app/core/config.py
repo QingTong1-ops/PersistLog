@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     ai_model: str = ""
     ai_base_url: str = ""
 
+    notification_provider: str = "wecom"
+    web_base_url: str = "http://localhost:3000"
+
     storage_backend: str = "local"
     storage_dir: str = "storage"
     max_upload_bytes: int = 5 * 1024 * 1024
