@@ -38,7 +38,7 @@ def _capacity(db: Session, user: User) -> int:
     return max(int(profile.daily_available_minutes * float(profile.planning_capacity_factor)), 30)
 
 
-def _logical_today(db: Session, user: User, on_date: date | None = None) -> date:
+def logical_today(db: Session, user: User, on_date: date | None = None) -> date:
     if on_date is not None:
         return on_date
     profile = db.get(UserProfile, user.id)
@@ -298,7 +298,7 @@ def generate_daily_plan(db: Session, user: User, on_date: date) -> DailyPlan:
 
 
 def ensure_today(db: Session, user: User, on_date: date | None = None) -> DailyPlan:
-    day = _logical_today(db, user, on_date)
+    day = logical_today(db, user, on_date)
     carry_over(db, user, day)
     return generate_daily_plan(db, user, day)
 

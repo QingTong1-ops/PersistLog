@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.v1 import (
     auth,
     consents,
+    dashboard,
     imports,
     job_targets,
     profile,
@@ -22,6 +23,7 @@ router.include_router(routes.router)
 router.include_router(routes.stage_router)
 router.include_router(tasks.router)
 router.include_router(today.router)
+router.include_router(dashboard.router)
 
 
 @router.get("/ping", tags=["meta"])
