@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import logging
 
+import app.models  # noqa: F401  # register models on Base.metadata
 from alembic import context
-from sqlalchemy import engine_from_config, pool
-
 from app.core.config import get_settings
 from app.models.base import Base
+from sqlalchemy import engine_from_config, pool
 
 logging.basicConfig(level=logging.INFO)
 config = context.config
