@@ -28,6 +28,7 @@ class ImportPreview(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     stats: dict[str, int] = Field(default_factory=dict)
     issues: list[ImportIssueOut] = Field(default_factory=list)
+    updated_at: datetime
 
 
 class ImportSummary(BaseModel):

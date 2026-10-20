@@ -45,7 +45,10 @@ class Settings(BaseSettings):
     web_base_url: str = "http://localhost:3000"
 
     # Comma-separated browser origins allowed to call the API with credentials.
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    cors_origins: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://localhost:3001,http://127.0.0.1:3001"
+    )
     refresh_cookie_name: str = "persistlog_refresh"
     refresh_cookie_secure: bool | None = None
     refresh_cookie_samesite: Literal["lax", "strict", "none"] = "lax"

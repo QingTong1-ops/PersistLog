@@ -25,6 +25,30 @@ def test_route_list_and_status_filter(client: TestClient) -> None:
     assert active.json()[0]["id"] == route["id"]
 
 
+def test_route_list_excludes_archived_by_default(client: TestClient) -> None:
+    body = register(client)
+    token = body["access_token"]
+    route = create_route(client, token)
+
+    archived = client.post(
+        f"/api/v1/routes/{route['id']}/archive",
+        headers=auth_header(token),
+    )
+    assert archived.status_code == 200, archived.text
+
+    default = client.get("/api/v1/routes", headers=auth_header(token))
+    assert default.status_code == 200
+    assert default.json() == []
+
+    archived_only = client.get(
+        "/api/v1/routes?status=archived", headers=auth_header(token)
+    )
+    assert [item["id"] for item in archived_only.json()] == [route["id"]]
+
+    all_routes = client.get("/api/v1/routes?status=all", headers=auth_header(token))
+    assert [item["id"] for item in all_routes.json()] == [route["id"]]
+
+
 def test_route_task_requires_week(client: TestClient) -> None:
     body = register(client)
     token = body["access_token"]

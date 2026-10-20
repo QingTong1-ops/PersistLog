@@ -1030,8 +1030,10 @@
                   "type": "null"
                 }
               ],
+              "description": "按状态过滤；默认排除 archived，传 all 返回全部",
               "title": "Status"
-            }
+            },
+            "description": "按状态过滤；默认排除 archived，传 all 返回全部"
           }
         ],
         "responses": {
@@ -2230,6 +2232,71 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/today/items": {
+      "post": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Add Today Item",
+        "operationId": "add_today_item_api_v1_today_items_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodayItemCreate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4442,6 +4509,11 @@
             "type": "array",
             "title": "Issues"
           },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
           "format": {
             "type": "string",
             "title": "Format"
@@ -4478,6 +4550,7 @@
         "required": [
           "import_id",
           "status",
+          "updated_at",
           "format",
           "created_at"
         ],
@@ -4577,12 +4650,18 @@
             },
             "type": "array",
             "title": "Issues"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
           }
         },
         "type": "object",
         "required": [
           "import_id",
-          "status"
+          "status",
+          "updated_at"
         ],
         "title": "ImportPreview"
       },
@@ -6456,6 +6535,16 @@
             ],
             "title": "Exit Criteria"
           },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "weeks": {
             "items": {
               "$ref": "#/components/schemas/WeekOut"
@@ -7365,6 +7454,66 @@
         ],
         "title": "TodayItem"
       },
+      "TodayItemCreate": {
+        "properties": {
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "estimated_minutes": {
+            "type": "integer",
+            "maximum": 120.0,
+            "minimum": 15.0,
+            "title": "Estimated Minutes",
+            "default": 30
+          },
+          "task_type": {
+            "type": "string",
+            "title": "Task Type",
+            "default": "review"
+          },
+          "priority": {
+            "type": "string",
+            "pattern": "^P[0-2]$",
+            "title": "Priority",
+            "default": "P1"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "TodayItemCreate",
+        "description": "Add an existing task or an ad-hoc task to today's plan."
+      },
       "TodayResponse": {
         "properties": {
           "plan_id": {
@@ -7755,6 +7904,16 @@
               }
             ],
             "title": "End Date"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "tasks": {
             "items": {

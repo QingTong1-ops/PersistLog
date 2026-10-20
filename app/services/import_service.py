@@ -351,6 +351,7 @@ def get_preview(db: Session, user: User, batch_id: str) -> dict[str, Any]:
         "warnings": summary.get("warnings", []),
         "stats": summary.get("stats", {}),
         "issues": get_issues(db, batch),
+        "updated_at": batch.updated_at,
     }
 
 
@@ -370,6 +371,7 @@ def get_detail(db: Session, user: User, batch_id: str) -> dict[str, Any]:
         "stats": summary.get("stats", {}),
         "issues": get_issues(db, batch),
         "created_at": batch.created_at,
+        "updated_at": batch.updated_at,
     }
 
 

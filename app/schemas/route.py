@@ -58,6 +58,12 @@ class TaskOut(BaseModel):
     created_at: datetime
 
 
+class RouteProgress(BaseModel):
+    total_tasks: int
+    completed_tasks: int
+    percent: float
+
+
 class WeekOut(BaseModel):
     id: str
     week_no: int
@@ -65,6 +71,7 @@ class WeekOut(BaseModel):
     milestone: str | None = None
     start_date: date | None = None
     end_date: date | None = None
+    progress: RouteProgress | None = None
     tasks: list[TaskOut] = Field(default_factory=list)
 
 
@@ -77,13 +84,8 @@ class StageOut(BaseModel):
     end_date: date | None = None
     weight: float
     exit_criteria: str | None = None
+    progress: RouteProgress | None = None
     weeks: list[WeekOut] = Field(default_factory=list)
-
-
-class RouteProgress(BaseModel):
-    total_tasks: int
-    completed_tasks: int
-    percent: float
 
 
 class RouteDetail(BaseModel):

@@ -26,7 +26,11 @@ stage_router = APIRouter(prefix="/stages", tags=["routes"])
 def list_routes(
     user: CurrentUser,
     db: DbSession,
-    status_filter: str | None = Query(default=None, alias="status"),
+    status_filter: str | None = Query(
+        default=None,
+        alias="status",
+        description="按状态过滤；默认排除 archived，传 all 返回全部",
+    ),
 ) -> list[RouteSummary]:
     return [
         RouteSummary.model_validate(route)

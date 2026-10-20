@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class OccurrenceOut(BaseModel):
@@ -53,6 +53,23 @@ class TodayResponse(BaseModel):
     summary: TodaySummary
     items: list[TodayItem] = Field(default_factory=list)
     carry_over: list[TodayItem] = Field(default_factory=list)
+
+
+class TodayItemCreate(BaseModel):
+    """Add an existing task or an ad-hoc task to today's plan."""
+
+    task_id: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    estimated_minutes: int = Field(default=30, ge=15, le=120)
+    task_type: str = Field(default="review")
+    priority: str = Field(default="P1", pattern="^P[0-2]$")
+    note: str | None = None
+
+    @model_validator(mode="after")
+    def _require_task_or_title(self) -> TodayItemCreate:
+        if not self.task_id and not self.title:
+            raise ValueError("task_id 或 title 至少提供一个")
+        return self
 
 
 class CompleteRequest(BaseModel):

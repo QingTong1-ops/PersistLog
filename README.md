@@ -73,7 +73,7 @@ Redis 仅用于本地开发：只绑定 `127.0.0.1`、无密码，不要暴露�
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；测试强制 AI 使用 Stub、通知使用 Logging Provider，不访问外网。当前为 **106 passed**。
+测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；测试强制 AI 使用 Stub、通知使用 Logging Provider，不访问外网。当前为 **111 passed**。
 
 ## 数据库
 
@@ -129,6 +129,8 @@ $mysql = "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 - 认证：Access Token 走 `Authorization: Bearer`；Refresh Token 只放 `HttpOnly` Cookie（`Path=/api/v1/auth`），响应体不返回 `refresh_token`
 - CORS：`CORS_ORIGINS` 白名单 + `allow_credentials`；`/auth/refresh`、`/auth/logout` 校验 `Origin`
 - 导入：`POST /imports` 返回 `import_id + job_id`，用 `GET /jobs/{id}` 轮询进度
+- 今日：`POST /today/items` 手动加任务；已有空计划会在下次 `GET /today` 自动补齐路线任务
+- 路线：`GET /routes` 默认排除 archived，传 `?status=all` 返回全部
 - 错误统一为 `{"error": {"code", "message", "details", "request_id"}}`
 - 每个响应带 `X-Request-ID`
 - 限流：登录 5 次/分钟/IP；导入 3 次/小时/用户；通知测试 5 次/小时/用户
@@ -136,4 +138,4 @@ $mysql = "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 
 ## 当前阶段
 
-Phase 1 后端 M1–M8 + W0 已完成（W0：安全认证 Cookie、CORS、异步导入 + Job 查询、OpenAPI 导出），并已完成真实 DeepSeek、企业微信 Webhook、Redis/Celery 链路验证。前端未开始；Phase 2/3（代码静态评审、AI 诊断等）不在本仓库当前范围内。
+Phase 1 后端 M1–M8 + W0 已完成（W0：安全认证 Cookie、CORS、异步导入 + Job 查询、OpenAPI 导出），并已完成真实 DeepSeek、企业微信 Webhook、Redis/Celery 链路验证与前端联调修复。前端初步联调中；Phase 2/3（代码静态评审、AI 诊断等）不在本仓库当前范围内。

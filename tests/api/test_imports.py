@@ -56,6 +56,7 @@ def test_import_preview_edit_confirm_rollback(client: TestClient) -> None:
     assert preview.status_code == 200, preview.text
     data = preview.json()
     assert data["stats"]["tasks"] == 2
+    assert data["updated_at"]
     task = data["route"]["stages"][0]["weeks"][0]["tasks"][0]
     assert task["title"] == "TCP 三次握手"
 
@@ -70,6 +71,7 @@ def test_import_preview_edit_confirm_rollback(client: TestClient) -> None:
         edited.json()["route"]["stages"][0]["weeks"][0]["tasks"][0]["title"]
         == "TCP 三次握手（已编辑）"
     )
+    assert edited.json()["updated_at"]
 
     confirmed = client.post(
         f"/api/v1/imports/{import_id}/confirm",
@@ -78,6 +80,16 @@ def test_import_preview_edit_confirm_rollback(client: TestClient) -> None:
     assert confirmed.status_code == 200, confirmed.text
     assert confirmed.json()["created_tasks"] == 2
     route_id = confirmed.json()["route_id"]
+
+    route_detail = client.get(
+        f"/api/v1/routes/{route_id}",
+        headers=auth_header(token),
+    )
+    assert route_detail.status_code == 200, route_detail.text
+    assert (
+        route_detail.json()["stages"][0]["weeks"][0]["tasks"][0]["title"]
+        == "TCP 三次握手（已编辑）"
+    )
 
     repeated = client.post(
         f"/api/v1/imports/{import_id}/confirm",

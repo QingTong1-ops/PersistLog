@@ -22,9 +22,11 @@ from app.schemas.planning import (
     SkipRequest,
     SplitRequest,
     TodayItem,
+    TodayItemCreate,
     TodayResponse,
     TodaySummary,
 )
+from app.services.import_validation import ALLOWED_TASK_TYPES
 
 
 def _naive_utcnow() -> datetime:
@@ -120,6 +122,36 @@ def _task_sort_key(task: Task) -> tuple[int, date, int]:
     return priority, task.planned_date or date.max, task.estimated_minutes
 
 
+def _eligible_tasks(db: Session, user: User, on_date: date) -> list[Task]:
+    """Active route/manual tasks due today and not already instantiated."""
+    completed_task_ids = select(TaskOccurrence.task_id).where(
+        TaskOccurrence.user_id == user.id,
+        TaskOccurrence.status == "completed",
+    )
+    today_task_ids = select(TaskOccurrence.task_id).where(
+        TaskOccurrence.user_id == user.id,
+        TaskOccurrence.occurrence_date == on_date,
+    )
+    tasks = list(
+        db.scalars(
+            select(Task)
+            .outerjoin(Route, Task.route_id == Route.id)
+            .where(
+                Task.user_id == user.id,
+                Task.status == "active",
+                Task.deleted_at.is_(None),
+                Task.planned_date.is_not(None),
+                Task.planned_date <= on_date,
+                Task.id.not_in(completed_task_ids),
+                Task.id.not_in(today_task_ids),
+                or_(Task.route_id.is_(None), Route.status == "active"),
+            )
+        )
+    )
+    tasks.sort(key=_task_sort_key)
+    return tasks
+
+
 def _attach_unlinked_occurrences(db: Session, plan: DailyPlan, user: User) -> None:
     occurrences = list(
         db.scalars(
@@ -166,38 +198,106 @@ def _attach_unlinked_occurrences(db: Session, plan: DailyPlan, user: User) -> No
     db.commit()
 
 
+def _fill_existing_plan(db: Session, user: User, plan: DailyPlan) -> None:
+    """Backfill route tasks when a plan was created before the route existed."""
+    _attach_unlinked_occurrences(db, plan, user)
+    rows = db.execute(
+        select(DailyPlanItem, TaskOccurrence, Task)
+        .join(TaskOccurrence, DailyPlanItem.task_occurrence_id == TaskOccurrence.id)
+        .join(Task, TaskOccurrence.task_id == Task.id)
+        .where(
+            DailyPlanItem.daily_plan_id == plan.id,
+            TaskOccurrence.status != "abandoned",
+        )
+        .order_by(DailyPlanItem.order_no)
+    ).all()
+    existing_count = len(rows)
+    planned_minutes = sum(item.planned_minutes for item, _, _ in rows)
+    summary = dict(plan.summary_json or {})
+    selected_payload = list(summary.get("selected", []))
+    deferred = list(summary.get("deferred", []))
+    next_order = (
+        db.scalar(
+            select(func.max(DailyPlanItem.order_no)).where(
+                DailyPlanItem.daily_plan_id == plan.id
+            )
+        )
+        or 0
+    ) + 1
+    added_titles: list[str] = []
+
+    for task in _eligible_tasks(db, user, plan.plan_date):
+        if existing_count >= 6:
+            deferred.append(
+                {"task_id": task.id, "title": task.title, "reason": "超过每日任务数上限"}
+            )
+            continue
+        if planned_minutes + task.estimated_minutes > plan.capacity_minutes:
+            deferred.append(
+                {"task_id": task.id, "title": task.title, "reason": "容量不足"}
+            )
+            continue
+        reason = "P0 路线任务" if task.priority == "P0" else "计划日期到期"
+        if task.route_id is None:
+            reason = "手动任务"
+        occurrence = TaskOccurrence(
+            user_id=user.id,
+            task_id=task.id,
+            daily_plan_id=plan.id,
+            occurrence_date=plan.plan_date,
+            timezone=user.timezone,
+            status="pending",
+            priority_snapshot=task.priority,
+            planned_minutes=task.estimated_minutes,
+            remaining_minutes=task.estimated_minutes,
+        )
+        db.add(occurrence)
+        db.flush()
+        db.add(
+            DailyPlanItem(
+                daily_plan_id=plan.id,
+                task_occurrence_id=occurrence.id,
+                order_no=next_order,
+                planned_minutes=task.estimated_minutes,
+                is_optional=task.priority == "P2",
+            )
+        )
+        next_order += 1
+        existing_count += 1
+        planned_minutes += task.estimated_minutes
+        added_titles.append(task.title)
+        selected_payload.append(
+            {
+                "occurrence_id": occurrence.id,
+                "task_id": task.id,
+                "title": task.title,
+                "reason": reason,
+            }
+        )
+
+    if not added_titles:
+        return
+    summary["selected"] = selected_payload
+    summary["deferred"] = deferred
+    summary["planned_minutes"] = planned_minutes
+    summary["over_capacity"] = planned_minutes > plan.capacity_minutes
+    if not rows:
+        summary["focus"] = added_titles[0]
+    plan.summary_json = summary
+    plan.generation_version = (plan.generation_version or 1) + 1
+    plan.generated_at = _naive_utcnow()
+    db.commit()
+    db.refresh(plan)
+
+
 def generate_daily_plan(db: Session, user: User, on_date: date) -> DailyPlan:
     existing = get_plan(db, user, on_date)
     if existing is not None:
-        _attach_unlinked_occurrences(db, existing, user)
+        _fill_existing_plan(db, user, existing)
         return existing
 
     capacity = _capacity(db, user)
-    completed_task_ids = select(TaskOccurrence.task_id).where(
-        TaskOccurrence.user_id == user.id,
-        TaskOccurrence.status == "completed",
-    )
-    today_task_ids = select(TaskOccurrence.task_id).where(
-        TaskOccurrence.user_id == user.id,
-        TaskOccurrence.occurrence_date == on_date,
-    )
-    tasks = list(
-        db.scalars(
-            select(Task)
-            .outerjoin(Route, Task.route_id == Route.id)
-            .where(
-                Task.user_id == user.id,
-                Task.status == "active",
-                Task.deleted_at.is_(None),
-                Task.planned_date.is_not(None),
-                Task.planned_date <= on_date,
-                Task.id.not_in(completed_task_ids),
-                Task.id.not_in(today_task_ids),
-                or_(Task.route_id.is_(None), Route.status == "active"),
-            )
-        )
-    )
-    tasks.sort(key=_task_sort_key)
+    tasks = _eligible_tasks(db, user, on_date)
 
     carried = list(
         db.scalars(
@@ -374,6 +474,158 @@ def get_today(db: Session, user: User, on_date: date | None = None) -> TodayResp
         items=items,
         carry_over=[item for item in items if item.carry_over],
     )
+
+
+def add_today_item(
+    db: Session,
+    user: User,
+    payload: TodayItemCreate,
+    on_date: date | None = None,
+) -> TodayResponse:
+    """Add an existing task or an ad-hoc task to an existing daily plan."""
+    day = logical_today(db, user, on_date)
+    plan = ensure_today(db, user, on_date)
+    created_item = False
+
+    if payload.task_id:
+        task = db.scalar(
+            select(Task).where(
+                Task.id == payload.task_id,
+                Task.user_id == user.id,
+                Task.status == "active",
+                Task.deleted_at.is_(None),
+            )
+        )
+        if task is None:
+            raise AppError("TASK_NOT_FOUND", "任务不存在", status_code=404)
+        occurrence = db.scalar(
+            select(TaskOccurrence).where(
+                TaskOccurrence.user_id == user.id,
+                TaskOccurrence.task_id == task.id,
+                TaskOccurrence.occurrence_date == day,
+                TaskOccurrence.split_index == 0,
+            )
+        )
+        if occurrence is None:
+            minutes = task.estimated_minutes
+            occurrence = TaskOccurrence(
+                user_id=user.id,
+                task_id=task.id,
+                daily_plan_id=plan.id,
+                occurrence_date=day,
+                timezone=user.timezone,
+                status="pending",
+                priority_snapshot=task.priority,
+                planned_minutes=minutes,
+                remaining_minutes=minutes,
+            )
+            db.add(occurrence)
+            db.flush()
+        elif occurrence.status not in {"pending", "in_progress", "blocked"}:
+            raise AppError(
+                "TODAY_ITEM_INVALID",
+                "该任务今天已有执行记录，不能重复加入",
+                status_code=409,
+            )
+        else:
+            occurrence.daily_plan_id = plan.id
+            minutes = occurrence.planned_minutes
+    else:
+        if payload.task_type not in ALLOWED_TASK_TYPES:
+            raise AppError("INVALID_TASK_TYPE", "任务类型无效", status_code=422)
+        minutes = payload.estimated_minutes
+        task = Task(
+            user_id=user.id,
+            title=payload.title or "手动任务",
+            task_type=payload.task_type,
+            priority=payload.priority,
+            estimated_minutes=minutes,
+            planned_date=day,
+            deliverable="手动添加",
+            acceptance_criteria="完成",
+            resources_json=[],
+            capability_tags_json=[],
+            needs_review=False,
+            is_splittable=True,
+            source_type="manual",
+            status="active",
+        )
+        db.add(task)
+        db.flush()
+        occurrence = TaskOccurrence(
+            user_id=user.id,
+            task_id=task.id,
+            daily_plan_id=plan.id,
+            occurrence_date=day,
+            timezone=user.timezone,
+            status="pending",
+            priority_snapshot=task.priority,
+            planned_minutes=minutes,
+            remaining_minutes=minutes,
+        )
+        db.add(occurrence)
+        db.flush()
+
+    if payload.note:
+        occurrence.note = payload.note
+
+    plan_item = db.scalar(
+        select(DailyPlanItem).where(
+            DailyPlanItem.daily_plan_id == plan.id,
+            DailyPlanItem.task_occurrence_id == occurrence.id,
+        )
+    )
+    if plan_item is None:
+        next_order = (
+            db.scalar(
+                select(func.max(DailyPlanItem.order_no)).where(
+                    DailyPlanItem.daily_plan_id == plan.id
+                )
+            )
+            or 0
+        ) + 1
+        plan_item = DailyPlanItem(
+            daily_plan_id=plan.id,
+            task_occurrence_id=occurrence.id,
+            order_no=next_order,
+            planned_minutes=minutes,
+            is_optional=task.priority == "P2",
+        )
+        db.add(plan_item)
+        db.flush()
+        created_item = True
+
+    if created_item:
+        summary = dict(plan.summary_json or {})
+        selected = list(summary.get("selected", []))
+        if not any(item.get("occurrence_id") == occurrence.id for item in selected):
+            selected.append(
+                {
+                    "occurrence_id": occurrence.id,
+                    "task_id": task.id,
+                    "title": task.title,
+                    "reason": "手动添加",
+                }
+            )
+        planned_minutes = int(
+            db.scalar(
+                select(func.sum(DailyPlanItem.planned_minutes)).where(
+                    DailyPlanItem.daily_plan_id == plan.id
+                )
+            )
+            or 0
+        )
+        summary["selected"] = selected
+        summary["planned_minutes"] = planned_minutes
+        summary["over_capacity"] = planned_minutes > plan.capacity_minutes
+        if not summary.get("focus"):
+            summary["focus"] = task.title
+        plan.summary_json = summary
+        plan.generation_version = (plan.generation_version or 1) + 1
+        plan.generated_at = _naive_utcnow()
+
+    db.commit()
+    return get_today(db, user, on_date)
 
 
 def start_occurrence(db: Session, user: User, occurrence_id: str) -> OccurrenceOut:

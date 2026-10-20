@@ -59,10 +59,121 @@ def test_today_generate_and_complete(client: TestClient) -> None:
     assert progress["total_tasks"] == 1
     assert progress["completed_tasks"] == 1
     assert progress["percent"] == 100.0
+    stage_progress = detail.json()["stages"][0]["progress"]
+    assert stage_progress == {
+        "total_tasks": 1,
+        "completed_tasks": 1,
+        "percent": 100.0,
+    }
+    week_progress = detail.json()["stages"][0]["weeks"][0]["progress"]
+    assert week_progress == {
+        "total_tasks": 1,
+        "completed_tasks": 1,
+        "percent": 100.0,
+    }
 
     today = get_today(client, token, "2099-01-02")
     assert today["summary"]["completed_tasks"] == 1
     assert today["summary"]["actual_minutes"] == 50
+
+
+def test_empty_plan_is_backfilled_after_route_creation(client: TestClient) -> None:
+    body = register(client)
+    token = body["access_token"]
+
+    empty = get_today(client, token, "2099-01-02")
+    assert empty["summary"]["planned_tasks"] == 0
+    assert empty["items"] == []
+
+    route, task = prepare_route(client, token)
+
+    filled = get_today(client, token, "2099-01-02")
+    assert filled["plan_id"] == empty["plan_id"]
+    assert filled["summary"]["planned_tasks"] == 1
+    assert filled["items"][0]["task_id"] == task["id"]
+
+    regenerated = client.post(
+        "/api/v1/today/generate?date=2099-01-02",
+        headers=auth_header(token),
+    )
+    assert regenerated.status_code == 200
+    assert regenerated.json()["plan_id"] == empty["plan_id"]
+    assert len(regenerated.json()["items"]) == 1
+
+
+def test_add_ad_hoc_today_item(client: TestClient) -> None:
+    body = register(client)
+    token = body["access_token"]
+
+    response = client.post(
+        "/api/v1/today/items?date=2099-01-02",
+        headers=auth_header(token),
+        json={
+            "title": "临时复习",
+            "task_type": "review",
+            "priority": "P1",
+            "estimated_minutes": 30,
+            "note": "手动加入",
+        },
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["summary"]["planned_tasks"] == 1
+    item = data["items"][0]
+    assert item["title"] == "临时复习"
+    assert item["source_type"] == "manual"
+    assert item["note"] == "手动加入"
+    assert item["why"] == "手动添加"
+
+    again = get_today(client, token, "2099-01-02")
+    assert again["summary"]["planned_tasks"] == 1
+    assert again["items"][0]["title"] == "临时复习"
+
+
+def test_add_existing_task_to_today_is_idempotent(client: TestClient) -> None:
+    body = register(client)
+    token = body["access_token"]
+    route, task = prepare_route(client, token)
+
+    # Move the task outside today's auto-selection window.
+    updated = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        headers=auth_header(token),
+        json={"planned_date": "2099-01-05"},
+    )
+    assert updated.status_code == 200, updated.text
+
+    empty = get_today(client, token, "2099-01-02")
+    assert empty["summary"]["planned_tasks"] == 0
+
+    added = client.post(
+        "/api/v1/today/items?date=2099-01-02",
+        headers=auth_header(token),
+        json={"task_id": task["id"]},
+    )
+    assert added.status_code == 200, added.text
+    assert added.json()["summary"]["planned_tasks"] == 1
+    assert added.json()["items"][0]["task_id"] == task["id"]
+
+    repeated = client.post(
+        "/api/v1/today/items?date=2099-01-02",
+        headers=auth_header(token),
+        json={"task_id": task["id"]},
+    )
+    assert repeated.status_code == 200
+    assert repeated.json()["summary"]["planned_tasks"] == 1
+
+
+def test_add_today_item_requires_task_or_title(client: TestClient) -> None:
+    body = register(client)
+    token = body["access_token"]
+    response = client.post(
+        "/api/v1/today/items",
+        headers=auth_header(token),
+        json={"estimated_minutes": 30},
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_postpone_and_carry_over(client: TestClient) -> None:

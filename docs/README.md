@@ -1,6 +1,6 @@
 # 恒序 persistLog 文档
 
-**当前阶段**：Phase 1 后端 M1–M8 + W0 已完成，真实 DeepSeek/企微/Redis 链路已验证；前端、Phase 2/3 未开始
+**当前阶段**：Phase 1 后端 M1–M8 + W0 已完成，真实 DeepSeek/企微/Redis 链路已验证；前端初步联调中；Phase 2/3 未开始
 
 **当前有效文档**：产品/技术/后端计划 3 份主文档 + 进度总结 + 前端对接 + 后续计划 + 1 份 DDL + OpenAPI 导出
 

@@ -72,8 +72,12 @@ def get_week(db: Session, stage: RouteStage, week_id: str) -> RouteWeek:
 
 def list_routes(db: Session, user: User, status: str | None = None) -> list[Route]:
     statement = select(Route).where(Route.user_id == user.id, Route.deleted_at.is_(None))
-    if status:
+    if status == "all":
+        pass
+    elif status:
         statement = statement.where(Route.status == status)
+    else:
+        statement = statement.where(Route.status != "archived")
     statement = statement.order_by(Route.created_at.desc())
     return list(db.scalars(statement))
 
@@ -194,6 +198,7 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
     stage_payloads = []
     total_tasks = 0
     task_ids: list[str] = []
+    week_task_map: dict[str, list[Task]] = {}
     for stage in stages:
         weeks = list(
             db.scalars(
@@ -217,6 +222,7 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
             )
             total_tasks += len(tasks)
             task_ids.extend(task.id for task in tasks)
+            week_task_map[week.id] = tasks
             week_payloads.append(
                 {
                     "id": week.id,
@@ -241,18 +247,42 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
                 "weeks": week_payloads,
             }
         )
-    completed_tasks = 0
+    completed_task_ids: set[str] = set()
     if task_ids:
-        completed_tasks = int(
-            db.scalar(
-                select(func.count(func.distinct(TaskOccurrence.task_id))).where(
+        completed_task_ids = set(
+            db.scalars(
+                select(TaskOccurrence.task_id)
+                .where(
                     TaskOccurrence.user_id == route.user_id,
                     TaskOccurrence.status == "completed",
                     TaskOccurrence.task_id.in_(task_ids),
                 )
-            )
-            or 0
+                .distinct()
+            ).all()
         )
+    completed_tasks = len(set(task_ids) & completed_task_ids)
+    for stage_payload in stage_payloads:
+        stage_total = 0
+        stage_completed = 0
+        for week_payload in stage_payload["weeks"]:
+            week_tasks = week_task_map.get(week_payload["id"], [])
+            week_completed = sum(
+                1 for task in week_tasks if task.id in completed_task_ids
+            )
+            stage_total += len(week_tasks)
+            stage_completed += week_completed
+            week_payload["progress"] = {
+                "total_tasks": len(week_tasks),
+                "completed_tasks": week_completed,
+                "percent": (week_completed / len(week_tasks) * 100.0)
+                if week_tasks
+                else 0.0,
+            }
+        stage_payload["progress"] = {
+            "total_tasks": stage_total,
+            "completed_tasks": stage_completed,
+            "percent": (stage_completed / stage_total * 100.0) if stage_total else 0.0,
+        }
     percent = (completed_tasks / total_tasks * 100.0) if total_tasks else 0.0
     return RouteDetail.model_validate(
         {

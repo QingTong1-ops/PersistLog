@@ -14,6 +14,7 @@ from app.schemas.planning import (
     OccurrenceUpdate,
     SkipRequest,
     SplitRequest,
+    TodayItemCreate,
     TodayResponse,
 )
 from app.services import planning_service
@@ -37,6 +38,16 @@ def generate_today(
     on_date: Annotated[date | None, Query(alias="date")] = None,
 ) -> TodayResponse:
     return planning_service.get_today(db, user, on_date)
+
+
+@router.post("/today/items", response_model=TodayResponse)
+def add_today_item(
+    user: CurrentUser,
+    db: DbSession,
+    payload: TodayItemCreate,
+    on_date: Annotated[date | None, Query(alias="date")] = None,
+) -> TodayResponse:
+    return planning_service.add_today_item(db, user, payload, on_date)
 
 
 @router.get("/routes/{route_id}/forecast", response_model=ForecastOut)
