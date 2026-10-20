@@ -13,14 +13,16 @@ import { cn } from "@/lib/utils";
 type AuthMode = "login" | "register";
 
 const isDev = process.env.NODE_ENV === "development";
+const demoEmail = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "";
+const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "";
 
 export function LoginView() {
   const router = useRouter();
   const { showToast } = useToast();
   const { status, login, register } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
-  const [account, setAccount] = useState(isDev ? "lin.frontend@example.com" : "");
-  const [password, setPassword] = useState(isDev ? "persistlog123" : "");
+  const [account, setAccount] = useState(demoEmail || (isDev ? "demo@persistlog.dev" : ""));
+  const [password, setPassword] = useState(demoPassword || (isDev ? "Demo2026!" : ""));
   const [name, setName] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
