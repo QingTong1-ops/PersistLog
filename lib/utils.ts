@@ -46,7 +46,7 @@ export interface TaskStats {
   percent: number;
 }
 
-export function taskStats(tasks: Task[]): TaskStats {
+export function taskStats(tasks: Task[], capacity = EFFECTIVE_CAPACITY): TaskStats {
   const considered = tasks.filter((task) => task.status !== "abandoned");
   const completed = considered.filter((task) => task.status === "completed");
   const pending = considered.filter((task) =>
@@ -71,7 +71,7 @@ export function taskStats(tasks: Task[]): TaskStats {
     plannedTotal,
     completedPlanned,
     remainingPlanned,
-    buffer: EFFECTIVE_CAPACITY - plannedTotal,
+    buffer: capacity - plannedTotal,
     percent,
   };
 }

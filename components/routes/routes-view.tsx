@@ -12,8 +12,9 @@ import {
   Upload,
 } from "lucide-react";
 import { Button, EmptyState, Modal, PageHeader, Tag, useToast } from "@/components/ui";
-import { INITIAL_ROUTES } from "@/lib/mock-data";
 import { useAppStore } from "@/lib/store/app-store";
+import { live as liveApi } from "@/lib/api/live";
+import { daysBetween, formatShortDate } from "@/lib/api/mappers";
 import type { RouteRecord, RouteStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -25,27 +26,55 @@ const ROUTE_STATUS: Record<RouteStatus, { label: string; className: string }> = 
 };
 
 export function RoutesView({ demoState }: { demoState?: string }) {
-  const { routeStates, setRouteStatus, routeDone, routePercent } = useAppStore();
+  const {
+    routes: liveRoutes,
+    routeStates,
+    setRouteStatus,
+    routeDone,
+    routePercent,
+    live,
+    loading,
+    error,
+    refreshLive,
+  } = useAppStore();
   const { showToast } = useToast();
   const [extraRoutes, setExtraRoutes] = useState<RouteRecord[]>([]);
   const [newRouteOpen, setNewRouteOpen] = useState(false);
 
-  const routes = useMemo(() => [...INITIAL_ROUTES, ...extraRoutes], [extraRoutes]);
-  const empty = demoState === "empty" && routes.length === INITIAL_ROUTES.length;
+  const routes = useMemo(() => [...liveRoutes, ...extraRoutes], [extraRoutes, liveRoutes]);
+  const empty = live
+    ? !loading && liveRoutes.length === 0
+    : demoState === "empty" && routes.length === liveRoutes.length;
   const activeCount = routes.filter((route) => (routeStates[route.id] ?? route.status) === "active").length;
+  const draftCount = routes.filter((route) => (routeStates[route.id] ?? route.status) === "draft").length;
+  const pausedCount = routes.filter((route) => (routeStates[route.id] ?? route.status) === "paused").length;
+  const totalTasks = routes.reduce((sum, route) => sum + route.taskCount, 0);
+  const totalDone = routes.reduce((sum, route) => sum + route.doneCount, 0);
+  const primaryRoute = routes.find((route) => (routeStates[route.id] ?? route.status) === "active") ?? routes[0];
+  const lateDays =
+    primaryRoute?.targetDate && primaryRoute.forecast
+      ? Math.max(0, daysBetween(primaryRoute.targetDate, primaryRoute.forecast) - 1)
+      : 0;
 
   function statusOf(route: RouteRecord) {
     return routeStates[route.id] ?? route.status;
   }
 
-  function handleAction(route: RouteRecord, action: "pause" | "resume") {
+  async function handleAction(route: RouteRecord, action: "pause" | "resume") {
     const next: RouteStatus = action === "pause" ? "paused" : "active";
-    setRouteStatus(route.id, next);
-    showToast(
-      next === "paused"
-        ? "<strong>路线已暂停。</strong> 暂停期间不会生成新的今日任务，已有执行记录保留。"
-        : "<strong>路线已恢复。</strong> 下一次生成今日计划时会重新纳入未完成任务。"
-    );
+    try {
+      await setRouteStatus(route.id, next);
+      showToast(
+        next === "paused"
+          ? "<strong>路线已暂停。</strong> 暂停期间不会生成新的今日任务，已有执行记录保留。"
+          : "<strong>路线已恢复。</strong> 下一次生成今日计划时会重新纳入未完成任务。"
+      );
+    } catch (cause) {
+      showToast(
+        `<strong>路线状态没有保存。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+        "risk"
+      );
+    }
   }
 
   return (
@@ -53,7 +82,11 @@ export function RoutesView({ demoState }: { demoState?: string }) {
       <PageHeader
         eyebrow="Plans · Phase 1"
         title="学习路线"
-        description="路线、阶段、周目标和任务保持清晰的层级关系。删除是归档，历史执行记录不会被物理删除。"
+        description={
+          loading
+            ? "正在从后端读取路线、阶段和任务…"
+            : "路线、阶段、周目标和任务保持清晰的层级关系。删除是归档，历史执行记录不会被物理删除。"
+        }
         side={
           <>
             <Button variant="secondary" size="sm" onClick={() => setNewRouteOpen(true)}>
@@ -68,6 +101,23 @@ export function RoutesView({ demoState }: { demoState?: string }) {
         }
       />
 
+      {error ? (
+        <div className="insight insight--warn" style={{ marginBottom: 16 }}>
+          <RouteIcon className="icon" aria-hidden="true" />
+          <span>
+            路线加载失败：{error}
+            <Button
+              variant="secondary"
+              size="xs"
+              style={{ marginLeft: 10 }}
+              onClick={() => void refreshLive()}
+            >
+              重试
+            </Button>
+          </span>
+        </div>
+      ) : null}
+
       {!empty ? (
         <div className="metric-grid metric-grid--3">
           <div className="card metric-card">
@@ -80,7 +130,9 @@ export function RoutesView({ demoState }: { demoState?: string }) {
             <div className="metric-card__value">{activeCount}</div>
             <div className="metric-card__foot">
               <span className="delta">正在执行</span>
-              <span>另有 1 条草稿、1 条暂停</span>
+              <span>
+                另有 {draftCount} 条草稿、{pausedCount} 条暂停
+              </span>
             </div>
           </div>
           <div className="card metric-card">
@@ -91,10 +143,10 @@ export function RoutesView({ demoState }: { demoState?: string }) {
               </span>
             </div>
             <div className="metric-card__value">
-              42 <small>项</small>
+              {totalTasks} <small>项</small>
             </div>
             <div className="metric-card__foot">
-              <span className="delta">已完成 {routeDone} 项</span>
+              <span className="delta">已完成 {totalDone} 项</span>
               <span>按任务去重</span>
             </div>
           </div>
@@ -105,10 +157,14 @@ export function RoutesView({ demoState }: { demoState?: string }) {
                 <Calendar className="icon" aria-hidden="true" />
               </span>
             </div>
-            <div className="metric-card__value">11.12</div>
+            <div className="metric-card__value">
+              {primaryRoute ? formatShortDate(primaryRoute.forecast) : "—"}
+            </div>
             <div className="metric-card__foot">
-              <span className="delta delta--risk">晚于目标 2 天</span>
-              <span>目标 11.10</span>
+              <span className={cn("delta", lateDays > 0 && "delta--risk")}>
+                {lateDays > 0 ? `晚于目标 ${lateDays} 天` : "按目标推进"}
+              </span>
+              <span>目标 {primaryRoute?.targetDate ? formatShortDate(primaryRoute.targetDate) : "待设置"}</span>
             </div>
           </div>
         </div>
@@ -122,6 +178,10 @@ export function RoutesView({ demoState }: { demoState?: string }) {
             const isPrimaryRoute = route.id === 1;
             const progress = isPrimaryRoute ? routePercent : route.progress;
             const doneCount = isPrimaryRoute ? routeDone : route.doneCount;
+            const routeLate =
+              route.targetDate && route.forecast
+                ? Math.max(0, daysBetween(route.targetDate, route.forecast) - 1)
+                : 0;
             return (
               <article
                 className={cn("route-item", status === "active" && "route-item--active")}
@@ -158,8 +218,10 @@ export function RoutesView({ demoState }: { demoState?: string }) {
                     <span>
                       计划 <b>{route.plannedMinutes.toLocaleString()}</b> 分钟
                     </span>
-                    <span className={route.id === 1 ? "text-risk" : undefined}>
-                      {route.id === 1 ? `预测 ${route.forecast} · 晚 2 天` : route.forecast}
+                    <span className={routeLate > 0 ? "text-risk" : undefined}>
+                      {`预测 ${formatShortDate(route.forecast)}${
+                        routeLate > 0 ? ` · 晚 ${routeLate} 天` : " · 按目标"
+                      }`}
                     </span>
                   </div>
                 </div>
@@ -236,7 +298,25 @@ export function RoutesView({ demoState }: { demoState?: string }) {
       <NewRouteModal
         open={newRouteOpen}
         onClose={() => setNewRouteOpen(false)}
-        onCreate={(route) => {
+        onCreate={async (route) => {
+          if (live) {
+            try {
+              await liveApi.routes.create({
+                title: route.name,
+                start_date: route.startDate,
+                daily_capacity_minutes: 300,
+              });
+              await refreshLive();
+              setNewRouteOpen(false);
+              showToast(`<strong>草稿路线「${route.name}」已创建。</strong> 添加阶段和任务后即可激活。`);
+            } catch (cause) {
+              showToast(
+                `<strong>路线没有创建。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                "risk"
+              );
+            }
+            return;
+          }
           setExtraRoutes((current) => [...current, route]);
           setRouteStatus(route.id, "draft");
           setNewRouteOpen(false);

@@ -22,7 +22,7 @@ import {
 import { BrandMark } from "@/components/brand-mark";
 import { IconButton, useToast } from "@/components/ui";
 import { useAppStore } from "@/lib/store/app-store";
-import { DEMO_TODAY_LABEL, DEMO_USER, ROUTE_TOTAL_TASKS } from "@/lib/mock-data";
+import { formatChineseDate, formatShortDate } from "@/lib/api/mappers";
 import { cn } from "@/lib/utils";
 
 const NAV_LABELS: Record<string, string> = {
@@ -45,7 +45,7 @@ function navKeyFromPath(pathname: string) {
 function Sidebar() {
   const pathname = usePathname();
   const active = navKeyFromPath(pathname);
-  const { stats, routePercent, routeDone } = useAppStore();
+  const { stats, routePercent, routeDone, routeTotal, profile } = useAppStore();
   const { showToast } = useToast();
 
   return (
@@ -112,23 +112,29 @@ function Sidebar() {
 
       <div className="sidebar-goal">
         <p className="sidebar-goal__label">当前主目标</p>
-        <p className="sidebar-goal__title">Java 后端实习 · 11 月 10 日</p>
+        <p className="sidebar-goal__title">
+          {profile.goal}
+          {profile.targetDate ? ` · ${formatShortDate(profile.targetDate)}` : ""}
+        </p>
         <div className="progress-track" aria-hidden="true">
           <span style={{ width: `${routePercent}%` }} />
         </div>
         <div className="sidebar-goal__meta">
           <span>路线进度</span>
           <b className="tnum">
-            {routePercent}% · {routeDone}/{ROUTE_TOTAL_TASKS}
+            {routePercent}% · {routeDone}/{routeTotal}
           </b>
         </div>
       </div>
 
       <div className="sidebar-profile">
-        <span className="avatar">{DEMO_USER.initial}</span>
+        <span className="avatar">{profile.initial}</span>
         <div className="sidebar-profile__copy">
-          <b>{DEMO_USER.name}</b>
-          <span>每天 240 分钟 · 按自己的节奏</span>
+          <b>{profile.name}</b>
+          <span>
+            每天 {profile.dailyMinutes} 分钟 · 有效{" "}
+            {Math.max(30, Math.round(profile.dailyMinutes * profile.capacityFactor))} 分钟
+          </span>
         </div>
         <Link className="icon-button sidebar-settings" href="/settings/profile" aria-label="个人设置">
           <Settings className="icon" aria-hidden="true" />
@@ -140,7 +146,7 @@ function Sidebar() {
 
 function DevNav({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const { completeAll, clearToday, resetDemo } = useAppStore();
+  const { completeAll, clearToday, resetDemo, live } = useAppStore();
 
   if (!open) return null;
 
@@ -224,7 +230,13 @@ function DevNav({ open, onClose }: { open: boolean; onClose: () => void }) {
         <div className="dev-nav__section">
           <h3>状态演示</h3>
           <div className="dev-nav__grid">
-            <button
+            {live ? (
+              <p className="muted" style={{ fontSize: 11, lineHeight: 1.7 }}>
+                当前是真实后端数据，演示动作已禁用；`?state=` 只在未登录的 mock 模式生效。
+              </p>
+            ) : (
+              <>
+                <button
               className="dev-nav__link"
               type="button"
               onClick={() => {
@@ -263,6 +275,8 @@ function DevNav({ open, onClose }: { open: boolean; onClose: () => void }) {
             >
               <Target className="icon" aria-hidden="true" /> 重置演示数据
             </button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -274,6 +288,7 @@ function Topbar() {
   const pathname = usePathname();
   const [devNavOpen, setDevNavOpen] = useState(false);
   const { showToast } = useToast();
+  const { profile, todayDate } = useAppStore();
   const segments = pathname.split("/").filter(Boolean);
   const root = segments[0] ?? "today";
   const pageLabel = root === "routes" && segments[1] ? "路线详情" : NAV_LABELS[root] ?? "今日";
@@ -299,7 +314,7 @@ function Topbar() {
           <span className="proto-badge">Phase 1 · 执行层</span>
           <span className="date-chip">
             <Calendar className="icon" aria-hidden="true" />
-            {DEMO_TODAY_LABEL}
+            {formatChineseDate(todayDate)}
           </span>
           {showDevNav ? (
             <IconButton type="button" aria-label="打开页面地图" onClick={() => setDevNavOpen(true)}>
@@ -317,8 +332,8 @@ function Topbar() {
             <Bell className="icon" aria-hidden="true" />
           </IconButton>
           <Link className="topbar-avatar" href="/settings/profile">
-            <span>{DEMO_USER.name}</span>
-            <span className="avatar avatar--sm">{DEMO_USER.initial}</span>
+            <span>{profile.name}</span>
+            <span className="avatar avatar--sm">{profile.initial}</span>
           </Link>
         </div>
       </header>

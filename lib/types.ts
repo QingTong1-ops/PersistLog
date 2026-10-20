@@ -11,6 +11,9 @@ export type TaskStatus =
 
 export interface Task {
   id: string;
+  occurrenceId?: string;
+  taskId?: string;
+  routeId?: string;
   title: string;
   type: TaskType;
   stage: string;
@@ -19,6 +22,8 @@ export interface Task {
   actual: number;
   status: TaskStatus;
   carry: number;
+  carryOverFrom?: string;
+  postponeCount?: number;
   why: string;
   output: string;
   acceptance: string;
@@ -33,6 +38,7 @@ export type RouteStatus = "active" | "paused" | "draft" | "archived";
 
 export interface RouteRecord {
   id: number;
+  apiId?: string;
   name: string;
   job: string;
   status: RouteStatus;
@@ -46,6 +52,8 @@ export interface RouteRecord {
   currentStage: string;
   day: number;
   startDate: string;
+  endDate?: string;
+  dailyCapacity?: number;
 }
 
 export interface DashboardDay {
@@ -71,6 +79,14 @@ export interface DashboardDataset {
   };
   types: Array<{ label: string; count: number }>;
   days: DashboardDay[];
+  forecast?: {
+    endDate: string;
+    targetDate: string;
+    remainingMinutes: number;
+    throughputMinutes: number;
+    lateDays: number;
+    routeTitle?: string;
+  };
 }
 
 export interface PreviewTask {
@@ -91,6 +107,7 @@ export interface DemoUser {
   timezone: string;
   dailyMinutes: number;
   capacityFactor: number;
+  createdAt?: string;
 }
 
 export interface NewTaskInput {

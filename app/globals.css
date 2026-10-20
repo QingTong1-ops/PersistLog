@@ -5962,3 +5962,24 @@ button {
     background-position: 0 50%;
   }
 }
+
+/* Session bootstrap gate */
+.session-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.session-loading .brand {
+  margin-bottom: 10px;
+}
+
+.session-loading p {
+  color: var(--ink-500);
+  font-size: 12px;
+}

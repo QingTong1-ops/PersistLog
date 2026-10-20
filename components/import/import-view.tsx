@@ -20,9 +20,87 @@ import {
   useToast,
 } from "@/components/ui";
 import { PREVIEW_TASKS, TEMPLATE_MARKDOWN } from "@/lib/mock-data";
+import { useAppStore } from "@/lib/store/app-store";
+import { live } from "@/lib/api/live";
 import type { PreviewTask, TaskType } from "@/lib/types";
 
 type ImportPane = "empty" | "processing" | "preview" | "error" | "done";
+
+interface PreviewStageView {
+  title: string;
+  meta: string;
+  weeks: Array<{ title: string; ids: number[]; more?: boolean }>;
+}
+
+interface PreviewIssueView {
+  severity: string;
+  message: string;
+  suggestion?: string | null;
+}
+
+interface PreviewStats {
+  stages: number;
+  weeks: number;
+  tasks: number;
+  minutes: number;
+  errors: number;
+  warnings: number;
+  hints: number;
+}
+
+const DEMO_STATS: PreviewStats = {
+  stages: 3,
+  weeks: 6,
+  tasks: 42,
+  minutes: 1260,
+  errors: 0,
+  warnings: 2,
+  hints: 1,
+};
+
+const DEMO_ISSUES: PreviewIssueView[] = [
+  {
+    severity: "warning",
+    message: "「第 4 周」的「完成 3 道中等题」缺少验收标准。建议补充：能独立说明每题的时间/空间复杂度。",
+  },
+  {
+    severity: "warning",
+    message: "检测到 2 个重复任务：「TCP 三次握手」在 10/20 和 10/21 各出现一次，请选择保留、合并或跳过。",
+  },
+  {
+    severity: "info",
+    message: "开始日期 10/02 早于今天。默认整体平移到今天，并保留历史任务为归档状态。",
+  },
+];
+
+interface AiRouteTask {
+  title?: string;
+  task_type?: string;
+  estimated_minutes?: number;
+  deliverable?: string;
+  acceptance_criteria?: string;
+  planned_date?: string | null;
+}
+
+interface AiRouteWeek {
+  week_no?: number;
+  focus?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  tasks?: AiRouteTask[];
+}
+
+interface AiRouteStage {
+  name?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  weeks?: AiRouteWeek[];
+}
+
+interface AiRoute {
+  title?: string;
+  stages?: AiRouteStage[];
+}
 
 const STAGES = [
   {
@@ -57,6 +135,7 @@ function clonePreview() {
 
 export function ImportView({ demoState }: { demoState?: string }) {
   const { showToast } = useToast();
+  const { live: isLive, routes, refreshLive } = useAppStore();
   const initialPane: ImportPane =
     demoState === "preview"
       ? "preview"
@@ -71,9 +150,19 @@ export function ImportView({ demoState }: { demoState?: string }) {
   const [progress, setProgress] = useState(5);
   const [step, setStep] = useState(0);
   const [previewTasks, setPreviewTasks] = useState<Record<number, PreviewTask>>(clonePreview);
+  const [previewStages, setPreviewStages] = useState<PreviewStageView[]>(STAGES);
+  const [previewStats, setPreviewStats] = useState<PreviewStats>(DEMO_STATS);
+  const [previewIssues, setPreviewIssues] = useState<PreviewIssueView[]>(
+    demoState === "preview" ? DEMO_ISSUES : []
+  );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importId, setImportId] = useState<string | null>(null);
+  const [confirmedRouteId, setConfirmedRouteId] = useState<string | null>(null);
+  const [liveError, setLiveError] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [rollbackOpen, setRollbackOpen] = useState(false);
+  const confirmedRoute = routes.find((route) => route.apiId === confirmedRouteId);
   const fileRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<number | null>(null);
   const finishRef = useRef<number | null>(null);
@@ -93,16 +182,153 @@ export function ImportView({ demoState }: { demoState?: string }) {
     finishRef.current = null;
   }
 
-  function startProcessing(name = fileName) {
+  function toTaskType(value: string | undefined): TaskType {
+    const mapping: Record<string, TaskType> = {
+      algorithm: "算法",
+      fundamentals: "八股",
+      engineering: "工程",
+      project: "项目",
+      resume: "简历",
+      interview: "面试",
+      review: "复盘",
+      reflection: "复盘",
+      apply: "复盘",
+    };
+    return mapping[value ?? ""] ?? "复盘";
+  }
+
+  function applyPreview(preview: Awaited<ReturnType<typeof live.imports.preview>>) {
+    const route = preview.route as AiRoute | null;
+    if (!route?.stages?.length) {
+      throw new Error("后端没有返回可预览的阶段结构");
+    }
+
+    const nextTasks: Record<number, PreviewTask> = {};
+    const nextStages: PreviewStageView[] = [];
+    let nextId = 0;
+    let weekCount = 0;
+    let minutes = 0;
+
+    for (const stage of route.stages) {
+      const weeks: PreviewStageView["weeks"] = [];
+      for (const week of stage.weeks ?? []) {
+        weekCount += 1;
+        const ids: number[] = [];
+        for (const task of week.tasks ?? []) {
+          nextId += 1;
+          ids.push(nextId);
+          minutes += task.estimated_minutes ?? 0;
+          nextTasks[nextId] = {
+            id: nextId,
+            title: task.title ?? "未命名任务",
+            type: toTaskType(task.task_type),
+            minutes: task.estimated_minutes ?? 30,
+            output: task.deliverable ?? "",
+            acceptance: task.acceptance_criteria ?? "",
+          };
+        }
+        weeks.push({
+          title: `第 ${week.week_no ?? weekCount} 周 · ${week.focus ?? "本周目标"}`,
+          ids,
+        });
+      }
+      nextStages.push({
+        title: stage.name ?? `阶段 ${nextStages.length + 1}`,
+        meta: `${stage.weeks?.flatMap((week) => week.tasks ?? []).length ?? 0} 任务`,
+        weeks,
+      });
+    }
+
+    const issues: PreviewIssueView[] = preview.issues.map((issue) => ({
+      severity: issue.severity,
+      message: issue.message,
+      suggestion: issue.suggestion,
+    }));
+    setPreviewTasks(nextTasks);
+    setPreviewStages(nextStages);
+    setPreviewIssues(issues);
+    setPreviewStats({
+      stages: nextStages.length,
+      weeks: weekCount,
+      tasks: nextId,
+      minutes,
+      errors: issues.filter((issue) => issue.severity === "error").length,
+      warnings: issues.filter((issue) => issue.severity === "warning").length,
+      hints: issues.filter((issue) => issue.severity === "info").length,
+    });
+    setFileName(preview.file_name ?? fileName);
+    setPane("preview");
+    showToast(
+      `<strong>解析完成。</strong> 已生成 ${nextStages.length} 个阶段、${weekCount} 个周目标、${nextId} 个任务，请检查问题清单。`
+    );
+  }
+
+  async function pollJob(jobId: string, nextImportId: string) {
+    try {
+      const job = await live.imports.job(jobId);
+      setProgress(Math.round((job.progress || 0) * 100));
+      setStep(job.status === "succeeded" ? 4 : 2);
+      if (job.status === "succeeded") {
+        const preview = await live.imports.preview(nextImportId);
+        applyPreview(preview);
+        return;
+      }
+      if (job.status === "failed" || job.status === "cancelled") {
+        setLiveError(job.error?.message ?? "后端解析任务失败");
+        setPane("error");
+        return;
+      }
+      finishRef.current = window.setTimeout(() => {
+        void pollJob(jobId, nextImportId);
+      }, 1200);
+    } catch (cause) {
+      setLiveError(cause instanceof Error ? cause.message : "轮询解析任务失败");
+      setPane("error");
+    }
+  }
+
+  async function startProcessing(input?: File | string) {
     if (!consent) {
       showToast("<strong>需要先授权。</strong> 首次导入前请勾选 AI 解析授权。", "risk");
       return;
     }
     stopTimers();
-    setFileName(name);
+
+    const file =
+      input instanceof File
+        ? input
+        : selectedFile ??
+          new File([TEMPLATE_MARKDOWN], typeof input === "string" ? input : fileName, {
+            type: "text/markdown",
+          });
+
+    if (isLive) {
+      setFileName(file.name);
+      setPane("processing");
+      setProgress(5);
+      setStep(1);
+      setLiveError(null);
+      setImportId(null);
+      setConfirmedRouteId(null);
+      try {
+        await live.profile.setConsent({ scope: "ai_import", version: "v1", granted: true });
+        const created = await live.imports.create(file);
+        setImportId(created.import_id);
+        await pollJob(created.job_id, created.import_id);
+      } catch (cause) {
+        setLiveError(cause instanceof Error ? cause.message : "上传或解析失败");
+        setPane("error");
+      }
+      return;
+    }
+
+    setFileName(file.name);
     setPane("processing");
     setProgress(8);
     setStep(1);
+    setPreviewIssues(DEMO_ISSUES);
+    setPreviewStats(DEMO_STATS);
+    setPreviewStages(STAGES);
     intervalRef.current = window.setInterval(() => {
       setStep((current) => {
         const next = Math.min(4, current + 1);
@@ -120,15 +346,24 @@ export function ImportView({ demoState }: { demoState?: string }) {
     }, 760);
   }
 
-  function cancelProcessing() {
+  async function cancelProcessing() {
     stopTimers();
+    if (isLive && importId) {
+      try {
+        await live.imports.cancel(importId);
+      } catch {
+        // The local state is cleared even if the batch is already gone.
+      }
+    }
     setPane("empty");
+    setImportId(null);
     showToast("<strong>已取消解析。</strong> 没有创建任何路线。", "risk");
   }
 
   function handleFile(file: File | undefined) {
     if (!file) return;
-    startProcessing(file.name);
+    setSelectedFile(file);
+    void startProcessing(file);
   }
 
   function onDrop(event: DragEvent<HTMLDivElement>) {
@@ -153,7 +388,11 @@ export function ImportView({ demoState }: { demoState?: string }) {
   function savePreviewTask(task: PreviewTask) {
     setPreviewTasks((current) => ({ ...current, [task.id]: task }));
     setEditId(null);
-    showToast("<strong>任务已更新。</strong> 问题清单会按新的验收标准重新判断。");
+    showToast(
+      isLive
+        ? "<strong>本地预览已更新。</strong> 当前联调版确认仍以后端原始预览结构为准；完整 PATCH 预览将在下一轮接入。"
+        : "<strong>任务已更新。</strong> 问题清单会按新的验收标准重新判断。"
+    );
   }
 
   return (
@@ -326,9 +565,12 @@ export function ImportView({ demoState }: { demoState?: string }) {
                 </span>
                 <h2>没有识别到可执行任务</h2>
                 <p>
-                  文件能读取，但没有找到任务列表或表格。请检查 Markdown 是否使用标题、无序列表或表格，或下载模板对照结构。
+                  {liveError ??
+                    "文件能读取，但没有找到任务列表或表格。请检查 Markdown 是否使用标题、无序列表或表格，或下载模板对照结构。"}
                 </p>
-                <span className="error-code">IMPORT_PARSE_FAILED · request_id 9f2c…</span>
+                <span className="error-code">
+                  IMPORT_PARSE_FAILED{liveError ? ` · ${liveError}` : " · request_id 9f2c…"}
+                </span>
                 <div className="error-state__actions">
                   <Button variant="primary" size="sm" onClick={() => setPane("empty")}>
                     重新上传
@@ -351,29 +593,29 @@ export function ImportView({ demoState }: { demoState?: string }) {
                   </div>
                   <div className="import-stats">
                     <span>
-                      <b>3</b> 阶段
+                      <b>{previewStats.stages}</b> 阶段
                     </span>
                     <span>
-                      <b>6</b> 周
+                      <b>{previewStats.weeks}</b> 周
                     </span>
                     <span>
-                      <b>42</b> 任务
+                      <b>{previewStats.tasks}</b> 任务
                     </span>
                     <span>
-                      <b>1,260</b> 分钟
+                      <b>{previewStats.minutes}</b> 分钟
                     </span>
                   </div>
                 </div>
 
                 <div className="issue-summary">
                   <span className="issue-chip issue-chip--error">
-                    <b>0</b> 错误
+                    <b>{previewStats.errors}</b> 错误
                   </span>
                   <span className="issue-chip">
-                    <b>2</b> 警告
+                    <b>{previewStats.warnings}</b> 警告
                   </span>
                   <span className="issue-chip issue-chip--info">
-                    <b>1</b> 提示
+                    <b>{previewStats.hints}</b> 提示
                   </span>
                   <span className="muted" style={{ fontSize: 9 }}>
                     错误会阻止确认；警告可逐项处理。
@@ -381,43 +623,33 @@ export function ImportView({ demoState }: { demoState?: string }) {
                 </div>
 
                 <div className="issue-list">
-                  <div className="issue-item">
-                    <TriangleAlert className="icon" aria-hidden="true" />
-                    <p>
-                      「第 4 周」的「完成 3 道中等题」缺少验收标准。AI 建议：能独立说明每道题的时间/空间复杂度。
-                    </p>
-                    <button className="issue-action" type="button" onClick={() => setEditId(3)}>
-                      去编辑
-                    </button>
-                  </div>
-                  <div className="issue-item">
-                    <TriangleAlert className="icon" aria-hidden="true" />
-                    <p>
-                      检测到 2 个重复任务：「TCP 三次握手」在 10/20 和 10/21 各出现一次。请选择保留、合并或跳过。
-                    </p>
-                    <button
-                      className="issue-action"
-                      type="button"
-                      onClick={() => showToast("<strong>已合并重复任务。</strong> 保留较早的一天，后一天标记为跳过。")}
-                    >
-                      合并
-                    </button>
-                  </div>
-                  <div className="issue-item">
-                    <Info className="icon" aria-hidden="true" />
-                    <p>开始日期 10/02 早于今天。默认整体平移到今天，并保留历史任务为归档状态。</p>
-                    <button
-                      className="issue-action"
-                      type="button"
-                      onClick={() => showToast("<strong>已选择「整体平移到今天」。</strong> 未完成任务日期后移 17 天。")}
-                    >
-                      查看规则
-                    </button>
-                  </div>
+                  {previewIssues.length ? (
+                    previewIssues.map((issue, index) => (
+                      <div className="issue-item" key={`${issue.severity}-${index}`}>
+                        {issue.severity === "info" ? (
+                          <Info className="icon" aria-hidden="true" />
+                        ) : (
+                          <TriangleAlert className="icon" aria-hidden="true" />
+                        )}
+                        <p>
+                          {issue.message}
+                          {issue.suggestion ? ` AI 建议：${issue.suggestion}` : ""}
+                        </p>
+                        <span className="muted" style={{ fontSize: 9 }}>
+                          {issue.severity}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="issue-item">
+                      <CheckCircle2 className="icon icon--ok" aria-hidden="true" />
+                      <p>没有阻断错误，可以确认创建路线。</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="preview-tree">
-                  {STAGES.map((stage) => (
+                  {previewStages.map((stage) => (
                     <div className="preview-stage" key={stage.title}>
                       <div className="preview-stage__title">
                         {stage.title} <span>{stage.meta}</span>
@@ -461,7 +693,7 @@ export function ImportView({ demoState }: { demoState?: string }) {
                     type="button"
                     onClick={() => setShowMore((value) => !value)}
                   >
-                    {showMore ? "收起多余任务" : "展开全部 42 项"}
+                    {showMore ? "收起多余任务" : `展开全部 ${previewStats.tasks} 项`}
                   </button>
                 </div>
               </div>
@@ -478,8 +710,25 @@ export function ImportView({ demoState }: { demoState?: string }) {
                   <Button
                     variant="primary"
                     size="sm"
-                    disabled={!consent}
-                    onClick={() => {
+                    disabled={!consent || previewStats.errors > 0}
+                    onClick={async () => {
+                      if (isLive && importId) {
+                        try {
+                          const result = await live.imports.confirm(importId);
+                          setConfirmedRouteId(result.route_id);
+                          setPane("done");
+                          await refreshLive();
+                          showToast(
+                            `<strong>路线已创建。</strong> ${result.created_tasks} 个任务已进入路线，可在导入批次中回滚。`
+                          );
+                        } catch (cause) {
+                          showToast(
+                            `<strong>确认失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                            "risk"
+                          );
+                        }
+                        return;
+                      }
                       setPane("done");
                       showToast("<strong>路线已创建。</strong> 42 个任务已进入路线 v1，可在 24 小时内回滚。");
                     }}
@@ -498,18 +747,20 @@ export function ImportView({ demoState }: { demoState?: string }) {
                   <CheckCircle2 className="icon" aria-hidden="true" />
                 </span>
                 <h2>路线已创建</h2>
-                <p>42 个任务、6 个周目标、3 个阶段已进入路线。今日计划会在下一次生成时纳入这些任务。</p>
+                <p>
+                  {previewStats.tasks} 个任务、{previewStats.weeks} 个周目标、{previewStats.stages} 个阶段已进入路线。今日计划会在下一次生成时纳入这些任务。
+                </p>
                 <div className="import-success__stats">
                   <div>
-                    <b>42</b>
+                    <b>{previewStats.tasks}</b>
                     <span>任务</span>
                   </div>
                   <div>
-                    <b>3</b>
+                    <b>{previewStats.stages}</b>
                     <span>阶段</span>
                   </div>
                   <div>
-                    <b>6</b>
+                    <b>{previewStats.weeks}</b>
                     <span>周目标</span>
                   </div>
                   <div>
@@ -518,7 +769,10 @@ export function ImportView({ demoState }: { demoState?: string }) {
                   </div>
                 </div>
                 <div className="import-success__actions">
-                  <Link className="btn btn--primary btn--sm" href="/routes/1">
+                  <Link
+                    className="btn btn--primary btn--sm"
+                    href={confirmedRoute ? `/routes/${confirmedRoute.id}` : "/routes"}
+                  >
                     查看路线
                   </Link>
                   <Button variant="secondary" size="sm" onClick={() => setRollbackOpen(true)}>
@@ -553,8 +807,23 @@ export function ImportView({ demoState }: { demoState?: string }) {
           </p>
         }
         confirmText="确认回滚"
-        onConfirm={() => {
+        onConfirm={async () => {
           setRollbackOpen(false);
+          if (isLive && importId) {
+            try {
+              await live.imports.rollback(importId);
+              await refreshLive();
+              setPane("empty");
+              setImportId(null);
+              showToast("<strong>已回滚本次导入。</strong> 已有路线和执行记录没有受到影响。", "risk");
+            } catch (cause) {
+              showToast(
+                `<strong>回滚失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                "risk"
+              );
+            }
+            return;
+          }
           setPane("empty");
           showToast("<strong>已回滚本次导入。</strong> 已有路线和执行记录没有受到影响。", "risk");
         }}

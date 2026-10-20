@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   Calendar,
@@ -15,21 +15,117 @@ import {
 import { EmptyState, PageHeader, Segmented, Tag } from "@/components/ui";
 import { DASHBOARD_DATA } from "@/lib/mock-data";
 import { useAppStore } from "@/lib/store/app-store";
+import { live } from "@/lib/api/live";
+import { daysBetween, formatShortDate } from "@/lib/api/mappers";
+import type { DashboardDataset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const TYPE_COLORS = ["var(--brand-600)", "var(--teal-600)", "var(--sky-600)", "#e8aa4d", "#9b8afb", "#c7ccda"];
 
+const EMPTY_DASHBOARD: DashboardDataset = {
+  planned: 0,
+  completed: 0,
+  carry: 0,
+  active: 0,
+  periodActive: 0,
+  planMinutes: 0,
+  actualMinutes: 0,
+  status: { completed: 0, carry: 0, skipped: 0, blocked: 0 },
+  types: [],
+  days: [],
+};
+
 export function DashboardView({ demoState }: { demoState?: string }) {
   const [period, setPeriod] = useState<7 | 30>(7);
-  const { routeDone, routePercent } = useAppStore();
-  const data = DASHBOARD_DATA[period];
-  const rate = Math.round((data.completed / data.planned) * 100);
-  const carryRate = Math.round((data.carry / data.planned) * 100);
-  const deviation = Math.round((data.actualMinutes / data.planMinutes) * 1000) / 10;
-  const empty = demoState === "empty";
+  const { live: isLive, profile, routes } = useAppStore();
+  const [liveData, setLiveData] = useState<DashboardDataset | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLive) return;
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [overview, trends, distribution, forecast] = await Promise.all([
+          live.dashboard.overview(period),
+          live.dashboard.trends(period),
+          live.dashboard.distribution(period),
+          live.dashboard.forecast(),
+        ]);
+        if (cancelled) return;
+
+        const buckets = new Map(distribution.by_status.map((bucket) => [bucket.key, bucket.planned_tasks]));
+        const activeDays = trends.points.filter((point) => point.completed_tasks > 0).length;
+        const routeTitle = forecast.routes[0]?.title;
+        const targetDate = profile.targetDate || forecast.routes[0]?.target_date || "";
+        const lateDays =
+          targetDate && forecast.forecast_end_date
+            ? Math.max(0, daysBetween(targetDate, forecast.forecast_end_date) - 1)
+            : 0;
+
+        setLiveData({
+          planned: overview.planned_tasks,
+          completed: overview.completed_tasks,
+          carry: overview.carry_over_count,
+          active: activeDays,
+          periodActive: activeDays,
+          planMinutes: overview.planned_minutes,
+          actualMinutes: overview.actual_minutes,
+          status: {
+            completed: buckets.get("completed") ?? 0,
+            carry: (buckets.get("postponed") ?? 0) + (buckets.get("carry_over") ?? 0),
+            skipped: buckets.get("skipped") ?? 0,
+            blocked: buckets.get("blocked") ?? 0,
+          },
+          types: distribution.by_task_type.map((bucket) => ({
+            label: bucket.label,
+            count: bucket.planned_tasks,
+          })),
+          days: trends.points.map((point) => ({
+            label: formatShortDate(point.date),
+            plan: point.planned_tasks,
+            done: point.completed_tasks,
+            carry: point.carry_over_count,
+          })),
+          forecast: {
+            endDate: forecast.forecast_end_date,
+            targetDate,
+            remainingMinutes: forecast.remaining_minutes,
+            throughputMinutes: forecast.throughput_minutes,
+            lateDays,
+            routeTitle,
+          },
+        });
+      } catch (cause) {
+        if (!cancelled) {
+          setError(cause instanceof Error ? cause.message : "看板加载失败");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLive, period, profile.targetDate]);
+
+  const data = isLive ? liveData ?? EMPTY_DASHBOARD : DASHBOARD_DATA[period];
+  const rate = data.planned ? Math.round((data.completed / data.planned) * 100) : 0;
+  const carryRate = data.planned ? Math.round((data.carry / data.planned) * 100) : 0;
+  const deviation = data.planMinutes
+    ? Math.round((data.actualMinutes / data.planMinutes) * 1000) / 10
+    : 0;
+  const empty = isLive ? !loading && data.planned === 0 : demoState === "empty";
 
   const donutStyle = useMemo(() => {
-    const total = data.status.completed + data.status.carry + data.status.skipped + data.status.blocked;
+    const total =
+      data.status.completed + data.status.carry + data.status.skipped + data.status.blocked || 1;
     const p1 = (data.status.completed / total) * 100;
     const p2 = p1 + (data.status.carry / total) * 100;
     const p3 = p2 + (data.status.skipped / total) * 100;
@@ -38,13 +134,25 @@ export function DashboardView({ demoState }: { demoState?: string }) {
 
   const maxPlan = Math.max(...data.days.map((day) => day.plan), 1);
   const dense = data.days.length > 10;
+  const forecast = data.forecast ?? {
+    endDate: "2026-11-12",
+    targetDate: "2026-11-10",
+    remainingMinutes: 1110,
+    throughputMinutes: 96,
+    lateDays: 2,
+    routeTitle: "Java 后端实习准备",
+  };
 
   return (
     <div className="view">
       <PageHeader
         eyebrow="Execution dashboard · Phase 1"
         title="执行看板"
-        description="看计划有没有落地、时间花在哪里，以及路线什么时候完成。Phase 1 只看执行，不显示能力评分。"
+        description={
+          loading
+            ? "正在从后端读取执行数据…"
+            : "看计划有没有落地、时间花在哪里，以及路线什么时候完成。Phase 1 只看执行，不显示能力评分。"
+        }
         side={
           <Segmented
             options={[
@@ -57,6 +165,13 @@ export function DashboardView({ demoState }: { demoState?: string }) {
           />
         }
       />
+
+      {error ? (
+        <div className="insight insight--warn" style={{ marginBottom: 16 }}>
+          <TriangleAlert className="icon" aria-hidden="true" />
+          <span>看板加载失败：{error}</span>
+        </div>
+      ) : null}
 
       {empty ? (
         <section className="card">
@@ -130,7 +245,7 @@ export function DashboardView({ demoState }: { demoState?: string }) {
 
             <div className="card metric-card">
               <div className="metric-card__top">
-                <span className="metric-card__label">累计活跃天数</span>
+                <span className="metric-card__label">活跃天数</span>
                 <span className="metric-card__icon">
                   <Calendar className="icon" aria-hidden="true" />
                 </span>
@@ -141,7 +256,7 @@ export function DashboardView({ demoState }: { demoState?: string }) {
               </div>
               <div className="metric-card__foot">
                 <span className="delta">近 {period} 天活跃 {data.periodActive} 天</span>
-                <span>中断不清零</span>
+                <span>有完成记录即计</span>
               </div>
             </div>
           </div>
@@ -285,47 +400,28 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                 </Link>
               </div>
               <div className="route-mini-list">
-                <div className="route-mini">
-                  <div className="route-mini__top">
-                    <b>Java 后端实习准备</b>
-                    <span>
-                      {routePercent}% · {routeDone}/42
-                    </span>
+                {routes.slice(0, 3).map((route) => (
+                  <div className="route-mini" key={route.id}>
+                    <div className="route-mini__top">
+                      <b>{route.name}</b>
+                      <span>
+                        {route.progress}% · {route.doneCount}/{route.taskCount}
+                      </span>
+                    </div>
+                    <div className="progress-track">
+                      <span style={{ width: `${route.progress}%` }} />
+                    </div>
+                    <div className="route-mini__foot">
+                      <span>预测 {formatShortDate(route.forecast)}</span>
+                      <span>{route.status === "active" ? "执行中" : route.status === "paused" ? "已暂停" : "草稿"}</span>
+                    </div>
                   </div>
-                  <div className="progress-track">
-                    <span style={{ width: `${routePercent}%` }} />
-                  </div>
-                  <div className="route-mini__foot">
-                    <span>预测 11/12 · 晚于目标 2 天</span>
-                    <span>执行中</span>
-                  </div>
-                </div>
-                <div className="route-mini">
-                  <div className="route-mini__top">
-                    <b>秋招算法基础补齐</b>
-                    <span>18% · 3/18</span>
-                  </div>
-                  <div className="progress-track">
-                    <span style={{ width: "18%", background: "#aaaaf0" }} />
-                  </div>
-                  <div className="route-mini__foot">
-                    <span>待确认计划日期</span>
-                    <span>草稿</span>
-                  </div>
-                </div>
-                <div className="route-mini">
-                  <div className="route-mini__top">
-                    <b>Redis 与 MySQL 专项</b>
-                    <span>42% · 5/12</span>
-                  </div>
-                  <div className="progress-track">
-                    <span style={{ width: "42%", background: "#d9a24a" }} />
-                  </div>
-                  <div className="route-mini__foot">
-                    <span>暂停于 10/11</span>
-                    <span>已暂停</span>
-                  </div>
-                </div>
+                ))}
+                {!routes.length ? (
+                  <p className="muted" style={{ fontSize: 11 }}>
+                    还没有路线。完成一次导入或创建路线后，这里会显示进度。
+                  </p>
+                ) : null}
               </div>
             </section>
 
@@ -335,33 +431,41 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                   <h2 id="forecast-kpi-title">预测与风险</h2>
                   <p>预测只基于剩余工作量和吞吐，不冒充能力评估。</p>
                 </div>
-                <span className="status status--risk">晚 2 天</span>
+                <span className={cn("status", forecast.lateDays > 0 ? "status--risk" : "status--active")}>
+                  {forecast.lateDays > 0 ? `晚 ${forecast.lateDays} 天` : "按目标"}
+                </span>
               </div>
               <div className="forecast-panel">
                 <div className="forecast-panel__date">
-                  11 月 12 日 <span>预计完成</span>
+                  {formatShortDate(forecast.endDate)} <span>预计完成</span>
                 </div>
                 <div className="forecast-panel__rows">
                   <div className="forecast-panel__row">
                     <span>目标日期</span>
-                    <b>2026-11-10</b>
+                    <b>{forecast.targetDate || "待设置"}</b>
                   </div>
                   <div className="forecast-panel__row">
-                    <span>剩余任务 / 预计分钟</span>
-                    <b>16 项 / 1,110 分钟</b>
+                    <span>剩余分钟</span>
+                    <b>{forecast.remainingMinutes} 分钟</b>
                   </div>
                   <div className="forecast-panel__row">
-                    <span>近 14 天吞吐</span>
-                    <b>3.1 项/天</b>
+                    <span>近期吞吐</span>
+                    <b>{forecast.throughputMinutes} 分钟/天</b>
                   </div>
                   <div className="forecast-panel__row">
                     <span>风险</span>
-                    <b className="text-risk">预测晚于目标 2 天</b>
+                    <b className={forecast.lateDays > 0 ? "text-risk" : "text-good"}>
+                      {forecast.lateDays > 0 ? `预测晚于目标 ${forecast.lateDays} 天` : "当前按目标推进"}
+                    </b>
                   </div>
                 </div>
-                <div className="insight insight--warn" style={{ marginTop: 12 }}>
+                <div className={cn("insight", forecast.lateDays > 0 ? "insight--warn" : "insight--good")} style={{ marginTop: 12 }}>
                   <TriangleAlert className="icon" aria-hidden="true" />
-                  <span>未来 3 天优先顺延任务；若仍无改善，建议拆分 1 项工程任务或把目标日期外移。</span>
+                  <span>
+                    {forecast.lateDays > 0
+                      ? `「${forecast.routeTitle ?? "当前路线"}」剩余 ${forecast.remainingMinutes} 分钟；建议优先顺延任务，或拆分 1 项工程任务。`
+                      : "当前吞吐可以覆盖剩余工作量，继续保持今天的节奏。"}
+                  </span>
                 </div>
               </div>
             </section>
@@ -417,7 +521,7 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                 <b>路线进度</b> = 已完成任务数 / 路线总任务数（按 task 去重）。
               </p>
               <p>
-                <b>累计活跃天数</b> = 历史有完成记录的天数，不清零，不是连续打卡。
+                <b>活跃天数</b> = 统计区间内有完成记录的天数，不是连续打卡。
               </p>
               <p>
                 <b>预测完成日期</b> = 剩余分钟 / 近 14 天吞吐，按用户容量和日界线换算。

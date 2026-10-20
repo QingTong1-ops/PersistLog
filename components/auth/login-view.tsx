@@ -2,39 +2,81 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Check } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Button, useToast } from "@/components/ui";
+import { useAuth } from "@/lib/auth/auth-provider";
+import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register";
 
+const isDev = process.env.NODE_ENV === "development";
+
 export function LoginView() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { status, login, register } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
-  const [account, setAccount] = useState("lin@example.com");
-  const [password, setPassword] = useState("persistlog");
+  const [account, setAccount] = useState(isDev ? "lin.frontend@example.com" : "");
+  const [password, setPassword] = useState(isDev ? "persistlog123" : "");
   const [name, setName] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const isRegister = mode === "register";
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/today");
+    }
+  }, [router, status]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
+
+    const email = account.trim();
+    if (!email || !email.includes("@")) {
+      showToast("<strong>请输入有效邮箱。</strong> 当前后端使用邮箱登录。", "risk");
+      return;
+    }
+    if (password.length < 8) {
+      showToast("<strong>密码至少 8 位。</strong> 后端要求 8–128 位。", "risk");
+      return;
+    }
+    if (isRegister && password !== confirm) {
+      showToast("<strong>两次密码不一致。</strong> 请重新确认。", "risk");
+      return;
+    }
+
     setSubmitting(true);
-    window.setTimeout(() => {
-      setSubmitting(false);
+    try {
       if (isRegister) {
+        await register({ email, password, displayName: name.trim() });
         showToast("<strong>账号已创建。</strong> 接下来用 4 步完成档案、目标和第一份计划。");
         router.push("/onboarding");
       } else {
-        showToast("<strong>登录成功。</strong> 今天的计划已经准备好了。");
+        await login(email, password);
+        showToast("<strong>登录成功。</strong> 正在加载你的真实计划和执行记录。");
         router.push("/today");
       }
-    }, 450);
+    } catch (cause) {
+      const error = cause instanceof ApiError ? cause : null;
+      const code = error?.code ?? "";
+      const message =
+        code === "INVALID_CREDENTIALS"
+          ? "邮箱或密码错误"
+          : code === "EMAIL_ALREADY_EXISTS"
+            ? "这个邮箱已经注册，请直接登录"
+            : code === "RATE_LIMITED"
+              ? "登录尝试过于频繁，请稍后再试"
+              : error?.message ?? "无法连接后端，请确认 API 已启动";
+      showToast(`<strong>操作失败。</strong> ${message}${error?.requestId ? `（${error.requestId}）` : ""}`, "risk");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -196,14 +238,11 @@ export function LoginView() {
           </form>
 
           <div className="auth-hint">
-            <strong>开发预览：</strong>无需真实账号。点击「登录」进入今日页，点击「注册」进入首次引导。
+            <strong>联调模式：</strong>使用真实后端账号登录；开发环境已预填测试账号。注册后会进入档案与目标引导。
           </div>
-          <div className="auth-divider">
-            <span>或</span>
+          <div className="auth-hint">
+            <strong>还没有账号？</strong> 点击上方「注册」，创建后会进入档案、目标和导入引导。
           </div>
-          <Link className="btn btn--secondary btn--block" href="/onboarding">
-            先看首次使用引导
-          </Link>
           <p className="auth-legal">
             继续即表示同意《服务条款》与《隐私政策》。计划文本发送第三方 AI 解析前，会单独请求授权。
           </p>

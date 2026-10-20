@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Button, Toggle, useToast } from "@/components/ui";
+import { useAuth } from "@/lib/auth/auth-provider";
+import { useAppStore } from "@/lib/store/app-store";
+import { live } from "@/lib/api/live";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -26,6 +29,8 @@ const STEPS = [
 export function OnboardingView() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { status, user } = useAuth();
+  const { refreshLive } = useAppStore();
   const [step, setStep] = useState(1);
   const [dailyMinutes, setDailyMinutes] = useState(300);
   const [factor, setFactor] = useState(80);
@@ -34,19 +39,79 @@ export function OnboardingView() {
   const [morning, setMorning] = useState(true);
   const [evening, setEvening] = useState(true);
   const [reminders, setReminders] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const effective = useMemo(
     () => Math.max(30, Math.floor((dailyMinutes * factor) / 100)),
     [dailyMinutes, factor]
   );
 
-  function next() {
+  useEffect(() => {
+    if (status === "anonymous") {
+      router.replace("/login");
+    }
+  }, [router, status]);
+
+  async function next() {
     if (step < 4) {
       setStep(step + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      showToast("<strong>引导完成。</strong> 今日页会先用示例数据展示执行流程。");
+      return;
+    }
+
+    if (saving) return;
+    setSaving(true);
+    try {
+      const value = (id: string) =>
+        (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value ?? "";
+      const targetDate = value("onb-target-date");
+      const goal = value("onb-job") || "求职目标";
+
+      await live.profile.update({
+        display_name: user?.display_name || undefined,
+        timezone: value("onb-timezone") || "Asia/Shanghai",
+        daily_available_minutes: dailyMinutes,
+        planning_capacity_factor: factor / 100,
+        day_boundary_hour: Number(value("onb-boundary").slice(0, 2)) || 4,
+      });
+
+      const jobs = await live.profile.jobs();
+      const primary = jobs.find((job) => job.is_primary && job.status === "active") ?? jobs[0];
+      if (primary) {
+        await live.profile.updateJob(primary.id, {
+          title: goal,
+          city: value("onb-city"),
+          industry: value("onb-industry"),
+          company_type: value("onb-company"),
+          target_date: targetDate || undefined,
+          priority: value("onb-priority") as "P0" | "P1" | "P2",
+        });
+      } else {
+        await live.profile.createJob({
+          title: goal,
+          city: value("onb-city"),
+          industry: value("onb-industry"),
+          company_type: value("onb-company"),
+          target_date: targetDate || undefined,
+          priority: (value("onb-priority") || "P0") as "P0" | "P1" | "P2",
+          is_primary: true,
+        });
+      }
+
+      if (consent) {
+        await live.profile.setConsent({ scope: "ai_import", version: "v1", granted: true });
+      }
+
+      await refreshLive();
+      showToast("<strong>引导完成。</strong> 档案、目标与授权已保存，今日页已接入真实计划。");
       router.push("/today");
+    } catch (cause) {
+      showToast(
+        `<strong>引导没有保存。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+        "risk"
+      );
+    } finally {
+      setSaving(false);
     }
   }
 

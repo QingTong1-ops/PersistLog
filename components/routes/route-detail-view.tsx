@@ -1,8 +1,10 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect -- route detail hydrates stages from the API. */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -23,6 +25,8 @@ import {
 } from "@/components/ui";
 import { INITIAL_ROUTES } from "@/lib/mock-data";
 import { useAppStore } from "@/lib/store/app-store";
+import { live, type RouteDetail } from "@/lib/api/live";
+import { mapRouteStages, daysBetween, type StageView } from "@/lib/api/mappers";
 import type { RouteStatus, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -164,11 +168,22 @@ type DetailTab = "structure" | "versions" | "settings";
 export function RouteDetailView({ routeId }: { routeId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
-  const { routeStates, setRouteStatus, routeDone, routePercent, tasks } = useAppStore();
-  const route = INITIAL_ROUTES.find((item) => String(item.id) === routeId) ?? INITIAL_ROUTES[0];
+  const {
+    routes,
+    routeStates,
+    setRouteStatus,
+    routeDone,
+    routePercent,
+    tasks,
+    live: isLive,
+    refreshLive,
+  } = useAppStore();
+  const route = routes.find((item) => String(item.id) === routeId) ?? routes[0] ?? INITIAL_ROUTES[0];
   const status = routeStates[route.id] ?? route.status;
   const statusMeta = ROUTE_STATUS[status] ?? ROUTE_STATUS.active;
-  const isPrimary = route.id === 1;
+  const isPrimary = isLive ? false : route.id === 1;
+  const [detail, setDetail] = useState<RouteDetail | null>(null);
+  const [stages, setStages] = useState<StageView[]>(STAGES);
   const [tab, setTab] = useState<DetailTab>("structure");
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -176,20 +191,60 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
   const [dailyMinutes, setDailyMinutes] = useState(300);
   const [factor, setFactor] = useState(80);
   const effective = Math.round((dailyMinutes * factor) / 100);
+  const hasStructure = isLive ? Boolean(detail?.stages.length) : isPrimary;
+  const progress = isLive ? route.progress : isPrimary ? routePercent : route.progress;
+  const doneCount = isLive ? route.doneCount : isPrimary ? routeDone : route.doneCount;
+  const lateDays =
+    route.targetDate && route.forecast
+      ? Math.max(0, daysBetween(route.targetDate, route.forecast) - 1)
+      : 0;
 
-  function togglePause() {
+  useEffect(() => {
+    if (!isLive || !route.apiId) {
+      setDetail(null);
+      setStages(STAGES);
+      return;
+    }
+    let cancelled = false;
+    live.routes
+      .get(route.apiId)
+      .then((next) => {
+        if (cancelled) return;
+        setDetail(next);
+        setStages(mapRouteStages(next, tasks));
+      })
+      .catch((cause) => {
+        if (cancelled) return;
+        showToast(
+          `<strong>路线详情加载失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+          "risk"
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLive, route.apiId, showToast, tasks]);
+
+  async function togglePause() {
     const next: RouteStatus = status === "active" ? "paused" : "active";
-    setRouteStatus(route.id, next);
-    showToast(
-      next === "paused"
-        ? "<strong>路线已暂停。</strong> 暂停期间不会生成新的今日任务，已有执行记录保留。"
-        : "<strong>路线已恢复。</strong> 下一次生成今日计划时会重新纳入未完成任务。"
-    );
+    try {
+      await setRouteStatus(route.id, next);
+      showToast(
+        next === "paused"
+          ? "<strong>路线已暂停。</strong> 暂停期间不会生成新的今日任务，已有执行记录保留。"
+          : "<strong>路线已恢复。</strong> 下一次生成今日计划时会重新纳入未完成任务。"
+      );
+    } catch (cause) {
+      showToast(
+        `<strong>路线状态没有保存。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+        "risk"
+      );
+    }
   }
 
   function taskStatus(task: StageTask): TaskStatus {
     if (task.id) {
-      const found = tasks.find((item) => item.id === task.id);
+      const found = tasks.find((item) => item.taskId === task.id || item.id === task.id);
       if (found) return found.status;
     }
     return task.status;
@@ -205,12 +260,12 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
       <section className="route-hero">
         <div>
           <span className="eyebrow">Route · {route.days} 天</span>
-          <h1>{route.id === 1 ? "Java 后端实习准备" : route.name}</h1>
+          <h1>{route.name}</h1>
           <div className="route-hero__meta">
             <span>目标：{route.job} · {route.targetDate}</span>
-            <span>路线周期：{route.startDate} → {isPrimary ? "2026-11-06" : "待排期"}</span>
+            <span>路线周期：{route.startDate} → {route.endDate ?? "待排期"}</span>
             <span className={cn("status", statusMeta.className)}>{statusMeta.label}</span>
-            <Tag variant="outline">版本 v3</Tag>
+            <Tag variant="outline">版本 v{detail?.current_version ?? (isLive ? 1 : 3)}</Tag>
           </div>
         </div>
         <div className="route-hero__actions">
@@ -250,16 +305,16 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
         </div>
         <div className="summary-strip__item">
           <span>任务 / 已完成</span>
-          <b>{route.taskCount} <small>/ {isPrimary ? routeDone : route.doneCount} 项</small></b>
+          <b>{route.taskCount} <small>/ {doneCount} 项</small></b>
         </div>
         <div className="summary-strip__item">
           <span>路线进度</span>
-          <b>{isPrimary ? routePercent : route.progress} <small>%</small></b>
+          <b>{progress} <small>%</small></b>
         </div>
         <div className="summary-strip__item">
           <span>预计完成</span>
-          <b className={isPrimary ? "text-risk" : undefined}>
-            {route.forecast} <small>{isPrimary ? "晚 2 天" : ""}</small>
+          <b className={lateDays > 0 ? "text-risk" : undefined}>
+            {route.forecast} <small>{lateDays > 0 ? `晚 ${lateDays} 天` : ""}</small>
           </b>
         </div>
       </div>
@@ -287,7 +342,7 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
         <div className="detail-panel">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "2px 0 12px" }}>
             <p className="muted" style={{ fontSize: 10 }}>
-              原型展示 19 / 42 项关键任务；其余任务按同样结构折叠。
+              共 {route.taskCount} 项任务，按阶段 / 周折叠；任务状态与今日执行记录同步。
             </p>
             <div style={{ display: "flex", gap: 7 }}>
               <Button variant="secondary" size="xs" onClick={() => showToast("<strong>新增阶段：</strong> 填写名称、开始日期和目标。")}>
@@ -302,8 +357,8 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
             </div>
           </div>
 
-          {isPrimary ? (
-            STAGES.map((stage, stageIndex) => (
+          {hasStructure ? (
+            stages.map((stage, stageIndex) => (
             <details className="stage" open={stage.open} key={stage.title}>
               <summary>
                 <span className="stage__chevron">
@@ -491,7 +546,26 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
       <AdjustRouteModal
         open={adjustOpen}
         onClose={() => setAdjustOpen(false)}
-        onSave={() => {
+        defaultStart={route.startDate}
+        defaultMinutes={route.dailyCapacity ?? 144}
+        onSave={async (start, minutes) => {
+          if (isLive && route.apiId) {
+            try {
+              await live.routes.adjust(route.apiId, {
+                start_date: start,
+                daily_capacity_minutes: minutes,
+              });
+              await refreshLive();
+              setAdjustOpen(false);
+              showToast("<strong>路线已重排。</strong> 后端已生成新的路线版本，未完成任务的日期已平移。");
+            } catch (cause) {
+              showToast(
+                `<strong>路线没有重排。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                "risk"
+              );
+            }
+            return;
+          }
           setAdjustOpen(false);
           showToast("<strong>路线已重排。</strong> 未完成阶段整体后移 2 天，并生成版本 v4。");
         }}
@@ -504,11 +578,18 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
         subtitle="Java 后端实习准备 · 36 天"
         body={<p>归档后不再生成每日任务，历史记录与看板数据保留。正式版应支持从归档恢复。</p>}
         confirmText="确认归档"
-        onConfirm={() => {
+        onConfirm={async () => {
           setArchiveOpen(false);
-          setRouteStatus(route.id, "archived");
-          showToast("<strong>路线已归档。</strong> 不再生成每日任务，历史记录和看板数据保留。", "risk");
-          router.push("/routes");
+          try {
+            await setRouteStatus(route.id, "archived");
+            showToast("<strong>路线已归档。</strong> 不再生成每日任务，历史记录和看板数据保留。", "risk");
+            router.push("/routes");
+          } catch (cause) {
+            showToast(
+              `<strong>路线没有归档。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+              "risk"
+            );
+          }
         }}
       />
     </div>
@@ -519,10 +600,14 @@ function AdjustRouteModal({
   open,
   onClose,
   onSave,
+  defaultStart,
+  defaultMinutes,
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (start: string, minutes: number) => void;
+  defaultStart: string;
+  defaultMinutes: number;
 }) {
   return (
     <Modal
@@ -535,17 +620,26 @@ function AdjustRouteModal({
         className="modal__form"
         onSubmit={(event) => {
           event.preventDefault();
-          onSave();
+          const data = new FormData(event.currentTarget);
+          onSave(
+            String(data.get("start") ?? defaultStart),
+            Number(data.get("minutes") ?? defaultMinutes)
+          );
         }}
       >
         <div className="form-grid">
           <div className="field">
             <label htmlFor="adjust-start">开始日期</label>
-            <input id="adjust-start" type="date" defaultValue="2026-10-02" />
+            <input id="adjust-start" name="start" type="date" defaultValue={defaultStart} />
           </div>
           <div className="field">
-            <label htmlFor="adjust-minutes">每日可用分钟</label>
-            <input id="adjust-minutes" type="number" defaultValue={300} />
+            <label htmlFor="adjust-minutes">每日容量分钟</label>
+            <input
+              id="adjust-minutes"
+              name="minutes"
+              type="number"
+              defaultValue={defaultMinutes}
+            />
           </div>
           <div className="field">
             <label htmlFor="adjust-factor">容量系数</label>
@@ -558,7 +652,7 @@ function AdjustRouteModal({
           </div>
           <div className="field">
             <label>有效日容量</label>
-            <input value="240 分钟" disabled />
+            <input value={`${defaultMinutes} 分钟`} disabled />
           </div>
         </div>
         <div className="impact-box">

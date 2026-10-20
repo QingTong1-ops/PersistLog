@@ -1,8 +1,10 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect -- settings forms hydrate from the authenticated profile and notification API. */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   Bell,
   Check,
@@ -23,9 +25,10 @@ import {
   Toggle,
   useToast,
 } from "@/components/ui";
-import { DEMO_USER } from "@/lib/mock-data";
 import { useAppStore } from "@/lib/store/app-store";
-import { cn, maskWebhook } from "@/lib/utils";
+import { useAuth } from "@/lib/auth/auth-provider";
+import { live } from "@/lib/api/live";
+import { cn } from "@/lib/utils";
 
 type SettingsTab = "profile" | "notifications" | "ai" | "data";
 
@@ -38,6 +41,7 @@ const TABS: Array<{ id: SettingsTab; label: string; icon: React.ReactNode }> = [
 
 export function SettingsView({ tab }: { tab: string }) {
   const active = (TABS.find((item) => item.id === tab)?.id ?? "profile") as SettingsTab;
+  const { profile } = useAppStore();
 
   return (
     <div className="view">
@@ -48,7 +52,7 @@ export function SettingsView({ tab }: { tab: string }) {
         side={
           <span className="goal-pill">
             <i />
-            当前主目标：{DEMO_USER.goal}
+            当前主目标：{profile.goal}
           </span>
         }
       />
@@ -104,19 +108,85 @@ function PanelHead({
 
 function ProfilePanel() {
   const { showToast } = useToast();
-  const [dailyMinutes, setDailyMinutes] = useState(DEMO_USER.dailyMinutes);
-  const [factor, setFactor] = useState(80);
+  const { profile, jobTargets, refreshLive } = useAppStore();
+  const primaryTarget =
+    jobTargets.find((target) => target.is_primary && target.status === "active") ?? jobTargets[0];
+  const [dailyMinutes, setDailyMinutes] = useState(profile.dailyMinutes);
+  const [factor, setFactor] = useState(Math.round(profile.capacityFactor * 100));
+  const [goal, setGoal] = useState(profile.goal);
+  const [city, setCity] = useState(primaryTarget?.city ?? "杭州 / 上海");
+  const [industry, setIndustry] = useState(primaryTarget?.industry ?? "互联网 / 软件");
+  const [targetDate, setTargetDate] = useState(profile.targetDate);
+  const [priority, setPriority] = useState(primaryTarget?.priority ?? "P0");
   const [autoCarry, setAutoCarry] = useState(true);
   const [emptyPlan, setEmptyPlan] = useState(true);
   const [askActual, setAskActual] = useState(true);
+  const [saving, setSaving] = useState(false);
   const effective = Math.round((dailyMinutes * factor) / 100);
+
+  useEffect(() => {
+    setDailyMinutes(profile.dailyMinutes);
+    setFactor(Math.round(profile.capacityFactor * 100));
+    setGoal(profile.goal);
+    setTargetDate(profile.targetDate);
+  }, [profile.capacityFactor, profile.dailyMinutes, profile.goal, profile.targetDate]);
+
+  useEffect(() => {
+    if (!primaryTarget) return;
+    setGoal(primaryTarget.title);
+    setCity(primaryTarget.city ?? "");
+    setIndustry(primaryTarget.industry ?? "互联网 / 软件");
+    setTargetDate(primaryTarget.target_date ?? "");
+    setPriority(primaryTarget.priority);
+  }, [primaryTarget]);
+
+  async function saveProfile() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await live.profile.update({
+        display_name: profile.name,
+        timezone: profile.timezone,
+        daily_available_minutes: dailyMinutes,
+        planning_capacity_factor: factor / 100,
+        day_boundary_hour: 4,
+      });
+      if (primaryTarget) {
+        await live.profile.updateJob(primaryTarget.id, {
+          title: goal,
+          city,
+          industry,
+          target_date: targetDate || undefined,
+          priority,
+        });
+      } else {
+        await live.profile.createJob({
+          title: goal,
+          city,
+          industry,
+          target_date: targetDate || undefined,
+          priority,
+          is_primary: true,
+        });
+      }
+      await refreshLive();
+      showToast("<strong>档案设置已保存。</strong> 变更只影响未来计划，历史记录保持不变。");
+    } catch (cause) {
+      showToast(
+        `<strong>设置没有保存。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+        "risk"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <section className="card settings-panel">
       <PanelHead
         title="档案与容量"
         description="决定每日计划的时间预算和“今天”的边界。"
-        onSave={() => showToast("<strong>档案设置已保存。</strong> 变更只影响未来计划，历史记录保持不变。")}
+        onSave={() => void saveProfile()}
       />
 
       <div className="settings-section">
@@ -186,21 +256,30 @@ function ProfilePanel() {
         <div className="form-grid form-grid--3">
           <div className="field">
             <label htmlFor="set-job">目标岗位</label>
-            <input id="set-job" defaultValue={DEMO_USER.goal} />
+            <input id="set-job" value={goal} onChange={(event) => setGoal(event.target.value)} />
           </div>
           <div className="field">
             <label htmlFor="set-city">目标城市</label>
-            <input id="set-city" defaultValue="杭州 / 上海" />
+            <input id="set-city" value={city} onChange={(event) => setCity(event.target.value)} />
           </div>
           <div className="field">
             <label htmlFor="set-target-date">目标日期</label>
-            <input id="set-target-date" type="date" defaultValue={DEMO_USER.targetDate} />
+            <input
+              id="set-target-date"
+              type="date"
+              value={targetDate}
+              onChange={(event) => setTargetDate(event.target.value)}
+            />
           </div>
         </div>
         <div className="form-grid" style={{ marginTop: 15 }}>
           <div className="field">
             <label htmlFor="set-industry">行业</label>
-            <select id="set-industry" defaultValue="互联网 / 软件">
+            <select
+              id="set-industry"
+              value={industry}
+              onChange={(event) => setIndustry(event.target.value)}
+            >
               <option>互联网 / 软件</option>
               <option>金融科技</option>
               <option>企业服务</option>
@@ -208,7 +287,11 @@ function ProfilePanel() {
           </div>
           <div className="field">
             <label htmlFor="set-priority">优先级</label>
-            <select id="set-priority" defaultValue="P0">
+            <select
+              id="set-priority"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as "P0" | "P1" | "P2")}
+            >
               <option value="P0">P0 · 最高</option>
               <option value="P1">P1 · 高</option>
               <option value="P2">P2 · 普通</option>
@@ -268,13 +351,82 @@ const INITIAL_EVENTS: NotificationEvent[] = [
 
 function NotificationsPanel() {
   const { showToast } = useToast();
-  const [connected, setConnected] = useState(true);
-  const [webhookMask, setWebhookMask] = useState("https://qyapi.weixin.qq.com/…/send?key=••••••7a2f");
-  const [lastTest, setLastTest] = useState("今天 07:31 · 成功");
+  const { live: isLive } = useAppStore();
+  const [connected, setConnected] = useState(false);
+  const [channelId, setChannelId] = useState<string | null>(null);
+  const [webhookMask, setWebhookMask] = useState("未配置");
+  const [lastTest, setLastTest] = useState("尚未测试");
   const [events, setEvents] = useState(INITIAL_EVENTS);
   const [dnd, setDnd] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
+  const [outbox, setOutbox] = useState<Array<{ id: string; event_type: string; status: string; attempts: number; last_error: string | null; created_at: string }>>([]);
+
+  async function loadNotifications() {
+    if (!isLive) return;
+    try {
+      const [channels, preferences, outboxItems] = await Promise.all([
+        live.notifications.channels(),
+        live.notifications.preferences(),
+        live.notifications.outbox(),
+      ]);
+      const channel = channels.find((item) => item.status === "active") ?? channels[0];
+      setConnected(Boolean(channel));
+      setChannelId(channel?.id ?? null);
+      setWebhookMask(channel?.webhook_masked ?? "未配置");
+      setLastTest(channel?.last_test_at ? "最近测试：" + channel.last_test_at.slice(0, 19).replace("T", " ") : "尚未测试");
+      setOutbox(outboxItems);
+      setEvents((current) =>
+        current.map((event) => {
+          const key = event.id === "carry" ? "carry_over" : event.id;
+          const preference = preferences.find((item) => item.event_type === key);
+          return preference
+            ? {
+                ...event,
+                enabled: preference.enabled,
+                time: preference.send_time?.slice(0, 5) ?? event.time,
+              }
+            : event;
+        })
+      );
+    } catch (cause) {
+      showToast(
+        `<strong>通知配置加载失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+        "risk"
+      );
+    }
+  }
+
+  useEffect(() => {
+    void loadNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLive]);
+
+  async function savePreferences() {
+    if (!channelId) {
+      showToast("<strong>还没有通知渠道。</strong> 请先配置企业微信 Webhook。", "risk");
+      return;
+    }
+    try {
+      await live.notifications.updatePreferences(
+        events.map((event) => ({
+          event_type: event.id === "carry" ? "carry_over" : event.id,
+          channel_id: channelId,
+          enabled: event.enabled,
+          send_time: event.time,
+          timezone: "Asia/Shanghai",
+          quiet_hours_behavior: dnd ? "delay" : "drop",
+        }))
+      );
+      await loadNotifications();
+      showToast("<strong>通知设置已保存。</strong> 变更只影响未来计划，历史记录保持不变。");
+    } catch (cause) {
+      showToast(
+        `<strong>通知设置没有保存。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+        "risk"
+      );
+    }
+  }
 
   function updateEvent(id: string, patch: Partial<NotificationEvent>) {
     setEvents((current) => current.map((event) => (event.id === id ? { ...event, ...patch } : event)));
@@ -285,7 +437,7 @@ function NotificationsPanel() {
       <PanelHead
         title="企业微信推送"
         description="单向群机器人 Webhook。未配置不影响今日页和看板。"
-        onSave={() => showToast("<strong>通知设置已保存。</strong> 变更只影响未来计划，历史记录保持不变。")}
+        onSave={() => void savePreferences()}
       />
 
       <div className="settings-section">
@@ -313,9 +465,19 @@ function NotificationsPanel() {
                 variant="secondary"
                 size="xs"
                 disabled={!connected}
-                onClick={() => {
-                  setLastTest("刚刚 · 已进入 Outbox 队列");
-                  showToast("<strong>测试消息已排队。</strong> 通常 5 秒内送达；失败会按 1/5/30 分钟重试。");
+                onClick={async () => {
+                  if (!channelId) return;
+                  try {
+                    await live.notifications.test(channelId);
+                    setLastTest("刚刚 · 已发送");
+                    await loadNotifications();
+                    showToast("<strong>测试消息已发送。</strong> 失败会按 1/5/30 分钟重试并进入 Outbox。");
+                  } catch (cause) {
+                    showToast(
+                      `<strong>测试发送失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                      "risk"
+                    );
+                  }
                 }}
               >
                 发送测试消息
@@ -326,9 +488,9 @@ function NotificationsPanel() {
               <Button
                 variant="ghost"
                 size="xs"
-                onClick={() => (connected ? setDisconnectOpen(true) : setConnected(true))}
+                onClick={() => (connected ? setDisconnectOpen(true) : setEditOpen(true))}
               >
-                {connected ? "断开" : "重新连接"}
+                {connected ? "断开" : "连接"}
               </Button>
             </div>
           </div>
@@ -400,34 +562,89 @@ function NotificationsPanel() {
           </Link>
         </div>
         <div className="outbox">
-          <div className="outbox-row">
-            <div>
-              <strong>早报 · 10/19 周一</strong>
-              <span>07:30 · 送达 1 个群</span>
-            </div>
-            <span className="status status--active">已发送</span>
-            <span />
-          </div>
-          <div className="outbox-row">
-            <div>
-              <strong>逾期提醒 · 2 项</strong>
-              <span>昨天 20:00 · 第 1 次重试</span>
-            </div>
-            <span className="status status--paused">重试中</span>
-            <Button variant="ghost" size="xs" onClick={() => showToast("<strong>已手动重发。</strong> 1 分钟后再次尝试。")}>
-              重发
-            </Button>
-          </div>
-          <div className="outbox-row">
-            <div>
-              <strong>周总结 · 第 17 周</strong>
-              <span>10/12 20:00 · 3 次重试后 dead</span>
-            </div>
-            <span className="status status--risk">dead</span>
-            <Button variant="secondary" size="xs" onClick={() => showToast("<strong>已重新入队。</strong> 稍后查看发送结果。")}>
-              重新入队
-            </Button>
-          </div>
+          {isLive ? (
+            outbox.length ? (
+              outbox.map((item) => (
+                <div className="outbox-row" key={item.id}>
+                  <div>
+                    <strong>{item.event_type}</strong>
+                    <span>
+                      {item.created_at.slice(0, 16).replace("T", " ")} · {item.attempts} 次尝试
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      "status",
+                      item.status === "sent"
+                        ? "status--active"
+                        : item.status === "dead"
+                          ? "status--risk"
+                          : "status--paused"
+                    )}
+                  >
+                    {item.status}
+                  </span>
+                  {item.status === "failed" || item.status === "dead" ? (
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={async () => {
+                        try {
+                          await live.notifications.resend(item.id);
+                          await loadNotifications();
+                          showToast("<strong>已重新入队。</strong> 稍后查看发送结果。");
+                        } catch (cause) {
+                          showToast(
+                            `<strong>重发失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                            "risk"
+                          );
+                        }
+                      }}
+                    >
+                      重发
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="muted" style={{ fontSize: 11 }}>
+                暂无发送记录。配置渠道并触发一次通知后会出现在这里。
+              </p>
+            )
+          ) : (
+            <>
+              <div className="outbox-row">
+                <div>
+                  <strong>早报 · 10/19 周一</strong>
+                  <span>07:30 · 送达 1 个群</span>
+                </div>
+                <span className="status status--active">已发送</span>
+                <span />
+              </div>
+              <div className="outbox-row">
+                <div>
+                  <strong>逾期提醒 · 2 项</strong>
+                  <span>昨天 20:00 · 第 1 次重试</span>
+                </div>
+                <span className="status status--paused">重试中</span>
+                <Button variant="ghost" size="xs" onClick={() => showToast("<strong>已手动重发。</strong> 1 分钟后再次尝试。")}>
+                  重发
+                </Button>
+              </div>
+              <div className="outbox-row">
+                <div>
+                  <strong>周总结 · 第 17 周</strong>
+                  <span>10/12 20:00 · 3 次重试后 dead</span>
+                </div>
+                <span className="status status--risk">dead</span>
+                <Button variant="secondary" size="xs" onClick={() => showToast("<strong>已重新入队。</strong> 稍后查看发送结果。")}>
+                  重新入队
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -439,13 +656,31 @@ function NotificationsPanel() {
       >
         <form
           className="modal__form"
-          onSubmit={(event: FormEvent<HTMLFormElement>) => {
+          onSubmit={async (event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
-            const input = new FormData(event.currentTarget).get("webhook")?.toString() ?? "";
-            setWebhookMask(maskWebhook(input));
-            setLastTest("刚刚 · 测试消息已排队");
-            setEditOpen(false);
-            showToast("<strong>Webhook 已更新。</strong> 测试消息已进入 Outbox，通常 5 秒内送达。");
+            const webhook = new FormData(event.currentTarget).get("webhook")?.toString() ?? "";
+            if (!webhook) return;
+            try {
+              if (channelId) {
+                await live.notifications.updateChannel(channelId, {
+                  name: "企业微信群机器人",
+                  webhook_url: webhook,
+                });
+              } else {
+                await live.notifications.createChannel({
+                  name: "企业微信群机器人",
+                  webhook_url: webhook,
+                });
+              }
+              await loadNotifications();
+              setEditOpen(false);
+              showToast("<strong>Webhook 已保存。</strong> 可点击测试发送验证渠道。");
+            } catch (cause) {
+              showToast(
+                `<strong>Webhook 保存失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                "risk"
+              );
+            }
           }}
         >
           <div className="field">
@@ -477,8 +712,21 @@ function NotificationsPanel() {
         subtitle="企业微信群机器人"
         body={<p>断开后不再发送早报、晚报、逾期和顺延提醒。今日页和看板仍然可用。</p>}
         confirmText="确认断开"
-        onConfirm={() => {
+        onConfirm={async () => {
           setDisconnectOpen(false);
+          if (isLive && channelId) {
+            try {
+              await live.notifications.deleteChannel(channelId);
+              await loadNotifications();
+              showToast("<strong>渠道已断开。</strong> 可在设置中重新配置 Webhook。", "risk");
+            } catch (cause) {
+              showToast(
+                `<strong>断开失败。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+                "risk"
+              );
+            }
+            return;
+          }
           setConnected(false);
           showToast("<strong>渠道已断开。</strong> 可在设置中重新配置 Webhook。", "risk");
         }}
@@ -595,6 +843,8 @@ function AIPanel() {
 function DataPanel() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { profile } = useAppStore();
+  const { logout, refresh } = useAuth();
 
   return (
     <section className="card settings-panel">
@@ -606,24 +856,37 @@ function DataPanel() {
         <div className="form-grid">
           <div className="field">
             <label>登录账号</label>
-            <input value={DEMO_USER.email} disabled />
+            <input value={profile.email} disabled />
           </div>
           <div className="field">
             <label>注册时间</label>
-            <input value="2026-10-02 09:08" disabled />
+            <input value={profile.createdAt?.slice(0, 10) ?? "—"} disabled />
           </div>
         </div>
         <div className="channel-actions" style={{ marginTop: 12 }}>
-          <Button variant="secondary" size="sm" onClick={() => router.push("/login")}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={async () => {
+              await logout();
+              router.replace("/login");
+            }}
+          >
             <LogOut className="icon" aria-hidden="true" />
             退出登录
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() =>
-              showToast("<strong>会话已刷新。</strong> Access Token 保存在内存，Refresh Token 在 HttpOnly Cookie。")
-            }
+            onClick={async () => {
+              const ok = await refresh();
+              showToast(
+                ok
+                  ? "<strong>会话已刷新。</strong> Access Token 保存在内存，Refresh Token 在 HttpOnly Cookie。"
+                  : "<strong>会话已失效。</strong> 请重新登录。",
+                ok ? "success" : "risk"
+              );
+            }}
           >
             <RefreshCw className="icon" aria-hidden="true" />
             刷新会话
