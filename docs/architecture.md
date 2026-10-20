@@ -1,6 +1,6 @@
 # 恒序 persistLog · 前端技术架构
 
-- **版本**：v0.1（Phase 1 技术框架）
+- **版本**：v0.2（Phase 1 页面 + 前后端联调）
 - **日期**：2026-10-19
 - **对应代码**：`persistLogFrontend/`
 - **设计依据**：[`design/visual-design.md`](../design/visual-design.md)、[`design/page-spec.md`](../design/page-spec.md)
@@ -58,13 +58,14 @@ app/layout.tsx（RootLayout）
 | `app/` | 路由、布局、metadata、参数解析 | 复杂业务状态 |
 | `components/*-view.tsx` | 页面级组合、交互编排 | 跨页面数据持久化 |
 | `components/today/` | 任务行、详情抽屉、任务弹窗 | 路线/看板渲染 |
-| `components/import/` | 上传/解析/预览/确认状态机 | 真实文件解析 |
+| `components/import/` | 上传/解析/预览/确认状态机 | 真实文件解析（后端） |
 | `components/routes/` | 路线列表、详情、阶段/周/任务、版本 | 今日计划生成 |
 | `components/dashboard/` | KPI、趋势、分布、预测 | 能力评分 |
 | `components/settings/` | 档案、通知、AI 授权、数据 | 认证后端 |
-| `lib/store/` | 跨页面任务/路线/授权状态 | 服务端持久化 |
-| `lib/api/` | fetch 封装、端点映射 | UI 逻辑 |
-| `lib/mock-data.ts` | 统一演示数据 | 生产数据 |
+| `lib/auth/` | 会话初始化、登录、刷新、登出 | 业务数据 |
+| `lib/store/` | 跨页面 today/routes/profile/授权状态 | 服务端持久化 |
+| `lib/api/` | fetch、Bearer、401 刷新、端点、映射 | UI 逻辑 |
+| `lib/mock-data.ts` | 未登录时的设计演示数据 | 生产数据 |
 | `app/globals.css` | 设计 token、组件、响应式 | 组件内联样式 |
 
 ---
@@ -135,36 +136,42 @@ resetDemo()
 
 ### 5.2 端点映射
 
-`lib/api/endpoints.ts` 按 openapi 分组：
+`lib/api/live.ts` 按 openapi 分组：
 
 ```text
-auth.login / register / me / refresh / logout
+auth.login / register / me / logout
+profile.get / update / jobs / createJob / updateJob / consents / setConsent
 today.get / generate / action
-imports.create / get / preview / confirm / cancel / rollback / job
-routes.list / get / create / update / action / adjust / forecast / versions
+imports.create / get / preview / updatePreview / confirm / cancel / rollback / job
+routes.list / get / create / action / adjust / forecast / versions / createTask
 dashboard.overview / trends / distribution / forecast
-settings.profile / settings / jobTargets / consents / channels / preferences / outbox / auditLogs
+notifications.channels / createChannel / updateChannel / deleteChannel /
+  preferences / updatePreferences / outbox / test / resend
 ```
 
-### 5.3 从 mock 切到真实 API
+`lib/api/mappers.ts` 负责把后端对象映射成页面类型，避免组件直接依赖 snake_case 字段。
 
-1. 保留 `AppStore` 的 action 签名，把 `setTasks` 更新替换成：
-   - 乐观更新本地 state；
-   - 调用 `api.today.action(...)`；
-   - 失败回滚并 `showToast`。
-2. 页面首次加载时用 Server Component 或 `useEffect` 拉取 `api.today.get()`、`api.routes.list()`、`api.dashboard.overview()`。
-3. 导入用 `api.imports.create` + `api.imports.job` 轮询，轮询间隔 1–2 秒，完成后进入预览。
-4. 认证接 HttpOnly Refresh Cookie；Access Token 只放内存；401 时调 `api.auth.refresh()`，失败跳 `/login`。
-5. 所有接口错误展示 `code + message + request_id`；不要只显示“请求失败”。
+### 5.3 当前接入状态
+
+已接真实链路：
+
+1. 登录/注册/刷新/登出、SessionGate、401 单飞刷新。
+2. 今日 `GET /today` 与全部 occurrence 动作；完成后重新拉取 today + routes。
+3. 导入 multipart 上传、Job 轮询、预览、确认、回滚。
+4. 路线列表/详情、暂停/恢复/归档、调整日期/容量。
+5. 看板 overview / trends / distribution / forecast。
+6. 档案与主目标保存、通知渠道/偏好/Outbox 读取与测试发送。
+
+仍为前端或占位的部分见 README §7。
 
 ### 5.4 认证
 
-- 登录/注册当前是前端模拟。
-- 正式接入时：
-  - `POST /auth/login` 返回 access token（内存）。
-  - Refresh token 由 HttpOnly Cookie 承载，前端不读、不写 localStorage。
-  - 路由守卫在 `(app)/layout.tsx` 或 middleware 中检查会话。
-  - CSRF/Origin 校验由后端负责；前端 `credentials: "include"`。
+- `POST /auth/login` 返回 access token，只放内存。
+- Refresh token 由 HttpOnly Cookie 承载，前端不读、不写 localStorage。
+- `SessionGate` 在 `(app)/layout.tsx` 检查会话；未登录跳 `/login`。
+- 401 时 `client.ts` 单飞刷新并重试一次；失败清空 token 并跳登录。
+- CSRF/Origin 校验由后端负责；前端 `credentials: "include"`。
+- Next rewrite 让浏览器只看到 `localhost:3000`，避免 localhost / 127.0.0.1 的 Cookie 不同源问题。
 
 ---
 
@@ -230,19 +237,19 @@ pnpm build
 
 ## 10. 已知技术债
 
-1. Store 与页面 props 仍有少量重复派生计算，接入 API 后统一到 selector。
-2. 演示数据与组件文案有重复（如目标日期、预测日期），应抽成常量/接口字段。
-3. 路线详情阶段任务为静态展示，未与任务 CRUD 打通。
-4. 新路线只存在本地 state，未持久化。
-5. 导入模拟定时器未使用真实 Job 轮询。
-6. 设置页表单保存只 Toast，未调用 API。
-7. 未加路由级 loading/error 以外的数据层错误边界。
+1. Store 与页面 props 仍有少量重复派生计算，后续统一到 selector。
+2. 导入预览编辑只改本地，确认仍用后端原始 preview。
+3. 今日页手动添加任务未持久化；后端暂无补入已有每日计划的接口。
+4. 路线阶段完成度目前只能用今日 occurrence 推断。
+5. 通知测试发送依赖有效企微 Webhook；`send_time` 动态调度未开放。
+6. 没有自动化 E2E；当前是 lint/typecheck/build + 手工验收。
+7. 时间戳按 UTC 解析，后端暂未补 `Z`。
 
 ---
 
 ## 11. 扩展点
 
-- `lib/api/endpoints.ts`：新增 Phase 2/3 端点。
+- `lib/api/live.ts`：新增 Phase 2/3 端点。
 - `components/today/task-modals.tsx`：新增任务动作时保持同一表单模式。
 - `components/dashboard/dashboard-view.tsx`：Phase 2 代码评分趋势区块。
 - `components/settings/settings-view.tsx`：Phase 3 复习参数面板。
