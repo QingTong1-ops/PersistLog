@@ -13,13 +13,14 @@
 | --- | --- |
 | 框架 | Next.js 16（App Router） |
 | UI | React 19 + TypeScript 5.9 |
-| 样式 | 原生 CSS（从设计原型迁移的 token / 组件类） |
+| 样式 | UWP / Windows 10：`uwp_components/styles.css` + `app/uwp.css` 覆盖层 |
+| 组件 | `uwp_components`（Button / Pivot / ProgressBar / ContentDialog） |
 | 图标 | lucide-react |
 | 包管理 | pnpm 12 |
 | 构建 | Turbopack（Next.js 默认） |
 | 校验 | ESLint 9 + `tsc --noEmit` |
 
-没有引入 Tailwind、组件库或状态管理库：Phase 1 页面数量和状态复杂度可控，原生 CSS + React Context 更容易保持设计还原度；后续如果数据缓存复杂，可引入 TanStack Query。
+没有引入 Tailwind 或状态管理库；业务布局仍用原生 CSS，UWP 组件与皮肤负责控件、surface、字体与状态。后续如果数据缓存复杂，可引入 TanStack Query。
 
 ---
 
@@ -66,7 +67,7 @@ app/layout.tsx（RootLayout）
 | `lib/store/` | 跨页面 today/routes/profile/授权状态 | 服务端持久化 |
 | `lib/api/` | fetch、Bearer、401 刷新、端点、映射 | UI 逻辑 |
 | `lib/mock-data.ts` | 未登录时的设计演示数据 | 生产数据 |
-| `app/globals.css` | 设计 token、组件、响应式 | 组件内联样式 |
+| `app/globals.css` / `app/uwp.css` | 业务布局、UWP 皮肤、组件覆盖 | 组件内联样式 |
 
 ---
 
@@ -179,10 +180,13 @@ notifications.channels / createChannel / updateChannel / deleteChannel /
 
 ## 6. 设计系统迁移
 
-- `design/prototype.css` → `app/globals.css`，保留 `--brand-*`、`--ink-*`、状态色、卡片、按钮、任务、看板等类名。
-- 原型 HTML 的语义结构迁移为 React 组件；未引入 CSS-in-JS。
+- 原 `design/prototype.css` 的 SaaS 渐变、圆角、彩色胶囊和阴影由 `app/uwp.css` 覆盖。
+- `components/uwp-root.tsx` 使用 `ThemeRoot`，固定 `win10 + light + compact`。
+- `uwp_components` 提供 Button、Pivot、ProgressBar、ContentDialog；`components/ui.tsx` 做业务适配。
+- 字体统一为 Segoe UI / Microsoft YaHei UI；accent 为 `#0078d7`；surface 为白底 1px 边框、方角。
+- eyebrow、phase badge、彩色标签等层级被移除或改为正文内联文本。
 - 图标由内联 sprite 改为 lucide-react，视觉尺寸/线宽保持一致。
-- 设计 token 修改只改 `:root`，不要在组件里散落色值。
+- 设计 token 修改优先改 `app/uwp.css` 的 `:root`，不要在组件里散落色值。
 
 ---
 
@@ -190,7 +194,7 @@ notifications.channels / createChannel / updateChannel / deleteChannel /
 
 | 断点 | 行为 |
 | --- | --- |
-| > 1200 | 252px 侧边栏 + 多列 |
+| > 1200 | 220px 侧边栏 + 多列 |
 | ≤ 1024 | 侧边栏收窄；今日/导入/看板单列 |
 | ≤ 860 | 隐藏侧边栏；顶部品牌 + 底部 4 导航 |
 | ≤ 640 | 任务两行、表单单列、设置导航 2×2、弹窗底部抽屉 |

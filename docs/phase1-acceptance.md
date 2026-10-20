@@ -12,6 +12,8 @@
 
 Phase 1 前后端主链路已闭环，可以进入「真实使用 7 天」的收尾观察期。
 
+视觉基线已切换为 UWP / Windows 10：`uwp_components` + `ThemeRoot(win10, light, compact)` + `app/uwp.css`；移除了 SaaS 渐变、圆角、彩色胶囊与阴影，标签改为正文内联文本，页面头部合并 eyebrow 与说明。
+
 | 能力 | 状态 | 说明 |
 |---|---|---|
 | 注册 / 登录 / 刷新 / 登出 | ✅ | Access Token 内存，Refresh HttpOnly Cookie |

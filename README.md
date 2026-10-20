@@ -1,7 +1,7 @@
 # 恒序 persistLog · Frontend
 
-**当前状态**：Phase 1 页面已完成，并完成前后端联调（登录、今日、导入、路线、看板、档案、通知读取）  
-**技术栈**：Next.js 16（App Router）+ React 19 + TypeScript + 原生 CSS  
+**当前状态**：Phase 1 页面已完成，并完成前后端联调；界面已切换为 UWP / Windows 10 风格  
+**技术栈**：Next.js 16（App Router）+ React 19 + TypeScript + `uwp_components` + 自定义 UWP 皮肤  
 **数据状态**：默认通过 Next.js rewrite `/api/v1/*` 调用本地 FastAPI；未登录时保留 mock 设计数据用于原型预览  
 **日期**：2026-10-20  
 **远程仓库**：<https://github.com/QingTong1-ops/PersistLog.git>  
@@ -84,9 +84,10 @@ pnpm dev
 ```text
 persistLogFrontend/
 ├─ app/
-│  ├─ layout.tsx                 # 根布局、Provider、全局样式
+│  ├─ layout.tsx                 # 根布局、UWP ThemeRoot、Provider
 │  ├─ page.tsx                   # 跳转 /today
-│  ├─ globals.css                # 设计 token + 组件样式 + 响应式
+│  ├─ globals.css                # 业务布局与旧版基础类
+│  ├─ uwp.css                    # UWP / Windows 10 皮肤与覆盖
 │  ├─ error.tsx / not-found.tsx
 │  ├─ (app)/
 │  │  ├─ layout.tsx              # 侧边栏 + 顶栏 + 移动端导航
@@ -99,9 +100,10 @@ persistLogFrontend/
 │     ├─ login/
 │     └─ onboarding/
 ├─ components/
+│  ├─ uwp-root.tsx               # ThemeRoot：win10 / light / compact
 │  ├─ app-shell.tsx              # 桌面侧边栏、顶栏、移动端导航、页面地图
 │  ├─ brand-mark.tsx
-│  ├─ ui.tsx                     # Button/Modal/Sheet/Toggle/Toast/进度等
+│  ├─ ui.tsx                     # UWP Button/Pivot/ProgressBar/ContentDialog 包装
 │  ├─ today/                     # 今日视图、任务行、任务抽屉、状态弹窗
 │  ├─ import/                    # 导入状态机
 │  ├─ routes/                    # 路线列表、路线详情
@@ -161,14 +163,14 @@ persistLogFrontend/
 
 ### 4.4 样式
 
-`app/globals.css` 从设计原型迁移：
+界面已从 SaaS 卡片风格切换为 UWP / Windows 10：
 
-- `--brand-*` / `--ink-*` / 状态色 token。
-- 卡片、按钮、标签、任务行、进度环、抽屉、弹窗、看板图表。
-- 桌面侧边栏 + 移动端底部导航。
-- `prefers-reduced-motion`、焦点环、状态文字 + 颜色。
-
-详细规范见 [design/visual-design.md](design/visual-design.md) 与 [design/page-spec.md](design/page-spec.md)。
+- `uwp_components/styles.css` 提供 Segoe UI、flat surface、accent、focus 与控件样式。
+- `components/uwp-root.tsx` 用 `ThemeRoot` 设置 `win10 + light + compact`。
+- `app/uwp.css` 移除旧版渐变、圆角、彩色胶囊和阴影，统一为方角、1px 边框、蓝色 `#0078d7` accent。
+- `components/ui.tsx` 的 Button / Segmented / ProgressBar / Modal / ConfirmDialog 使用 UWP 组件。
+- 信息层级收紧：隐藏 eyebrow / phase badge / colored tags，标签改为正文内联文本，页面标题与说明合并为一个头部。
+- 桌面侧边栏改为浅灰 UWP NavigationView 风格，移动端保留底部导航。
 
 ---
 
@@ -189,6 +191,7 @@ persistLogFrontend/
 | `docs`（上一轮） | API 客户端、环境变量、架构文档、README、截图 |
 | **本次联调** | Next rewrite、AuthProvider/SessionGate、真实 today/import/routes/dashboard/settings、API mappers、联调文档与截图 |
 | **Phase 1 收尾** | 空计划回填、`/today/items` 手动加任务、预览 PATCH、阶段/周进度、验收文档与截图 |
+| **UWP 视觉重构** | `uwp_components`、ThemeRoot、UWP Button/Pivot/ProgressBar/ContentDialog、`app/uwp.css`、所有页面方角扁平化 |
 
 原型与设计文档的历史仍保留在前面的 `ed45972` 提交。
 
