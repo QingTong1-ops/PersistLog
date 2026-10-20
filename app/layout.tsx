@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth/auth-provider";
 import { AppStoreProvider } from "@/lib/store/app-store";
 import { ToastProvider } from "@/components/ui";
 
@@ -21,9 +22,11 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <AppStoreProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </AppStoreProvider>
+        <AuthProvider>
+          <AppStoreProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </AppStoreProvider>
+        </AuthProvider>
       </body>
     </html>
   );
