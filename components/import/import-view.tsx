@@ -22,6 +22,7 @@ import {
 import { PREVIEW_TASKS, TEMPLATE_MARKDOWN } from "@/lib/mock-data";
 import { useAppStore } from "@/lib/store/app-store";
 import { live } from "@/lib/api/live";
+import { TASK_TYPE_TO_API } from "@/lib/api/mappers";
 import type { PreviewTask, TaskType } from "@/lib/types";
 
 type ImportPane = "empty" | "processing" | "preview" | "error" | "done";
@@ -155,6 +156,11 @@ export function ImportView({ demoState }: { demoState?: string }) {
   const [previewIssues, setPreviewIssues] = useState<PreviewIssueView[]>(
     demoState === "preview" ? DEMO_ISSUES : []
   );
+  const [previewRoute, setPreviewRoute] = useState<AiRoute | null>(null);
+  const [taskPaths, setTaskPaths] = useState<
+    Record<number, { stage: number; week: number; task: number }>
+  >({});
+  const [savingPreview, setSavingPreview] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importId, setImportId] = useState<string | null>(null);
   const [confirmedRouteId, setConfirmedRouteId] = useState<string | null>(null);
@@ -197,7 +203,10 @@ export function ImportView({ demoState }: { demoState?: string }) {
     return mapping[value ?? ""] ?? "复盘";
   }
 
-  function applyPreview(preview: Awaited<ReturnType<typeof live.imports.preview>>) {
+  function applyPreview(
+    preview: Awaited<ReturnType<typeof live.imports.preview>>,
+    mode: "load" | "saved" = "load"
+  ) {
     const route = preview.route as AiRoute | null;
     if (!route?.stages?.length) {
       throw new Error("后端没有返回可预览的阶段结构");
@@ -205,19 +214,21 @@ export function ImportView({ demoState }: { demoState?: string }) {
 
     const nextTasks: Record<number, PreviewTask> = {};
     const nextStages: PreviewStageView[] = [];
+    const nextPaths: Record<number, { stage: number; week: number; task: number }> = {};
     let nextId = 0;
     let weekCount = 0;
     let minutes = 0;
 
-    for (const stage of route.stages) {
+    route.stages.forEach((stage, stageIndex) => {
       const weeks: PreviewStageView["weeks"] = [];
-      for (const week of stage.weeks ?? []) {
+      (stage.weeks ?? []).forEach((week, weekIndex) => {
         weekCount += 1;
         const ids: number[] = [];
-        for (const task of week.tasks ?? []) {
+        (week.tasks ?? []).forEach((task, taskIndex) => {
           nextId += 1;
           ids.push(nextId);
           minutes += task.estimated_minutes ?? 0;
+          nextPaths[nextId] = { stage: stageIndex, week: weekIndex, task: taskIndex };
           nextTasks[nextId] = {
             id: nextId,
             title: task.title ?? "未命名任务",
@@ -226,18 +237,18 @@ export function ImportView({ demoState }: { demoState?: string }) {
             output: task.deliverable ?? "",
             acceptance: task.acceptance_criteria ?? "",
           };
-        }
+        });
         weeks.push({
           title: `第 ${week.week_no ?? weekCount} 周 · ${week.focus ?? "本周目标"}`,
           ids,
         });
-      }
+      });
       nextStages.push({
         title: stage.name ?? `阶段 ${nextStages.length + 1}`,
         meta: `${stage.weeks?.flatMap((week) => week.tasks ?? []).length ?? 0} 任务`,
         weeks,
       });
-    }
+    });
 
     const issues: PreviewIssueView[] = preview.issues.map((issue) => ({
       severity: issue.severity,
@@ -246,6 +257,8 @@ export function ImportView({ demoState }: { demoState?: string }) {
     }));
     setPreviewTasks(nextTasks);
     setPreviewStages(nextStages);
+    setTaskPaths(nextPaths);
+    setPreviewRoute(JSON.parse(JSON.stringify(route)) as AiRoute);
     setPreviewIssues(issues);
     setPreviewStats({
       stages: nextStages.length,
@@ -259,7 +272,9 @@ export function ImportView({ demoState }: { demoState?: string }) {
     setFileName(preview.file_name ?? fileName);
     setPane("preview");
     showToast(
-      `<strong>解析完成。</strong> 已生成 ${nextStages.length} 个阶段、${weekCount} 个周目标、${nextId} 个任务，请检查问题清单。`
+      mode === "saved"
+        ? "<strong>预览已保存。</strong> 后端已重新校验，确认创建将使用最新结构。"
+        : `<strong>解析完成。</strong> 已生成 ${nextStages.length} 个阶段、${weekCount} 个周目标、${nextId} 个任务，请检查问题清单。`
     );
   }
 
@@ -385,14 +400,48 @@ export function ImportView({ demoState }: { demoState?: string }) {
     showToast("<strong>模板已下载。</strong> 按标题、列表和缩进填写，解析成功率最高。");
   }
 
-  function savePreviewTask(task: PreviewTask) {
-    setPreviewTasks((current) => ({ ...current, [task.id]: task }));
-    setEditId(null);
-    showToast(
-      isLive
-        ? "<strong>本地预览已更新。</strong> 当前联调版确认仍以后端原始预览结构为准；完整 PATCH 预览将在下一轮接入。"
-        : "<strong>任务已更新。</strong> 问题清单会按新的验收标准重新判断。"
-    );
+  async function savePreviewTask(task: PreviewTask) {
+    if (!isLive || !importId) {
+      setPreviewTasks((current) => ({ ...current, [task.id]: task }));
+      setEditId(null);
+      showToast("<strong>任务已更新。</strong> 问题清单会按新的验收标准重新判断。");
+      return;
+    }
+
+    const path = taskPaths[task.id];
+    if (!path || !previewRoute) {
+      showToast("<strong>预览数据已变化。</strong> 请关闭弹窗后重新打开任务。", "risk");
+      return;
+    }
+
+    const route = JSON.parse(JSON.stringify(previewRoute)) as AiRoute;
+    const target = route.stages?.[path.stage]?.weeks?.[path.week]?.tasks?.[path.task];
+    if (!target) {
+      showToast("<strong>找不到对应任务。</strong> 请重新解析后再编辑。", "risk");
+      return;
+    }
+    target.title = task.title;
+    target.task_type = TASK_TYPE_TO_API[task.type];
+    target.estimated_minutes = task.minutes;
+    target.deliverable = task.output;
+    target.acceptance_criteria = task.acceptance;
+
+    setSavingPreview(true);
+    try {
+      const updated = await live.imports.updatePreview(
+        importId,
+        route as unknown as Record<string, unknown>
+      );
+      applyPreview(updated, "saved");
+      setEditId(null);
+    } catch (cause) {
+      showToast(
+        `<strong>预览没有保存。</strong> ${cause instanceof Error ? cause.message : "后端请求失败"}`,
+        "risk"
+      );
+    } finally {
+      setSavingPreview(false);
+    }
   }
 
   return (
@@ -710,7 +759,7 @@ export function ImportView({ demoState }: { demoState?: string }) {
                   <Button
                     variant="primary"
                     size="sm"
-                    disabled={!consent || previewStats.errors > 0}
+                    disabled={!consent || previewStats.errors > 0 || savingPreview}
                     onClick={async () => {
                       if (isLive && importId) {
                         try {

@@ -20,6 +20,16 @@ const TASK_TYPE: Record<string, TaskType> = {
   apply: "复盘",
 };
 
+export const TASK_TYPE_TO_API: Record<TaskType, string> = {
+  算法: "algorithm",
+  八股: "fundamentals",
+  工程: "engineering",
+  项目: "project",
+  简历: "resume",
+  面试: "interview",
+  复盘: "review",
+};
+
 const ROUTE_STATUS: Record<string, RouteStatus> = {
   active: "active",
   paused: "paused",
@@ -208,27 +218,42 @@ export function mapRouteStages(detail: RouteDetail, todayTasks: Task[] = []): St
   );
   return detail.stages.map((stage, stageIndex) => {
     const tasks = stage.weeks.flatMap((week) => week.tasks);
-    const completed = tasks.filter((task) => completedTaskIds.has(task.id)).length;
-    const total = tasks.length;
-    const percent = total ? Math.round((completed / total) * 100) : 0;
+    const stageProgress = stage.progress;
+    const completed = stageProgress?.completed_tasks ?? tasks.filter((task) => completedTaskIds.has(task.id)).length;
+    const total = stageProgress?.total_tasks ?? tasks.length;
+    const percent = Math.round(stageProgress?.percent ?? (total ? (completed / total) * 100 : 0));
     return {
       title: `阶段${stage.order_no} · ${stage.name.replace(/（.*$/, "").trim()}`,
-      meta: `${stage.start_date ?? "—"} – ${stage.end_date ?? "—"} · ${total} 个任务`,
+      meta: `${stage.start_date ?? "—"} – ${stage.end_date ?? "—"} · ${total} 个任务 · 已完成 ${completed}`,
       progress: `${completed} / ${total} · ${percent}%`,
       width: percent,
       open: stageIndex < 2,
-      weeks: stage.weeks.map((week) => ({
-        title: `第 ${week.week_no} 周 · ${week.focus ?? "本周目标"}`,
-        meta: `${week.start_date ?? "—"} – ${week.end_date ?? "—"} · ${week.tasks.length} 项`,
-        tasks: week.tasks.map((task) => ({
-          id: task.id,
-          title: task.title,
-          type: mapTaskType(task.task_type),
-          minutes: task.estimated_minutes,
-          date: task.planned_date ? formatShortDate(task.planned_date) : "待排期",
-          status: completedTaskIds.has(task.id) ? "completed" : "pending",
-        })),
-      })),
+      weeks: stage.weeks.map((week) => {
+        const weekProgress = week.progress;
+        const weekCompleted =
+          weekProgress?.completed_tasks ??
+          week.tasks.filter((task) => completedTaskIds.has(task.id)).length;
+        const weekMeta = `${week.start_date ?? "—"} – ${week.end_date ?? "—"} · ${week.tasks.length} 项${
+          weekProgress ? ` · 完成 ${weekCompleted}/${weekProgress.total_tasks}` : ""
+        }`;
+        return {
+          title: `第 ${week.week_no} 周 · ${week.focus ?? "本周目标"}`,
+          meta: weekMeta,
+          tasks: week.tasks.map((task) => ({
+            id: task.id,
+            title: task.title,
+            type: mapTaskType(task.task_type),
+            minutes: task.estimated_minutes,
+            date: task.planned_date ? formatShortDate(task.planned_date) : "待排期",
+            status:
+              weekProgress?.percent === 100 ||
+              (stageProgress?.percent === 100 && completedTaskIds.has(task.id)) ||
+              completedTaskIds.has(task.id)
+                ? "completed"
+                : "pending",
+          })),
+        };
+      }),
     };
   });
 }

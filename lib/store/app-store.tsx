@@ -20,7 +20,7 @@ import {
 } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { live, type JobTarget } from "@/lib/api/live";
-import { mapProfile, mapRoutes, mapToday } from "@/lib/api/mappers";
+import { mapProfile, mapRoutes, mapToday, TASK_TYPE_TO_API } from "@/lib/api/mappers";
 import type {
   DemoUser,
   NewTaskInput,
@@ -423,6 +423,25 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const addTask = useCallback(
     async (input: NewTaskInput) => {
+      if (isLive) {
+        const note = [input.output && `产出：${input.output}`, input.acceptance && `验收：${input.acceptance}`]
+          .filter(Boolean)
+          .join("\n");
+        const today = await live.today.addItem({
+          title: input.title,
+          estimated_minutes: clamp(input.planned, 15, 120),
+          task_type: TASK_TYPE_TO_API[input.type],
+          priority: "P1",
+          note: note || undefined,
+        });
+        const nextTasks = mapToday(today);
+        setTasks(nextTasks);
+        setTodayDate(today.date);
+        return (
+          [...nextTasks].reverse().find((task) => task.title === input.title) ?? nextTasks[nextTasks.length - 1]
+        );
+      }
+
       const task: Task = {
         id: `local${Date.now()}`,
         title: input.title,
@@ -433,9 +452,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         actual: 0,
         status: "pending",
         carry: 0,
-        why: isLive
-          ? "本地临时任务；后端当前没有直接补入已有每日计划的接口。"
-          : "用户手动加入今日计划；会占用今日容量并进入执行统计。",
+        why: "用户手动加入今日计划；会占用今日容量并进入执行统计。",
         output: input.output,
         acceptance: input.acceptance,
         note: "",

@@ -783,9 +783,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
               closeModal();
               showToast(
                 `<strong>已添加「${task.title}」</strong> ${
-                  live
-                    ? "这是当前页面的临时任务；后端当前没有补入已有每日计划的接口。"
-                    : "今日容量已重新计算。"
+                  live ? "已写入今日计划，刷新后仍会保留。" : "今日容量已重新计算。"
                 }`
               );
             } catch (cause) {

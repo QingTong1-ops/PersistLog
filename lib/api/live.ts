@@ -156,6 +156,15 @@ export interface OccurrenceOut {
   parent_occurrence_id: string | null;
 }
 
+export interface TodayItemCreate {
+  task_id?: string;
+  title?: string;
+  estimated_minutes?: number;
+  task_type?: string;
+  priority?: "P0" | "P1" | "P2";
+  note?: string;
+}
+
 export type OccurrenceAction =
   | "start"
   | "complete"
@@ -206,6 +215,7 @@ export interface WeekOut {
   milestone: string | null;
   start_date: string | null;
   end_date: string | null;
+  progress?: RouteProgress | null;
   tasks: TaskOut[];
 }
 
@@ -218,6 +228,7 @@ export interface StageOut {
   end_date: string | null;
   weight: number;
   exit_criteria: string | null;
+  progress?: RouteProgress | null;
   weeks: WeekOut[];
 }
 
@@ -363,6 +374,7 @@ export interface ImportPreview {
   warnings: string[];
   stats: Record<string, number>;
   issues: ImportIssue[];
+  updated_at?: string;
   format?: string;
   file_name?: string | null;
   route_id?: string | null;
@@ -447,6 +459,11 @@ export const live = {
     get: (date?: string) => apiFetch<TodayResponse>(`/today${date ? `?date=${date}` : ""}`),
     generate: (date?: string) =>
       apiFetch<TodayResponse>(`/today/generate${date ? `?date=${date}` : ""}`, { method: "POST" }),
+    addItem: (body: TodayItemCreate, date?: string) =>
+      apiFetch<TodayResponse>(`/today/items${date ? `?date=${date}` : ""}`, {
+        method: "POST",
+        body: jsonBody(body),
+      }),
     action: (
       occurrenceId: string,
       action: OccurrenceAction,
