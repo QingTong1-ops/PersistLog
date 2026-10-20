@@ -131,10 +131,7 @@ function Sidebar() {
         <span className="avatar">{profile.initial}</span>
         <div className="sidebar-profile__copy">
           <b>{profile.name}</b>
-          <span>
-            每天 {profile.dailyMinutes} 分钟 · 有效{" "}
-            {Math.max(30, Math.round(profile.dailyMinutes * profile.capacityFactor))} 分钟
-          </span>
+          <span>每天 {profile.dailyMinutes} 分钟</span>
         </div>
         <Link className="icon-button sidebar-settings" href="/settings/profile" aria-label="个人设置">
           <Settings className="icon" aria-hidden="true" />

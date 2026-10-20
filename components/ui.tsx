@@ -5,15 +5,21 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useId,
   useRef,
   useState,
   useSyncExternalStore,
   type ButtonHTMLAttributes,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, CheckCircle2, X } from "lucide-react";
+import {
+  Button as UwpButton,
+  ContentDialog,
+  Pivot,
+  ProgressBar as UwpProgressBar,
+} from "uwp_components";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn, STATUS_META } from "@/lib/utils";
 import type { TaskStatus } from "@/lib/types";
 
@@ -45,6 +51,15 @@ const BUTTON_SIZE: Record<ButtonSize, string> = {
   xs: "btn--xs",
 };
 
+const UWP_BUTTON_VARIANT: Record<ButtonVariant, "standard" | "accent" | "quiet"> = {
+  primary: "accent",
+  secondary: "standard",
+  ghost: "quiet",
+  danger: "standard",
+  light: "standard",
+  "on-dark": "standard",
+};
+
 export function Button({
   variant = "secondary",
   size = "md",
@@ -57,13 +72,14 @@ export function Button({
   size?: ButtonSize;
 }) {
   return (
-    <button
+    <UwpButton
       type={type}
+      variant={UWP_BUTTON_VARIANT[variant]}
       className={cn("btn", BUTTON_VARIANT[variant], BUTTON_SIZE[size], className)}
       {...props}
     >
       {children}
-    </button>
+    </UwpButton>
   );
 }
 
@@ -107,9 +123,12 @@ export function ProgressBar({
   color?: string;
 }) {
   return (
-    <div className={cn("progress-track", className)}>
-      <span style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }} />
-    </div>
+    <UwpProgressBar
+      value={Math.max(0, Math.min(100, value))}
+      max={100}
+      className={cn("progress-track", "uwp-progress", className)}
+      style={color ? ({ "--accent": color } as CSSProperties) : undefined}
+    />
   );
 }
 
@@ -186,18 +205,15 @@ export function Segmented<T extends string | number>({
   ariaLabel: string;
 }) {
   return (
-    <div className="segmented" role="group" aria-label={ariaLabel}>
-      {options.map((option) => (
-        <button
-          key={String(option.value)}
-          type="button"
-          className={option.value === value ? "is-active" : undefined}
-          aria-pressed={option.value === value}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
+    <div className="segmented uwp-pivot" role="group" aria-label={ariaLabel}>
+      <Pivot
+        tabs={options.map((option) => ({ key: String(option.value), label: option.label }))}
+        value={String(value)}
+        onChange={(key) => {
+          const next = options.find((option) => String(option.value) === key);
+          if (next) onChange(next.value);
+        }}
+      />
     </div>
   );
 }
@@ -267,75 +283,14 @@ export function Modal({
   footer?: ReactNode;
   wide?: boolean;
 }) {
-  const titleId = useId();
-  const panelRef = useRef<HTMLElement>(null);
-  const mounted = useMounted();
-
-  useEffect(() => {
-    if (!open) return;
-    document.body.classList.add("no-scroll");
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key !== "Tab") return;
-      const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusable || focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", handleKey);
-    const timer = window.setTimeout(() => {
-      const first = panelRef.current?.querySelector<HTMLElement>(
-        "input, select, textarea, button:not([data-close-modal])"
-      );
-      first?.focus();
-    }, 40);
-    return () => {
-      document.body.classList.remove("no-scroll");
-      document.removeEventListener("keydown", handleKey);
-      window.clearTimeout(timer);
-    };
-  }, [open, onClose]);
-
-  if (!mounted || !open) return null;
-
-  return createPortal(
-    <div
-      className="modal-backdrop"
-      data-modal-backdrop
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        ref={panelRef}
-        className={cn("modal", wide && "modal--wide")}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
-        <div className="modal__head">
-          <div>
-            <h2 id={titleId}>{title}</h2>
-            {subtitle ? <p>{subtitle}</p> : null}
-          </div>
-          <IconButton type="button" onClick={onClose} aria-label="关闭弹窗" data-close-modal>
-            <X className="icon" aria-hidden="true" />
-          </IconButton>
-        </div>
-        <div className="modal__body">{children}</div>
+  return (
+    <ContentDialog open={open} title={title} onClose={onClose}>
+      <div className={cn("dialog-content", wide && "dialog-content--wide")}>
+        {subtitle ? <p className="dialog-subtitle">{subtitle}</p> : null}
+        {children}
         {footer ? <div className="modal__foot">{footer}</div> : null}
-      </section>
-    </div>,
-    document.body
+      </div>
+    </ContentDialog>
   );
 }
 

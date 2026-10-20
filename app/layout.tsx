@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import "uwp_components/styles.css";
 import "./globals.css";
+import "./uwp.css";
+import { UwpRoot } from "@/components/uwp-root";
 import { AuthProvider } from "@/lib/auth/auth-provider";
 import { AppStoreProvider } from "@/lib/store/app-store";
 import { ToastProvider } from "@/components/ui";
@@ -22,11 +25,13 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <AuthProvider>
-          <AppStoreProvider>
-            <ToastProvider>{children}</ToastProvider>
-          </AppStoreProvider>
-        </AuthProvider>
+        <UwpRoot>
+          <AuthProvider>
+            <AppStoreProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </AppStoreProvider>
+          </AuthProvider>
+        </UwpRoot>
       </body>
     </html>
   );

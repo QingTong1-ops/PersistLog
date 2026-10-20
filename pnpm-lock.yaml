@@ -20,6 +20,9 @@ importers:
       react-dom:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
+      uwp_components:
+        specifier: ^0.1.0
+        version: 0.1.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
     devDependencies:
       '@types/node':
         specifier: ^22.18.0
@@ -1777,6 +1780,12 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  uwp_components@0.1.0:
+    resolution: {integrity: sha512-HdX7vhZra89csRYbIlOd6S2F0thHvoHyc795wNhPFqbgjrsfUU9ADMxSOP1ixxEVVVp8bVkLSHHJAH1QD0Eqtw==}
+    peerDependencies:
+      react: '>=18.3.1 <19'
+      react-dom: '>=18.3.1 <19'
 
   which-boxed-primitive@1.1.1:
     resolution: {integrity: sha512-TbX3mj8n0odCBFVlY8AxkqcHASw3L60jIuF8jFP78az3C2YhmGvqbHBpAjTRH2/xqYunrJ9g1jSyjCjpoWzIAA==}
@@ -3801,6 +3810,11 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  uwp_components@0.1.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+    dependencies:
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
 
   which-boxed-primitive@1.1.1:
     dependencies:

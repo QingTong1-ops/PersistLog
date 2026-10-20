@@ -17,7 +17,6 @@ import {
   Button,
   EmptyState,
   PageHeader,
-  ProgressRing,
 } from "@/components/ui";
 import { TaskRow } from "@/components/today/task-row";
 import { TaskDetailSheet, type TaskAction } from "@/components/today/task-detail-sheet";
@@ -283,13 +282,11 @@ export function TodayView({ demoState }: { demoState?: string }) {
 
       <section className="focus-hero" aria-labelledby="hero-title">
         <div className="hero-left">
-          <ProgressRing
-            percent={stats.percent}
-            label="今日完成"
-            className="hero-ring"
-          />
+          <div className="hero-progress" aria-label={`今日完成 ${stats.percent}%`}>
+            <strong>{stats.percent}%</strong>
+            <span>今日完成</span>
+          </div>
           <div className="hero-copy">
-            <span className="eyebrow eyebrow--light">Today focus</span>
             <h2 id="hero-title">{heroTitle}</h2>
             <p>{heroSub}</p>
             <div className="hero-metrics">
