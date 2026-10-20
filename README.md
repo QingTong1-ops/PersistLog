@@ -229,6 +229,14 @@ pnpm build       # 通过
 
 更多：[登录](docs/screenshots/login.png)、[移动端今日](docs/screenshots/today-mobile.png)。
 
+联调演示账户（`demo@persistlog.dev`）：
+
+| 今日 | 看板 |
+| --- | --- |
+| ![演示今日](docs/screenshots/demo-today.png) | ![演示看板](docs/screenshots/demo-dashboard.png) |
+
+[演示路线详情](docs/screenshots/demo-route.png)
+
 ---
 
 ## 7. 已知限制
