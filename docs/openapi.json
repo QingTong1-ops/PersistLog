@@ -4421,6 +4421,13 @@
             "type": "array",
             "title": "Assumptions"
           },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
           "stats": {
             "additionalProperties": {
               "type": "integer"
@@ -4549,6 +4556,13 @@
             },
             "type": "array",
             "title": "Assumptions"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
           },
           "stats": {
             "additionalProperties": {

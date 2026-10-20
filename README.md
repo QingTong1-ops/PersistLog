@@ -7,7 +7,11 @@ Phase 1 后端：计划导入、路线与任务、每日执行、执行看板、
 - `docs/01-产品与功能.md`
 - `docs/02-技术设计.md`
 - `docs/03-后端开发计划.md`
+- `docs/04-当前进度总结.md`
+- `docs/05-前端对接说明.md`
+- `docs/06-后续开发计划.md`
 - `docs/schema.sql`
+- `docs/openapi.json`
 
 ## 本地启动
 
@@ -22,13 +26,54 @@ Copy-Item .env.example .env
 
 接口文档：<http://127.0.0.1:8000/docs>
 
+## 本地 Redis / Celery
+
+本机使用便携版 Redis 5.0.14.1，安装在 `.redis/redis/`（已 gitignore，不提交）：
+
+```powershell
+# 启动 Redis（前台，Ctrl+C 停止）
+.\scripts\start_redis.ps1
+
+# 另开终端启动 worker
+.\scripts\start_worker.ps1
+
+# 另开终端启动 beat
+.\scripts\start_beat.ps1
+```
+
+验证：`.\.redis\redis\redis-cli.exe ping` 应返回 `PONG`。
+
+已创建 Windows 计划任务 **`persistLog-Redis`**：当前用户登录 Windows 后自动启动 Redis（无需管理员权限）。在新机器/新仓库上重建任务：
+
+```powershell
+.\scripts\install_redis_autostart.ps1
+```
+
+日常管理：
+
+```powershell
+# 查看状态
+Get-ScheduledTask -TaskName persistLog-Redis
+Get-ScheduledTaskInfo -TaskName persistLog-Redis
+
+# 手动触发
+Start-ScheduledTask -TaskName persistLog-Redis
+
+# 删除自启
+Unregister-ScheduledTask -TaskName persistLog-Redis -Confirm:$false
+```
+
+> 这是“用户登录时自启”，不是登录前的系统服务；注销当前用户后 Redis 可能随之停止。若要开机即启动（登录前/跨会话持续运行），需要管理员权限安装 Windows 服务；当前账户非管理员，未做系统级安装。
+
+Redis 仅用于本地开发：只绑定 `127.0.0.1`、无密码，不要暴露到公网或写入生产配置。
+
 ## 测试
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；AI 使用 Stub，通知使用 Logging Provider，不访问外网。当前为 **99 passed**。
+测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；测试强制 AI 使用 Stub、通知使用 Logging Provider，不访问外网。当前为 **106 passed**。
 
 ## 数据库
 
@@ -68,8 +113,10 @@ $mysql = "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 
 ## 配置要点
 
-- `AI_PROVIDER=stub`：本地导入不访问外部模型。
-- `NOTIFICATION_PROVIDER=wecom`：生产使用企微；测试环境自动使用 Logging Provider。
+- `AI_PROVIDER=stub`：本地导入不访问外部模型；接真实模型时设为 `deepseek` 或 `openai_compatible`。
+- `AI_MODEL` / `AI_BASE_URL` / `AI_API_KEY`：OpenAI-compatible 配置；当前本地使用 `deepseek-flash`。
+- `AI` 失败会自动降级为规则解析，导入仍可预览/编辑，`ai_runs` 记录失败原因。
+- `NOTIFICATION_PROVIDER=wecom`：生产使用企微；`APP_ENV=test` 或 `logging` 使用 Logging Provider。
 - `ENCRYPTION_KEY`：用于加密通知 Webhook，必须使用合法 Fernet key。
 - `CORS_ORIGINS`：允许的浏览器来源，逗号分隔；带 credentials 时不能使用 `*`。
 - `REFRESH_COOKIE_SECURE`：生产默认 `true`；本地 HTTP 开发可设为 `false`。
@@ -89,4 +136,4 @@ $mysql = "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 
 ## 当前阶段
 
-Phase 1 后端 M1–M8 + W0 已完成（W0：安全认证 Cookie、CORS、异步导入 + Job 查询、OpenAPI 导出）。Phase 2/3（代码静态评审、AI 诊断等）不在本仓库当前范围内。
+Phase 1 后端 M1–M8 + W0 已完成（W0：安全认证 Cookie、CORS、异步导入 + Job 查询、OpenAPI 导出），并已完成真实 DeepSeek、企业微信 Webhook、Redis/Celery 链路验证。前端未开始；Phase 2/3（代码静态评审、AI 诊断等）不在本仓库当前范围内。

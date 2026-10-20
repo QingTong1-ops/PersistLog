@@ -25,6 +25,7 @@ class ImportPreview(BaseModel):
     status: str
     route: dict[str, Any] | None = None
     assumptions: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     stats: dict[str, int] = Field(default_factory=dict)
     issues: list[ImportIssueOut] = Field(default_factory=list)
 

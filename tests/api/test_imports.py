@@ -151,6 +151,51 @@ def test_import_falls_back_inline_without_broker(
     assert created.json()["status"] == "needs_review"
 
 
+def test_import_falls_back_when_ai_fails(
+    client: TestClient, db, monkeypatch
+) -> None:
+    from app.models.system import AiRun
+    from app.services import import_service
+    from sqlalchemy import select
+
+    class BrokenNormalizer:
+        name = "broken"
+
+        def normalize_plan(self, text, rule_draft):
+            raise RuntimeError("provider down")
+
+    monkeypatch.setattr(
+        import_service, "get_plan_normalizer", lambda provider: BrokenNormalizer()
+    )
+    body = register(client)
+    created = _upload(client, body["access_token"])
+    assert created.status_code == 201, created.text
+    assert created.json()["status"] == "needs_review"
+
+    job = client.get(
+        f"/api/v1/jobs/{created.json()['job_id']}",
+        headers=auth_header(body["access_token"]),
+    )
+    assert job.status_code == 200
+    assert job.json()["status"] == "succeeded"
+
+    preview = client.get(
+        f"/api/v1/imports/{created.json()['import_id']}/preview",
+        headers=auth_header(body["access_token"]),
+    )
+    assert preview.status_code == 200
+    assert preview.json()["warnings"]
+
+    ai_run = db.scalar(
+        select(AiRun)
+        .where(AiRun.user_id == body["user"]["id"])
+        .order_by(AiRun.created_at.desc())
+    )
+    assert ai_run is not None
+    assert ai_run.status == "failed"
+    assert ai_run.error_code == "AI_PROVIDER_ERROR"
+
+
 def test_import_cancel(client: TestClient) -> None:
     body = register(client)
     created = _upload(client, body["access_token"])

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import logging
 import time
@@ -113,7 +114,20 @@ def _process_import(
     db.commit()
 
     normalizer = get_plan_normalizer(settings.ai_provider)
-    draft = normalizer.normalize_plan(source_text, rule_draft)
+    ai_status = "succeeded"
+    ai_error_code: str | None = None
+    ai_error_detail: str | None = None
+    try:
+        draft = normalizer.normalize_plan(source_text, rule_draft)
+    except Exception as exc:  # noqa: BLE001
+        # AI is an enhancement: keep the import usable with the rule parser.
+        logger.warning("AI normalization failed, falling back to rules", exc_info=True)
+        draft = copy.deepcopy(rule_draft)
+        draft.setdefault("assumptions", []).append("AI 解析失败，已使用规则解析结果")
+        draft.setdefault("warnings", []).append("AI 解析失败，请检查计划格式和字段")
+        ai_status = "failed"
+        ai_error_code = getattr(exc, "code", "AI_PROVIDER_ERROR")
+        ai_error_detail = str(exc)[:1000]
     job.progress = Decimal("0.65")
     db.commit()
 
@@ -138,7 +152,9 @@ def _process_import(
             "characters": len(source_text),
         },
         output_json=draft["route"],
-        status="succeeded",
+        status=ai_status,
+        error_code=ai_error_code,
+        error_detail=ai_error_detail,
         latency_ms=int((time.perf_counter() - started) * 1000),
     )
     db.add(ai_run)
@@ -148,6 +164,7 @@ def _process_import(
     batch.summary_json = {
         "route": draft["route"],
         "assumptions": draft.get("assumptions", []),
+        "warnings": draft.get("warnings", []),
         "stats": stats,
     }
     batch.error_json = {"issues": issues} if has_errors else None
@@ -331,6 +348,7 @@ def get_preview(db: Session, user: User, batch_id: str) -> dict[str, Any]:
         "status": batch.status,
         "route": summary.get("route"),
         "assumptions": summary.get("assumptions", []),
+        "warnings": summary.get("warnings", []),
         "stats": summary.get("stats", {}),
         "issues": get_issues(db, batch),
     }
@@ -348,6 +366,7 @@ def get_detail(db: Session, user: User, batch_id: str) -> dict[str, Any]:
         "route_id": batch.created_route_id,
         "route": summary.get("route"),
         "assumptions": summary.get("assumptions", []),
+        "warnings": summary.get("warnings", []),
         "stats": summary.get("stats", {}),
         "issues": get_issues(db, batch),
         "created_at": batch.created_at,
@@ -371,6 +390,7 @@ def update_preview(
     batch.summary_json = {
         "route": draft["route"],
         "assumptions": draft.get("assumptions", []),
+        "warnings": (batch.summary_json or {}).get("warnings", []),
         "stats": stats,
     }
     batch.error_json = {"issues": issues} if has_errors else None

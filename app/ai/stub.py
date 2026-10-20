@@ -4,6 +4,8 @@ import copy
 from typing import Any
 
 from app.ai.base import PlanNormalizer
+from app.ai.openai_compatible import OpenAICompatiblePlanNormalizer
+from app.core.config import get_settings
 
 
 class StubPlanNormalizer:
@@ -37,4 +39,13 @@ class UnavailablePlanNormalizer:
 def get_plan_normalizer(provider: str) -> PlanNormalizer:
     if provider == "stub":
         return StubPlanNormalizer()
+    if provider in {"deepseek", "openai_compatible"}:
+        settings = get_settings()
+        if settings.ai_api_key and settings.ai_model and settings.ai_base_url:
+            return OpenAICompatiblePlanNormalizer(
+                base_url=settings.ai_base_url,
+                api_key=settings.ai_api_key,
+                model=settings.ai_model,
+                name=provider,
+            )
     return UnavailablePlanNormalizer()

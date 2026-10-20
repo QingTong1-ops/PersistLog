@@ -29,6 +29,7 @@ pip-*/
 storage/
 storage_test/
 storage_dev/
+.redis/
 .test-storage-*/
 logs/
 *.log
