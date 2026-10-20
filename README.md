@@ -34,7 +34,7 @@ pnpm dev
 
 > 开发环境请使用 `http://localhost:3000`，不要用 `127.0.0.1`，否则 Next.js 的开发资源可能被跨域策略拦截。
 > 如确实需要 127.0.0.1，`next.config.ts` 已把 `127.0.0.1` 加入 `allowedDevOrigins`。
-> 若改前端端口（例如 3001），后端 `CORS_ORIGINS` 必须加入完整 Origin；否则 `/auth/refresh` 会返回 `CSRF_ORIGIN_REJECTED`。
+> 若改前端端口，后端 `CORS_ORIGINS` 必须加入完整 Origin；本地默认已包含 3000/3001。
 
 ### 常用脚本
 
@@ -188,6 +188,7 @@ persistLogFrontend/
 | `ab210aa` | 档案、企微推送、AI 授权、数据与账号 |
 | `docs`（上一轮） | API 客户端、环境变量、架构文档、README、截图 |
 | **本次联调** | Next rewrite、AuthProvider/SessionGate、真实 today/import/routes/dashboard/settings、API mappers、联调文档与截图 |
+| **Phase 1 收尾** | 空计划回填、`/today/items` 手动加任务、预览 PATCH、阶段/周进度、验收文档与截图 |
 
 原型与设计文档的历史仍保留在前面的 `ed45972` 提交。
 
@@ -207,10 +208,13 @@ pnpm build       # 通过
 
 - 登录后 `/today` 返回 3 项 / 140 分钟 / 有效容量 144；刷新页面仍保持登录。
 - 完成「TCP 三次握手」后：今日 0% → 33%（1/3），路线 0% → 17%（1/6），后端 `/today` 与 `/dashboard/overview` 同步。
-- 导入真实 Markdown：上传 → Job 轮询 → 预览（2 阶段 / 2 周 / 3 任务 / 180 分钟）→ 确认创建路线。
+- 导入真实 Markdown：上传 → Job 轮询 → 预览（2 阶段 / 2 周 / 3 任务 / 180 分钟）→ 编辑任务 → `PATCH preview` → 前端显示编辑后的标题。
+- 今日手动添加「Phase1 回归任务」后 4 项；刷新页面仍为 4 项，证明 `POST /today/items` 已持久化。
+- 空计划回填：新用户先 `GET /today` 生成 0 项计划，再导入路线；同一 `plan_id` 下一次 `GET /today` 自动补齐 3 项 / 140 分钟。
+- 路线详情阶段/周进度直接来自后端：阶段 `1/4 · 25%`、周 `完成 1/3`。
 - 看板 7/30 天、分布、预测、路线进度均来自真实接口。
-- 路线详情 2 个阶段、6 个任务；完成后阶段进度 1/4，任务状态与今日同步。
 - 设置档案显示 180 分钟 / 80% / 有效 144；未配置企微时显示「未配置」，测试按钮禁用。
+- 后端 `pytest` 全绿。
 - 桌面 1440px 与移动端 390px 布局通过。
 
 截图：
@@ -229,25 +233,21 @@ pnpm build       # 通过
 
 ## 7. 已知限制
 
-1. 导入预览的「编辑任务」目前只改本地展示；确认仍使用后端原始 preview 结构，完整 `PATCH /imports/{id}/preview` 待接。
-2. 今日页「添加任务」在 live 模式只加入当前页面，后端暂无“补入已有每日计划”的接口。
-3. 引导步骤 3 的文件选择仍是占位，导入在 `/import` 完成。
-4. 路线详情阶段完成数只能从今日 occurrence 推断；历史阶段完成度需要后端在 RouteDetail 返回按阶段统计。
-5. 企微测试发送需要有效 Webhook；`send_time` 已存储但定时调度仍按后端默认时间。
-6. 没有自动化 E2E；当前为 lint/typecheck/build + 浏览器手工验收。
-7. 时间戳仍按 UTC 解析（后端当前不带 `Z`）。
-8. Phase 2/3 页面（practice / quiz / mistakes / capability）未开始。
+1. 引导步骤 3 的文件选择仍是占位，导入在 `/import` 完成。
+2. 企微测试发送需要有效 Webhook；`send_time` 已存储但定时调度仍按后端默认时间。
+3. 没有自动化 E2E；当前为 lint/typecheck/build + 浏览器手工验收。
+4. 时间戳仍按 UTC 解析（后端当前不带 `Z`）。
+5. Phase 2/3 页面（practice / quiz / mistakes / capability）未开始。
 
 ---
 
 ## 8. 下一步
 
-1. 补导入预览 `PATCH` 与今日计划补任务的专用接口。
-2. 增加 TanStack Query 缓存与请求去重，减少 today/routes/dashboard 的重复拉取。
-3. 用后端 RouteDetail 补阶段/周完成度，避免前端推断。
-4. 补 Playwright：登录 → 导入 → 今日完成 → 看板 → 设置；CI 跑 lint/typecheck/build/E2E。
-5. 接真实企微 Webhook 验证测试发送、失败重试、Outbox。
-6. 进入 Phase 2 前完成 7 天真实使用与 20 条任务数据。
+1. 增加 TanStack Query 缓存与请求去重，减少 today/routes/dashboard 的重复拉取。
+2. 补 Playwright：登录 → 导入 → 今日完成 → 看板 → 设置；CI 跑 lint/typecheck/build/E2E。
+3. 接真实企微 Webhook 验证测试发送、失败重试、Outbox。
+4. 补生产部署配置：同源反向代理、HTTPS Cookie、CORS 白名单与监控。
+5. 完成 7 天真实使用与 20 条任务数据后进入 Phase 2。
 
 ---
 
@@ -271,6 +271,7 @@ git branch -vv
 | 文档 | 内容 |
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | 技术架构、数据流、API 接入方式 |
+| [docs/phase1-acceptance.md](docs/phase1-acceptance.md) | Phase 1 验收、回填/预览/加任务证据与上线检查 |
 | [design/visual-design.md](design/visual-design.md) | 设计方向、token、组件、信息架构 |
 | [design/page-spec.md](design/page-spec.md) | 逐页规格、状态机、API 映射、验收点 |
 | [design/persistlog-phase1-prototype.html](design/persistlog-phase1-prototype.html) | 静态设计原型 |
@@ -281,4 +282,4 @@ git branch -vv
 ---
 
 **维护者**：恒序 persistLog  
-**最后更新**：2026-10-19
+**最后更新**：2026-10-20

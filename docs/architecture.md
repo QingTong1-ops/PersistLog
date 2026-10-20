@@ -141,7 +141,7 @@ resetDemo()
 ```text
 auth.login / register / me / logout
 profile.get / update / jobs / createJob / updateJob / consents / setConsent
-today.get / generate / action
+today.get / generate / addItem / action
 imports.create / get / preview / updatePreview / confirm / cancel / rollback / job
 routes.list / get / create / action / adjust / forecast / versions / createTask
 dashboard.overview / trends / distribution / forecast
@@ -158,9 +158,11 @@ notifications.channels / createChannel / updateChannel / deleteChannel /
 1. 登录/注册/刷新/登出、SessionGate、401 单飞刷新。
 2. 今日 `GET /today` 与全部 occurrence 动作；完成后重新拉取 today + routes。
 3. 导入 multipart 上传、Job 轮询、预览、确认、回滚。
-4. 路线列表/详情、暂停/恢复/归档、调整日期/容量。
+4. 路线列表/详情、暂停/恢复/归档、调整日期/容量；阶段/周 `progress` 直接使用后端返回值。
 5. 看板 overview / trends / distribution / forecast。
 6. 档案与主目标保存、通知渠道/偏好/Outbox 读取与测试发送。
+7. 今日手动加任务 `POST /today/items`；导入预览编辑走 `PATCH /imports/{id}/preview`。
+8. 已有空计划会在下一次 `GET /today` / `POST /today/generate` 自动补齐。
 
 仍为前端或占位的部分见 README §7。
 
@@ -238,12 +240,11 @@ pnpm build
 ## 10. 已知技术债
 
 1. Store 与页面 props 仍有少量重复派生计算，后续统一到 selector。
-2. 导入预览编辑只改本地，确认仍用后端原始 preview。
-3. 今日页手动添加任务未持久化；后端暂无补入已有每日计划的接口。
-4. 路线阶段完成度目前只能用今日 occurrence 推断。
-5. 通知测试发送依赖有效企微 Webhook；`send_time` 动态调度未开放。
-6. 没有自动化 E2E；当前是 lint/typecheck/build + 手工验收。
-7. 时间戳按 UTC 解析，后端暂未补 `Z`。
+2. 未引入 TanStack Query；today/routes/dashboard 有重复拉取，可做缓存与请求去重。
+3. 引导步骤 3 的文件选择仍是占位，导入在 `/import` 完成。
+4. 通知测试发送依赖有效企微 Webhook；`send_time` 动态调度未开放。
+5. 没有自动化 E2E；当前是 lint/typecheck/build + 手工验收。
+6. 时间戳按 UTC 解析，后端暂未补 `Z`。
 
 ---
 
