@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Check } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Button, useToast } from "@/components/ui";
@@ -19,7 +19,7 @@ const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "";
 export function LoginView() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { status, login, register } = useAuth();
+  const { login, register } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
   const [account, setAccount] = useState(demoEmail || (isDev ? "demo@persistlog.dev" : ""));
   const [password, setPassword] = useState(demoPassword || (isDev ? "Demo2026!" : ""));
@@ -29,11 +29,7 @@ export function LoginView() {
 
   const isRegister = mode === "register";
 
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/today");
-    }
-  }, [router, status]);
+
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
