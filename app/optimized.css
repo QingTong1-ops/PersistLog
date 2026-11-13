@@ -355,3 +355,18 @@ html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
 @media (max-width: 860px) {
   .app-main > .main > .view { width: 100%; max-width: none; }
 }
+/* React screens use `.view` as a page wrapper; the prototype-only display toggle must not hide them. */
+.app-shell .view { display: block; }
+.app-shell .view.active { display: block; }
+
+/* Keep navigation pinned to the viewport while the content column owns the document scroll. */
+:root { --app-sidebar-width: 216px; }
+.app-shell { grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr); }
+.sidebar { position: fixed; inset: 0 auto 0 0; width: var(--app-sidebar-width); height: 100dvh; max-height: 100dvh; overflow-y: auto; z-index: 30; }
+@media (max-width: 1200px) and (min-width: 861px) {
+  :root { --app-sidebar-width: 196px; }
+  .app-shell { grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .sidebar { position: static; width: auto; height: auto; max-height: none; }
+}
