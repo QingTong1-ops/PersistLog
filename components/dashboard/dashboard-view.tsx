@@ -467,6 +467,10 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                       : "当前吞吐可以覆盖剩余工作量，继续保持今天的节奏。"}
                   </span>
                 </div>
+                <div className="forecast-actions">
+                  <Link className="btn btn--secondary btn--sm" href="/routes">管理路线</Link>
+                  <Link className="btn btn--primary btn--sm" href="/today">查看今日任务</Link>
+                </div>
               </div>
             </section>
           </div>

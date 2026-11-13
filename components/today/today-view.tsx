@@ -287,6 +287,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
             <span>今日完成</span>
           </div>
           <div className="hero-copy">
+            <span className="hero-eyebrow">CURRENT FOCUS · 当前焦点</span>
             <h2 id="hero-title">{heroTitle}</h2>
             <p>{heroSub}</p>
             <div className="hero-metrics">

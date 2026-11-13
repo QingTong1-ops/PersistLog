@@ -339,3 +339,6 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); }
   .form-grid, .form-grid--3 { grid-template-columns: 1fr; }
   .auth-form-wrap { padding: 24px 16px 40px; }
 }
+.hero-eyebrow { display: block; margin-bottom: 8px; color: #aeb9d7; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.forecast-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+@media (max-width: 560px) { .forecast-actions { justify-content: stretch; } .forecast-actions .btn { flex: 1; } }

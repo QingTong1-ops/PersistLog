@@ -88,7 +88,7 @@ function Sidebar() {
         </div>
 
         <div className="nav-group">
-          <p className="nav-label">后续阶段</p>
+          <p className="nav-label">后续能力</p>
           <button
             className="nav-item is-locked"
             type="button"
