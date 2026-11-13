@@ -342,3 +342,16 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); }
 .hero-eyebrow { display: block; margin-bottom: 8px; color: #aeb9d7; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .forecast-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 @media (max-width: 560px) { .forecast-actions { justify-content: stretch; } .forecast-actions .btn { flex: 1; } }
+/* Desktop viewport guard: keep the app shell and centered content in the same coordinate system. */
+html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+.app-shell { width: 100%; min-width: 0; grid-template-columns: minmax(216px, 216px) minmax(0, 1fr); }
+.app-main { width: 100%; min-width: 0; overflow-x: hidden; }
+.app-main > .main { width: 100%; max-width: none; min-width: 0; margin: 0; }
+.app-main > .main > .view { width: min(100%, 1360px); max-width: 1360px; margin-right: auto; margin-left: auto; }
+@media (max-width: 1200px) and (min-width: 861px) {
+  .app-shell { grid-template-columns: minmax(196px, 196px) minmax(0, 1fr); }
+  .app-main > .main > .view { width: 100%; max-width: none; }
+}
+@media (max-width: 860px) {
+  .app-main > .main > .view { width: 100%; max-width: none; }
+}
