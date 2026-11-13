@@ -67,7 +67,7 @@ app/layout.tsx（RootLayout）
 | `lib/store/` | 跨页面 today/routes/profile/授权状态 | 服务端持久化 |
 | `lib/api/` | fetch、Bearer、401 刷新、端点、映射 | UI 逻辑 |
 | `lib/mock-data.ts` | 未登录时的设计演示数据 | 生产数据 |
-| `app/globals.css` / `app/uwp.css` | 业务布局与迁移期间的旧版 UWP 覆盖 | 组件内联样式 |
+| `app/globals.css` / `app/uwp.css` / `app/optimized.css` | 业务布局、旧版 UWP 兼容层、optimized 正式视觉覆盖 | 组件内联样式 |
 | `design/optimized/` | 正式视觉基线、浅色 / 深色 token、dashboard / today 参考实现 | 业务数据与 API |
 
 ---
@@ -186,7 +186,7 @@ notifications.channels / createChannel / updateChannel / deleteChannel /
 - 浅色 token、布局、卡片、侧栏、dashboard / today 结构以 `design/optimized/assets/app.css` 为准。
 - 深色主题以 `design/optimized/assets/deepmind-app.css` 与 `deepmind-dark.css` 为准。
 - 正式基线要求支持 216px 桌面侧栏、可折叠导航、12 列网格、12px 卡片圆角、浅色 / 深色主题，以及 390px 窄屏布局。
-- 当前 `components/uwp-root.tsx`、`app/uwp.css` 与 `uwp_components` 是迁移期间的旧版兼容层，未迁移页面继续使用，但不应继续扩展新的 UWP 专属样式。
+- 当前 `app/optimized.css` 已由根布局加载，先统一 Shell、Today、Dashboard、Routes、Import、Settings、Auth 的共享 token 和响应式行为；`components/uwp-root.tsx`、`app/uwp.css` 与 `uwp_components` 暂作为迁移期间的旧版兼容层保留，不再扩展新的 UWP 专属样式。
 - `design/prototype.css`、`prototype.js` 与旧版截图保留作为历史参考，不再作为新页面实现依据。
 - 图标继续使用 `lucide-react`，业务组件应将颜色、间距、圆角和主题值集中到正式 token 中。
 

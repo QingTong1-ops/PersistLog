@@ -87,7 +87,8 @@ persistLogFrontend/
 │  ├─ layout.tsx                 # 根布局、Provider
 │  ├─ page.tsx                   # 跳转 /today
 │  ├─ globals.css                # 业务布局与旧版基础类
-│  ├─ uwp.css                    # 旧版 UWP 皮肤（迁移完成后清理）
+│  ├─ uwp.css                    # 旧版 UWP 皮肤兼容层
+│  ├─ optimized.css              # optimized 正式视觉覆盖层（迁移中）
 │  ├─ error.tsx / not-found.tsx
 │  ├─ (app)/
 │  │  ├─ layout.tsx              # 侧边栏 + 顶栏 + 移动端导航
@@ -167,7 +168,7 @@ persistLogFrontend/
 
 - `design/optimized/assets/app.css` 与 `deepmind-*.css` 定义正式浅色 / 深色 token、布局、卡片与响应式规则。
 - `design/optimized/README.md` 是新的视觉基线说明，包含 dashboard / today 的浅色与深色参考。
-- 当前 `app/uwp.css`、`uwp-root.tsx` 与 `uwp_components` 仍服务于未迁移页面，迁移完成后删除或降级为兼容层。
+- 当前 `app/optimized.css` 已接入根布局，统一覆盖 Shell、Today、Dashboard、Routes、Import、Settings、Auth 的共享视觉 token；`app/uwp.css`、`uwp-root.tsx` 与 `uwp_components` 暂作为兼容层保留。
 - 新页面应优先复用 optimized token 与现有业务组件，不再新增 UWP 专属视觉规则。
 - 信息层级收紧：隐藏 eyebrow / phase badge / colored tags，标签改为正文内联文本，页面标题与说明合并为一个头部。
 - optimized 基线要求支持浅色 / 深色主题、216px 侧栏、12 列桌面网格和 390px 窄屏布局。
