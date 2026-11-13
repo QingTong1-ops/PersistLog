@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from pydantic import BaseModel
+
+from app.schemas.common import UTCDateTime
 
 
 class AuditLogOut(BaseModel):
@@ -15,4 +15,4 @@ class AuditLogOut(BaseModel):
     request_id: str | None = None
     ip: str | None = None
     user_agent: str | None = None
-    created_at: datetime
+    created_at: UTCDateTime

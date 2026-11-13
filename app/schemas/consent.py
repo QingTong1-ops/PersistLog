@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.common import UTCDateTime
 
 ConsentScope = Literal["ai_import", "privacy_policy"]
 
@@ -19,5 +20,5 @@ class ConsentOut(BaseModel):
 
     scope: str
     version: str
-    granted_at: datetime
-    revoked_at: datetime | None = None
+    granted_at: UTCDateTime
+    revoked_at: UTCDateTime | None = None

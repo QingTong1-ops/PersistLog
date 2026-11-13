@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+from app.schemas.common import UTCDateTime
 
 
 class ImportIssueOut(BaseModel):
@@ -28,7 +29,7 @@ class ImportPreview(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     stats: dict[str, int] = Field(default_factory=dict)
     issues: list[ImportIssueOut] = Field(default_factory=list)
-    updated_at: datetime
+    updated_at: UTCDateTime
 
 
 class ImportSummary(BaseModel):
@@ -37,14 +38,14 @@ class ImportSummary(BaseModel):
     format: str
     file_name: str | None = None
     route_id: str | None = None
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class ImportDetail(ImportPreview):
     format: str
     file_name: str | None = None
     route_id: str | None = None
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class PreviewUpdate(BaseModel):

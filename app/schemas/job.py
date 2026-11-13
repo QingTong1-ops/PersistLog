@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
+
+from app.schemas.common import UTCDateTime
 
 
 class JobOut(BaseModel):
@@ -13,5 +14,5 @@ class JobOut(BaseModel):
     progress: float
     result_ref: str | None = None
     error: dict[str, Any] | None = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: UTCDateTime
+    updated_at: UTCDateTime

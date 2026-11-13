@@ -22,7 +22,7 @@ from app.models.profile import UserProfile
 from app.models.route import Route, RouteStage, RouteVersion, RouteWeek, Task
 from app.models.system import AiRun, Job, StoredFile
 from app.models.user import User
-from app.services import file_service, job_target_service
+from app.services import consent_service, file_service, job_target_service
 from app.services.import_validation import validate_route_draft
 from app.services.markdown_parser import parse_markdown
 
@@ -259,6 +259,7 @@ def _broker_available() -> bool:
 def create_import(
     db: Session, user: User, upload: UploadFile
 ) -> tuple[ImportBatch, Job]:
+    consent_service.require_ai_import_consent(db, user)
     stored = file_service.save_import_upload(db, user, upload)
     batch = ImportBatch(
         user_id=user.id,

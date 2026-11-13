@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import time
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.common import UTCDateTime
 
 
 class QuietHours(BaseModel):
@@ -30,9 +32,9 @@ class ChannelOut(BaseModel):
     webhook_masked: str
     status: str
     quiet_hours: dict | None = None
-    last_test_at: datetime | None = None
+    last_test_at: UTCDateTime | None = None
     last_error: str | None = None
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class ChannelTestResponse(BaseModel):
@@ -87,7 +89,7 @@ class OutboxOut(BaseModel):
     dedup_key: str
     status: str
     retry_count: int
-    next_retry_at: datetime | None = None
-    sent_at: datetime | None = None
+    next_retry_at: UTCDateTime | None = None
+    sent_at: UTCDateTime | None = None
     last_error: str | None = None
-    created_at: datetime
+    created_at: UTCDateTime

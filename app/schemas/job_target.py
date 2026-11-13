@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.common import UTCDateTime
 
 
 class JobTargetCreate(BaseModel):
@@ -38,4 +40,4 @@ class JobTargetOut(BaseModel):
     priority: str
     is_primary: bool
     status: str
-    created_at: datetime
+    created_at: UTCDateTime

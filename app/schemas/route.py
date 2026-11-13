@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+
+from app.schemas.common import UTCDateTime
 
 
 class RouteCreate(BaseModel):
@@ -55,7 +57,7 @@ class TaskOut(BaseModel):
     source_type: str
     source_id: str | None = None
     status: str
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class RouteProgress(BaseModel):
@@ -116,7 +118,7 @@ class RouteSummary(BaseModel):
     forecast_end_date: date | None = None
     daily_capacity_minutes: int | None = None
     current_version: int
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class StageCreate(BaseModel):
@@ -202,7 +204,7 @@ class RouteVersionSummary(BaseModel):
     version_no: int
     change_type: str
     change_summary: str | None = None
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class RouteVersionDetail(RouteVersionSummary):

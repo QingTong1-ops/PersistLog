@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.schemas.common import UTCDateTime
 
 
 class OccurrenceOut(BaseModel):
@@ -20,8 +22,8 @@ class OccurrenceOut(BaseModel):
     skip_reason: str | None = None
     block_reason: str | None = None
     note: str | None = None
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
+    started_at: UTCDateTime | None = None
+    completed_at: UTCDateTime | None = None
     split_index: int
     parent_occurrence_id: str | None = None
 

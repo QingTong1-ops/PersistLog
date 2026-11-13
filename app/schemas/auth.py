@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.schemas.common import UTCDateTime
 
 
 class UserOut(BaseModel):
@@ -13,7 +13,7 @@ class UserOut(BaseModel):
     display_name: str
     timezone: str
     status: str
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class RegisterRequest(BaseModel):

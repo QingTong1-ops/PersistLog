@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 from pydantic import BaseModel, Field
+
+from app.schemas.common import UTCDateTime
 
 
 class RouteProgressOut(BaseModel):
@@ -70,7 +72,7 @@ class ForecastRoute(BaseModel):
 
 
 class DashboardForecast(BaseModel):
-    generated_at: datetime
+    generated_at: UTCDateTime
     timezone: str
     throughput_minutes: int
     remaining_minutes: int

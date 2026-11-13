@@ -3817,7 +3817,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -3927,7 +3930,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -3949,7 +3955,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -4078,13 +4087,19 @@
           "granted_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Granted At"
+            "title": "Granted At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           },
           "revoked_at": {
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -4135,7 +4150,10 @@
           "generated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Generated At"
+            "title": "Generated At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           },
           "timezone": {
             "type": "string",
@@ -4512,7 +4530,10 @@
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At"
+            "title": "Updated At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           },
           "format": {
             "type": "string",
@@ -4543,7 +4564,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -4654,7 +4678,10 @@
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At"
+            "title": "Updated At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -4704,7 +4731,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -4760,12 +4790,18 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           },
           "updated_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At"
+            "title": "Updated At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -4923,7 +4959,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -5165,7 +5204,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5177,7 +5219,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5287,7 +5332,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5299,7 +5347,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -5321,7 +5372,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -6117,7 +6171,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -6224,7 +6281,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           },
           "snapshot": {
             "additionalProperties": true,
@@ -6265,7 +6325,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -6967,7 +7030,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",
@@ -7353,7 +7419,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -7365,7 +7434,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
               },
               {
                 "type": "null"
@@ -7731,7 +7803,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
           }
         },
         "type": "object",

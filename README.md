@@ -73,7 +73,7 @@ Redis 仅用于本地开发：只绑定 `127.0.0.1`、无密码，不要暴露�
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；测试强制 AI 使用 Stub、通知使用 Logging Provider，不访问外网。当前为 **111 passed**。
+测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；测试强制 AI 使用 Stub、通知使用 Logging Provider，不访问外网。当前为 **115 passed**。
 
 ## 数据库
 
@@ -128,7 +128,8 @@ $mysql = "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 - API 前缀：`/api/v1`
 - 认证：Access Token 走 `Authorization: Bearer`；Refresh Token 只放 `HttpOnly` Cookie（`Path=/api/v1/auth`），响应体不返回 `refresh_token`
 - CORS：`CORS_ORIGINS` 白名单 + `allow_credentials`；`/auth/refresh`、`/auth/logout` 校验 `Origin`
-- 导入：`POST /imports` 返回 `import_id + job_id`，用 `GET /jobs/{id}` 轮询进度
+- 导入：首次导入前先 `PUT /consents` 记录 `ai_import`，否则 `POST /imports` 返回 `403 AI_CONSENT_REQUIRED`；成功返回 `import_id + job_id`，用 `GET /jobs/{id}` 轮询
+- 时间戳：UTC，ISO 8601 带毫秒和 `Z`；日期字段为 `YYYY-MM-DD`
 - 今日：`POST /today/items` 手动加任务；已有空计划会在下次 `GET /today` 自动补齐路线任务
 - 路线：`GET /routes` 默认排除 archived，传 `?status=all` 返回全部
 - 错误统一为 `{"error": {"code", "message", "details", "request_id"}}`

@@ -34,6 +34,7 @@ def test_register_login_refresh_logout(client: TestClient) -> None:
     body = register(client)
     assert body["token_type"] == "bearer"
     assert body["user"]["email"] == "user@example.com"
+    assert body["user"]["created_at"].endswith("Z")
     assert body["access_token"]
     assert "refresh_token" not in body
 

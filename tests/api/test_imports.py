@@ -23,12 +23,37 @@ PLAN = """# 30 天后端冲刺
 """
 
 
-def _upload(client: TestClient, token: str, content: str = PLAN, filename: str = "plan.md"):
+def grant_ai_consent(client: TestClient, token: str) -> None:
+    response = client.put(
+        "/api/v1/consents",
+        headers=auth_header(token),
+        json={"scope": "ai_import", "version": "v1", "granted": True},
+    )
+    assert response.status_code == 200, response.text
+
+
+def _upload(
+    client: TestClient,
+    token: str,
+    content: str = PLAN,
+    filename: str = "plan.md",
+    *,
+    consent: bool = True,
+):
+    if consent:
+        grant_ai_consent(client, token)
     return client.post(
         "/api/v1/imports",
         headers=auth_header(token),
         files={"file": (filename, content.encode("utf-8"), "text/markdown")},
     )
+
+
+def test_import_requires_ai_consent(client: TestClient) -> None:
+    body = register(client)
+    response = _upload(client, body["access_token"], consent=False)
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "AI_CONSENT_REQUIRED"
 
 
 def test_import_preview_edit_confirm_rollback(client: TestClient) -> None:

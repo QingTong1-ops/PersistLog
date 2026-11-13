@@ -11,6 +11,12 @@ from tests.api.test_notifications import VALID_WEBHOOK
 def test_import_and_route_audit(client: TestClient) -> None:
     body = register(client)
     token = body["access_token"]
+    consent = client.put(
+        "/api/v1/consents",
+        headers=auth_header(token),
+        json={"scope": "ai_import", "version": "v1", "granted": True},
+    )
+    assert consent.status_code == 200, consent.text
     today = date.today().isoformat()
     plan = f"""# 审计计划
 

@@ -11,6 +11,12 @@ from tests.api.test_notifications import VALID_WEBHOOK
 def test_phase1_end_to_end(client: TestClient) -> None:
     body = register(client, email="e2e@example.com")
     token = body["access_token"]
+    consent = client.put(
+        "/api/v1/consents",
+        headers=auth_header(token),
+        json={"scope": "ai_import", "version": "v1", "granted": True},
+    )
+    assert consent.status_code == 200, consent.text
     today = date.today()
     plan = f"""# E2E 冲刺计划
 
