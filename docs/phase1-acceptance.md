@@ -12,7 +12,7 @@
 
 Phase 1 前后端主链路已闭环，可以进入「真实使用 7 天」的收尾观察期。
 
-视觉基线已切换为 UWP / Windows 10：`uwp_components` + `ThemeRoot(win10, light, compact)` + `app/uwp.css`；移除了 SaaS 渐变、圆角、彩色胶囊与阴影，标签改为正文内联文本，页面头部合并 eyebrow 与说明。
+Phase 1 联调验收使用的是上一版 UWP / Windows 10 实现；验收完成后，正式视觉基线已切换为 `design/optimized/`。optimized 基线包含浅色 / 深色主题、现代卡片布局、完整 dashboard / today 参考，其他页面待按同一 token 体系迁移。
 
 | 能力 | 状态 | 说明 |
 |---|---|---|

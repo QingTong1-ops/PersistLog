@@ -13,8 +13,8 @@
 | --- | --- |
 | 框架 | Next.js 16（App Router） |
 | UI | React 19 + TypeScript 5.9 |
-| 样式 | UWP / Windows 10：`uwp_components/styles.css` + `app/uwp.css` 覆盖层 |
-| 组件 | `uwp_components`（Button / Pivot / ProgressBar / ContentDialog） |
+| 样式 | 正式基线为 `design/optimized/` 的浅色 / 深色 token；当前未迁移页面仍使用 UWP 兼容层 |
+| 组件 | 业务组件优先；`uwp_components` 仅作为迁移期间的旧版兼容层 |
 | 图标 | lucide-react |
 | 包管理 | pnpm 12 |
 | 构建 | Turbopack（Next.js 默认） |
@@ -67,7 +67,8 @@ app/layout.tsx（RootLayout）
 | `lib/store/` | 跨页面 today/routes/profile/授权状态 | 服务端持久化 |
 | `lib/api/` | fetch、Bearer、401 刷新、端点、映射 | UI 逻辑 |
 | `lib/mock-data.ts` | 未登录时的设计演示数据 | 生产数据 |
-| `app/globals.css` / `app/uwp.css` | 业务布局、UWP 皮肤、组件覆盖 | 组件内联样式 |
+| `app/globals.css` / `app/uwp.css` | 业务布局与迁移期间的旧版 UWP 覆盖 | 组件内联样式 |
+| `design/optimized/` | 正式视觉基线、浅色 / 深色 token、dashboard / today 参考实现 | 业务数据与 API |
 
 ---
 
@@ -180,13 +181,14 @@ notifications.channels / createChannel / updateChannel / deleteChannel /
 
 ## 6. 设计系统迁移
 
-- 原 `design/prototype.css` 的 SaaS 渐变、圆角、彩色胶囊和阴影由 `app/uwp.css` 覆盖。
-- `components/uwp-root.tsx` 使用 `ThemeRoot`，固定 `win10 + light + compact`。
-- `uwp_components` 提供 Button、Pivot、ProgressBar、ContentDialog；`components/ui.tsx` 做业务适配。
-- 字体统一为 Segoe UI / Microsoft YaHei UI；accent 为 `#0078d7`；surface 为白底 1px 边框、方角。
-- eyebrow、phase badge、彩色标签等层级被移除或改为正文内联文本。
-- 图标由内联 sprite 改为 lucide-react，视觉尺寸/线宽保持一致。
-- 设计 token 修改优先改 `app/uwp.css` 的 `:root`，不要在组件里散落色值。
+`design/optimized/` 已确定为新的正式视觉基线，优先级高于历史 `design/prototype.*` 与旧版 UWP 皮肤。
+
+- 浅色 token、布局、卡片、侧栏、dashboard / today 结构以 `design/optimized/assets/app.css` 为准。
+- 深色主题以 `design/optimized/assets/deepmind-app.css` 与 `deepmind-dark.css` 为准。
+- 正式基线要求支持 216px 桌面侧栏、可折叠导航、12 列网格、12px 卡片圆角、浅色 / 深色主题，以及 390px 窄屏布局。
+- 当前 `components/uwp-root.tsx`、`app/uwp.css` 与 `uwp_components` 是迁移期间的旧版兼容层，未迁移页面继续使用，但不应继续扩展新的 UWP 专属样式。
+- `design/prototype.css`、`prototype.js` 与旧版截图保留作为历史参考，不再作为新页面实现依据。
+- 图标继续使用 `lucide-react`，业务组件应将颜色、间距、圆角和主题值集中到正式 token 中。
 
 ---
 

@@ -1,9 +1,9 @@
 # 恒序 persistLog · Frontend
 
-**当前状态**：Phase 1 页面已完成，并完成前后端联调；界面已切换为 UWP / Windows 10 风格  
-**技术栈**：Next.js 16（App Router）+ React 19 + TypeScript + `uwp_components` + 自定义 UWP 皮肤  
+**当前状态**：Phase 1 页面已完成并完成前后端联调；`design/optimized/` 已确定为新的正式视觉基线，工程页面正在迁移
+**技术栈**：Next.js 16（App Router）+ React 19 + TypeScript；当前工程仍通过 `uwp_components` 承载旧版视觉适配
 **数据状态**：默认通过 Next.js rewrite `/api/v1/*` 调用本地 FastAPI；未登录时保留 mock 设计数据用于原型预览  
-**日期**：2026-10-20  
+**日期**：2026-11-13
 **远程仓库**：<https://github.com/QingTong1-ops/PersistLog.git>  
 **分支**：`frontend-master`
 
@@ -84,10 +84,10 @@ pnpm dev
 ```text
 persistLogFrontend/
 ├─ app/
-│  ├─ layout.tsx                 # 根布局、UWP ThemeRoot、Provider
+│  ├─ layout.tsx                 # 根布局、Provider
 │  ├─ page.tsx                   # 跳转 /today
 │  ├─ globals.css                # 业务布局与旧版基础类
-│  ├─ uwp.css                    # UWP / Windows 10 皮肤与覆盖
+│  ├─ uwp.css                    # 旧版 UWP 皮肤（迁移完成后清理）
 │  ├─ error.tsx / not-found.tsx
 │  ├─ (app)/
 │  │  ├─ layout.tsx              # 侧边栏 + 顶栏 + 移动端导航
@@ -100,10 +100,10 @@ persistLogFrontend/
 │     ├─ login/
 │     └─ onboarding/
 ├─ components/
-│  ├─ uwp-root.tsx               # ThemeRoot：win10 / light / compact
+│  ├─ uwp-root.tsx               # 旧版 ThemeRoot 适配（迁移中）
 │  ├─ app-shell.tsx              # 桌面侧边栏、顶栏、移动端导航、页面地图
 │  ├─ brand-mark.tsx
-│  ├─ ui.tsx                     # UWP Button/Pivot/ProgressBar/ContentDialog 包装
+│  ├─ ui.tsx                     # 通用 Button/Pivot/ProgressBar/Modal 包装
 │  ├─ today/                     # 今日视图、任务行、任务抽屉、状态弹窗
 │  ├─ import/                    # 导入状态机
 │  ├─ routes/                    # 路线列表、路线详情
@@ -121,8 +121,8 @@ persistLogFrontend/
 │  └─ utils.ts                   # 状态标签、任务统计、路线进度
 ├─ docs/
 │  ├─ architecture.md            # 技术架构与接入说明
-│  └─ screenshots/               # 实现截图
-├─ design/                       # 原型、视觉规范、页面规格、设计预览
+│  └─ screenshots/               # 工程实现截图
+├─ design/                       # 正式视觉基线、历史原型、页面规格与设计预览
 └─ .env.example
 ```
 
@@ -163,14 +163,14 @@ persistLogFrontend/
 
 ### 4.4 样式
 
-界面已从 SaaS 卡片风格切换为 UWP / Windows 10：
+当前视觉基线已切换为 `design/optimized/`；现有工程正在从 UWP 皮肤迁移：
 
-- `uwp_components/styles.css` 提供 Segoe UI、flat surface、accent、focus 与控件样式。
-- `components/uwp-root.tsx` 用 `ThemeRoot` 设置 `win10 + light + compact`。
-- `app/uwp.css` 移除旧版渐变、圆角、彩色胶囊和阴影，统一为方角、1px 边框、蓝色 `#0078d7` accent。
-- `components/ui.tsx` 的 Button / Segmented / ProgressBar / Modal / ConfirmDialog 使用 UWP 组件。
+- `design/optimized/assets/app.css` 与 `deepmind-*.css` 定义正式浅色 / 深色 token、布局、卡片与响应式规则。
+- `design/optimized/README.md` 是新的视觉基线说明，包含 dashboard / today 的浅色与深色参考。
+- 当前 `app/uwp.css`、`uwp-root.tsx` 与 `uwp_components` 仍服务于未迁移页面，迁移完成后删除或降级为兼容层。
+- 新页面应优先复用 optimized token 与现有业务组件，不再新增 UWP 专属视觉规则。
 - 信息层级收紧：隐藏 eyebrow / phase badge / colored tags，标签改为正文内联文本，页面标题与说明合并为一个头部。
-- 桌面侧边栏改为浅灰 UWP NavigationView 风格，移动端保留底部导航。
+- optimized 基线要求支持浅色 / 深色主题、216px 侧栏、12 列桌面网格和 390px 窄屏布局。
 
 ---
 
@@ -191,7 +191,7 @@ persistLogFrontend/
 | `docs`（上一轮） | API 客户端、环境变量、架构文档、README、截图 |
 | **本次联调** | Next rewrite、AuthProvider/SessionGate、真实 today/import/routes/dashboard/settings、API mappers、联调文档与截图 |
 | **Phase 1 收尾** | 空计划回填、`/today/items` 手动加任务、预览 PATCH、阶段/周进度、验收文档与截图 |
-| **UWP 视觉重构** | `uwp_components`、ThemeRoot、UWP Button/Pivot/ProgressBar/ContentDialog、`app/uwp.css`、所有页面方角扁平化 |
+| **旧版 UWP 视觉重构** | `uwp_components`、ThemeRoot、`app/uwp.css`；作为迁移前实现保留 |
 
 原型与设计文档的历史仍保留在前面的 `ed45972` 提交。
 
@@ -220,7 +220,7 @@ pnpm build       # 通过
 - 后端 `pytest` 全绿。
 - 桌面 1440px 与移动端 390px 布局通过。
 
-截图：
+截图（以下为 Phase 1 联调时的旧版 UWP 验收截图；optimized 基线迁移完成后将更新）：
 
 | 今日 | 执行看板 |
 | --- | --- |
@@ -234,15 +234,15 @@ pnpm build       # 通过
 
 联调演示账户（`demo@persistlog.dev`）：
 
-| 今日 | 看板 |
-| --- | --- |
-| ![演示今日](docs/screenshots/demo-today.png) | ![演示看板](docs/screenshots/demo-dashboard.png) |
+今日与看板演示截图和正式截图内容重复，已删除重复文件。
 
 [演示路线详情](docs/screenshots/demo-route.png)
 
 ---
 
 ## 7. 已知限制
+
+0. `design/optimized/` 已确定为正式视觉基线；全部页面原型已补齐，工程页面仍在迁移中。
 
 1. 引导步骤 3 的文件选择仍是占位，导入在 `/import` 完成。
 2. 企微测试发送需要有效 Webhook；`send_time` 已存储但定时调度仍按后端默认时间。
@@ -283,7 +283,10 @@ git branch -vv
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | 技术架构、数据流、API 接入方式 |
 | [docs/phase1-acceptance.md](docs/phase1-acceptance.md) | Phase 1 验收、回填/预览/加任务证据与上线检查 |
-| [design/visual-design.md](design/visual-design.md) | 设计方向、token、组件、信息架构 |
+| [design/optimized/README.md](design/optimized/README.md) | **正式视觉基线**：optimized 浅色 / 深色 dashboard 与 today |
+| [design/optimized/index.html](design/optimized/index.html) | 全页面原型入口：今日、看板、路线、导入、设置、登录、引导 |
+| [design/visual-proposal.html](design/visual-proposal.html) | 产品导向的视觉提案 demo，可直接用浏览器打开 |
+| [design/visual-design.md](design/visual-design.md) | 历史设计方向、token、组件、信息架构 |
 | [design/page-spec.md](design/page-spec.md) | 逐页规格、状态机、API 映射、验收点 |
 | [design/persistlog-phase1-prototype.html](design/persistlog-phase1-prototype.html) | 静态设计原型 |
 | [docs/01-产品与功能.md](https://github.com/QingTong1-ops/PersistLog/blob/backend-main/docs/01-产品与功能.md) | 产品范围、功能规格、验收 |
@@ -293,4 +296,4 @@ git branch -vv
 ---
 
 **维护者**：恒序 persistLog  
-**最后更新**：2026-10-20
+**最后更新**：2026-11-13
