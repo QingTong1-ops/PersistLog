@@ -370,3 +370,14 @@ html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
 @media (max-width: 860px) {
   .sidebar { position: static; width: auto; height: auto; max-height: none; }
 }
+/* The React ThemeRoot also carries the `app` class. The prototype suite's `.app` grid
+   must not wrap and squeeze AppShell/auth pages inside a 216px grid cell. */
+.uwp-theme-root.app {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+}
+.uwp-theme-root.app > * {
+  min-width: 0;
+}
