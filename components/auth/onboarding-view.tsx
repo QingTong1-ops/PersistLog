@@ -236,7 +236,7 @@ export function OnboardingView() {
             <div className="onboarding-step">
               <span className="onboarding-step__eyebrow">Step 02 · 目标</span>
               <h1>给这段准备一个明确的目标岗位。</h1>
-              <p>目标只用于给路线定方向和判断风险，不会替你投递，也不做账号数据交换。</p>
+              <p>用于确定路线方向，并估算预计完成日期。</p>
               <div className="form-grid">
                 <div className="field">
                   <label htmlFor="onb-job">目标岗位</label>
@@ -283,7 +283,7 @@ export function OnboardingView() {
               </label>
               <div className="onboarding-step__note">
                 <Info className="icon" aria-hidden="true" />
-                <span>Phase 1 不生成 AI 路线。你可以导入已有计划，或先创建一条空路线手动添加任务。</span>
+                <span>可以导入已有 Markdown 计划，或创建空路线后手动添加任务。</span>
               </div>
             </div>
           ) : null}
@@ -320,11 +320,7 @@ export function OnboardingView() {
                   checked={consent}
                   onChange={(event) => setConsent(event.target.checked)}
                 />
-                <span>
-                  我同意将计划文本发送给第三方 AI 进行结构化解析（scope{" "}
-                  <code style={{ fontFamily: "var(--mono)", fontSize: 9 }}>ai_import</code>，version
-                  v1）。可在设置中随时撤销。
-                </span>
+                <span>我同意使用 AI 解析计划文本，可在设置中撤销授权。</span>
               </label>
 
               <div className="onboarding-step__note">
@@ -359,7 +355,7 @@ export function OnboardingView() {
                 <div className="toggle-row">
                   <div>
                     <strong>早报 · 07:30</strong>
-                    <p>今日计划和重点任务，附 today_link。</p>
+                    <p>今日计划和重点任务，附网页入口。</p>
                   </div>
                   <Toggle checked={morning} onChange={setMorning} label="开启早报" />
                 </div>
@@ -408,45 +404,35 @@ export function OnboardingView() {
         </section>
 
         <aside className="onboarding-aside">
-          <section className="card aside-card">
-            <h3>为什么先问时间？</h3>
-            <p>
-              大多数计划失败不是因为不努力，而是第一天就排了 6 小时。恒序用容量约束把“想做”变成“今天做得到”。
-            </p>
-            <div className="aside-formula">
-              有效容量 = 每日可用 × 容量系数
-              <br />
-              {dailyMinutes} × {factor}% = {effective} 分钟/天
-            </div>
-          </section>
-          <section className="card aside-card">
-            <h3>完成后你会得到</h3>
-            <ul className="aside-list">
-              <li>
-                <Check className="icon" aria-hidden="true" />
-                <span>一份可执行的路线，带阶段、周和任务</span>
-              </li>
-              <li>
-                <Check className="icon" aria-hidden="true" />
-                <span>每天自动生成的 3–6 项今日任务</span>
-              </li>
-              <li>
-                <Check className="icon" aria-hidden="true" />
-                <span>执行看板：完成率、顺延率、预计完成日</span>
-              </li>
-              <li>
-                <Check className="icon" aria-hidden="true" />
-                <span>企微早报/晚报，不用打开系统也知道做什么</span>
-              </li>
-            </ul>
-          </section>
-          <section
-            className="card aside-card"
-            style={{ background: "linear-gradient(135deg,#fbfbff,#f6f6ff)" }}
-          >
-            <h3>随时可以改</h3>
-            <p>时区、日界线、每日时间、容量系数和推送都能在设置里调整。调整不会改写已产生的执行记录。</p>
-          </section>
+          {step === 1 ? (
+            <section className="card aside-card">
+              <h3>为计划留出余量</h3>
+              <p>按可投入时间安排任务，并给临时事项保留缓冲。</p>
+              <div className="aside-formula">
+                每日计划容量
+                <br />
+                {dailyMinutes} × {factor}% = {effective} 分钟
+              </div>
+            </section>
+          ) : null}
+          {step === 2 ? (
+            <section className="card aside-card">
+              <h3>目标决定路线方向</h3>
+              <p>岗位、城市与目标日期用于组织路线和评估进度风险。</p>
+            </section>
+          ) : null}
+          {step === 3 ? (
+            <section className="card aside-card">
+              <h3>确认后再创建路线</h3>
+              <p>计划解析前会单独请求授权，解析结果确认后才进入路线。</p>
+            </section>
+          ) : null}
+          {step === 4 ? (
+            <section className="card aside-card">
+              <h3>推送是可选的</h3>
+              <p>未配置企业微信也能使用今日任务与执行看板。</p>
+            </section>
+          ) : null}
         </aside>
       </div>
     </div>
