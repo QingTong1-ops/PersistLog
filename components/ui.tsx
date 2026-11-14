@@ -147,15 +147,15 @@ export function ProgressRing({
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - percent / 100);
   return (
-    <div className={cn("ring", className)} style={{ width: size, height: size }} role="img" aria-label={`${label} ${percent}%`}>
+    <div className={cn("progress-dial", className)} style={{ width: size, height: size }} role="img" aria-label={`${label} ${percent}%`}>
       <svg viewBox="0 0 108 108" aria-hidden="true">
-        <circle cx="54" cy="54" r={radius} fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="7" />
+        <circle cx="54" cy="54" r={radius} fill="none" stroke="var(--ring-track, rgba(255,255,255,.14))" strokeWidth="7" />
         <circle
           cx="54"
           cy="54"
           r={radius}
           fill="none"
-          stroke="#79d9cb"
+          stroke="var(--ring-color, #79d9cb)"
           strokeWidth="7"
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -163,7 +163,7 @@ export function ProgressRing({
           style={{ transition: "stroke-dashoffset .45s ease" }}
         />
       </svg>
-      <div className="ring__center">
+      <div className="progress-dial__center">
         <strong>{percent}%</strong>
         <span>{label}</span>
       </div>

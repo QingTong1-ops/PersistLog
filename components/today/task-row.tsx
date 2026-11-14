@@ -74,16 +74,6 @@ export function TaskRow({
           <span>{task.stage}</span>
           <span className="dot-sep" aria-hidden="true" />
           <span>来源：{task.source}</span>
-          <button
-            className="task-why"
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpen();
-            }}
-          >
-            为什么今天做？
-          </button>
         </div>
       </div>
 
