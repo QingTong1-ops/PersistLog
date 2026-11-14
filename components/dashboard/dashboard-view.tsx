@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock,
   Info,
-  Lock,
   RefreshCw,
   TriangleAlert,
 } from "lucide-react";
@@ -146,13 +145,9 @@ export function DashboardView({ demoState }: { demoState?: string }) {
   return (
     <div className="view">
       <PageHeader
-        eyebrow="Execution dashboard · Phase 1"
+        eyebrow="执行记录"
         title="执行看板"
-        description={
-          loading
-            ? "正在从后端读取执行数据…"
-            : "看计划有没有落地、时间花在哪里，以及路线什么时候完成。Phase 1 只看执行，不显示能力评分。"
-        }
+        description={loading ? "正在读取执行数据…" : "查看任务完成、时间安排和路线预测。"}
         side={
           <Segmented
             options={[
@@ -203,7 +198,7 @@ export function DashboardView({ demoState }: { demoState?: string }) {
               </div>
               <div className="metric-card__value">{rate}%</div>
               <div className="metric-card__foot">
-                <span className="delta">{period === 7 ? "+6pt 较前 7 天" : "+3pt 较前 30 天"}</span>
+                <span className="delta delta--neutral">近 {period} 天</span>
                 <span>
                   {data.completed} / {data.planned} 项
                 </span>
@@ -222,8 +217,10 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                 <small>/ {data.actualMinutes} 分钟</small>
               </div>
               <div className="metric-card__foot">
-                <span className="delta delta--neutral">时间偏差 {deviation}%</span>
-                <span>实际少于计划 {data.planMinutes - data.actualMinutes} 分钟</span>
+                <span className="delta delta--neutral">实际占计划 {deviation}%</span>
+                <span>
+                  实际{data.actualMinutes <= data.planMinutes ? "少于" : "多于"}计划 {Math.abs(data.planMinutes - data.actualMinutes)} 分钟
+                </span>
               </div>
             </div>
 
@@ -236,10 +233,8 @@ export function DashboardView({ demoState }: { demoState?: string }) {
               </div>
               <div className="metric-card__value">{carryRate}%</div>
               <div className="metric-card__foot">
-                <span className="delta delta--warn">
-                  {data.carry} / {data.planned} 项
-                </span>
-                <span>目标 ≤ 20%</span>
+                <span className="delta delta--warn">顺延任务</span>
+                <span>{data.carry} / {data.planned} 项</span>
               </div>
             </div>
 
@@ -255,8 +250,8 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                 <small>天</small>
               </div>
               <div className="metric-card__foot">
-                <span className="delta">近 {period} 天活跃 {data.periodActive} 天</span>
-                <span>有完成记录即计</span>
+                <span className="delta delta--neutral">有完成记录的天数</span>
+                <span>近 {period} 天</span>
               </div>
             </div>
           </div>
@@ -328,17 +323,12 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                   计划 {data.planned} · 完成 {data.completed} · 顺延 {data.carry}
                 </span>
               </div>
-              <div className="chart-note">
-                <Info className="icon" aria-hidden="true" />
-                <span>完成率按 occurrence 统计；skip 进入分母但不计完成，abandoned 不计入分母。</span>
-              </div>
             </section>
 
             <section className="card" aria-labelledby="dist-title">
               <div className="card__head">
                 <div>
                   <h2 id="dist-title">任务分布</h2>
-                  <p>按类型与状态拆解，和今日页数据对账。</p>
                 </div>
               </div>
               <div className="dist-body">
@@ -393,7 +383,6 @@ export function DashboardView({ demoState }: { demoState?: string }) {
               <div className="card__head">
                 <div>
                   <h2 id="route-progress-title">路线进度</h2>
-                  <p>按任务去重：一个任务有任一 completed 即算完成。</p>
                 </div>
                 <Link className="card__link" href="/routes">
                   管理路线
@@ -429,7 +418,7 @@ export function DashboardView({ demoState }: { demoState?: string }) {
               <div className="card__head">
                 <div>
                   <h2 id="forecast-kpi-title">预测与风险</h2>
-                  <p>预测只基于剩余工作量和吞吐，不冒充能力评估。</p>
+                  <p>根据剩余工作量和近期完成速度估算。</p>
                 </div>
                 <span className={cn("status", forecast.lateDays > 0 ? "status--risk" : "status--active")}>
                   {forecast.lateDays > 0 ? `晚 ${forecast.lateDays} 天` : "按目标"}
@@ -449,7 +438,7 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                     <b>{forecast.remainingMinutes} 分钟</b>
                   </div>
                   <div className="forecast-panel__row">
-                    <span>近期吞吐</span>
+                    <span>近期日均完成</span>
                     <b>{forecast.throughputMinutes} 分钟/天</b>
                   </div>
                   <div className="forecast-panel__row">
@@ -463,8 +452,8 @@ export function DashboardView({ demoState }: { demoState?: string }) {
                   <TriangleAlert className="icon" aria-hidden="true" />
                   <span>
                     {forecast.lateDays > 0
-                      ? `「${forecast.routeTitle ?? "当前路线"}」剩余 ${forecast.remainingMinutes} 分钟；建议优先顺延任务，或拆分 1 项工程任务。`
-                      : "当前吞吐可以覆盖剩余工作量，继续保持今天的节奏。"}
+                      ? `「${forecast.routeTitle ?? "当前路线"}」剩余 ${forecast.remainingMinutes} 分钟；建议优先处理顺延任务，或拆分耗时较长的任务。`
+                      : "当前完成速度可以覆盖剩余工作量。"}
                   </span>
                 </div>
                 <div className="forecast-actions">
@@ -475,64 +464,17 @@ export function DashboardView({ demoState }: { demoState?: string }) {
             </section>
           </div>
 
-          <section className="card lock-card" style={{ marginTop: 18 }}>
-            <div className="card__head">
-              <div>
-                <h2>后续能力</h2>
-                <p>没有证据的能力一律显示未评估，不编造分数。</p>
-              </div>
-              <Tag variant="neutral">Phase 2 / 3</Tag>
-            </div>
-            <div className="lock-card__body">
-              <div className="lock-item">
-                <span className="lock-icon">
-                  <Lock className="icon" aria-hidden="true" />
-                </span>
-                <div>
-                  <strong>
-                    代码评分趋势 <Tag variant="brand">Phase 2</Tag>
-                  </strong>
-                  <p>提交代码后的静态评审总分、维度趋势和改进项完成率。不执行代码、不做沙箱。</p>
-                </div>
-              </div>
-              <div className="lock-item">
-                <span className="lock-icon">
-                  <Lock className="icon" aria-hidden="true" />
-                </span>
-                <div>
-                  <strong>
-                    完整能力与准备度 <Tag variant="neutral">Phase 3</Tag>
-                  </strong>
-                  <p>按证据计算掌握度、目标达成度与准备度；证据不足时显示未评估，覆盖率单独展示。</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
           <details className="metric-notes">
             <summary>
               <Info className="icon" aria-hidden="true" />
-              指标口径与数据来源
+              指标口径
             </summary>
             <div className="metric-notes__body">
-              <p>
-                <b>完成率</b> = 完成 occurrence / 计划 occurrence；abandoned 不进分母，skipped 进分母但不计完成。
-              </p>
-              <p>
-                <b>顺延率</b> = carry_over_from_id 非空的 occurrence / 计划 occurrence。
-              </p>
-              <p>
-                <b>路线进度</b> = 已完成任务数 / 路线总任务数（按 task 去重）。
-              </p>
-              <p>
-                <b>活跃天数</b> = 统计区间内有完成记录的天数，不是连续打卡。
-              </p>
-              <p>
-                <b>预测完成日期</b> = 剩余分钟 / 近 14 天吞吐，按用户容量和日界线换算。
-              </p>
-              <p>
-                <b>数据来源</b> = 今日页、路线详情和数据库同一口径；看板数字必须能对账。
-              </p>
+              <p><b>完成率</b>：已完成任务数占计划任务数的比例；跳过计入计划但不计完成，放弃不计入计划。</p>
+              <p><b>顺延率</b>：从之前日期顺延的任务数占计划任务数的比例。</p>
+              <p><b>路线进度</b>：已完成任务数占路线总任务数的比例，同一任务不重复计算。</p>
+              <p><b>活跃天数</b>：所选周期内有完成记录的天数，不是连续打卡。</p>
+              <p><b>预计完成日期</b>：根据剩余工作量和近 14 天完成速度，结合每日容量估算。</p>
             </div>
           </details>
         </>

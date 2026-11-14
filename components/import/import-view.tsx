@@ -447,9 +447,9 @@ export function ImportView({ demoState }: { demoState?: string }) {
   return (
     <div className="view">
       <PageHeader
-        eyebrow="Import · Markdown only"
+        eyebrow="导入与预览"
         title="导入一份计划"
-        description="把你已有的学习计划变成可以每天执行的路线。Phase 1 只支持 Markdown；解析、校验和确认前都可取消。"
+        description="上传 Markdown，检查并编辑解析结果，确认后创建路线。"
         side={
           <span className="goal-pill">
             <i />
@@ -514,17 +514,14 @@ export function ImportView({ demoState }: { demoState?: string }) {
               <Shield className="icon" aria-hidden="true" />
               首次导入授权
             </div>
-            <p>计划文本会发送给第三方 AI 做结构化。恒序只发送计划内容，不发送账号、简历或面试记录。</p>
+            <p>仅处理你上传的计划文本，用于生成可确认的路线和任务。</p>
             <label className="check-row">
               <input
                 type="checkbox"
                 checked={consent}
                 onChange={(event) => setConsent(event.target.checked)}
               />
-              <span>
-                我同意将计划文本用于 <code style={{ fontFamily: "var(--mono)", fontSize: 9 }}>ai_import</code>{" "}
-                v1 解析
-              </span>
+              <span>我同意使用 AI 解析计划文本，可在设置中撤销授权</span>
             </label>
           </div>
 
@@ -852,7 +849,7 @@ export function ImportView({ demoState }: { demoState?: string }) {
         subtitle="后端冲刺计划.md · 路线 v1"
         body={
           <p>
-            将删除本批次创建的路线、阶段、周和任务。如果已经产生执行记录，正式版会阻止回滚。
+            将删除本批次创建的路线、阶段、周和任务；已有执行记录会保留。
           </p>
         }
         confirmText="确认回滚"

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, type FormEvent } from "react";
 import { Info, Plus, RefreshCw, Settings, Target } from "lucide-react";
@@ -130,8 +130,7 @@ export function PostponeModal({
         <div className="impact-box">
           <Info className="icon" aria-hidden="true" />
           <span>
-            明天会创建新的 occurrence，<b>顺延次数 +1</b>；预计完成日期由 11/12 变为{" "}
-            <b>11/13</b>。连续顺延 3 次会提示拆分或放弃。
+            明天会创建新的任务记录，<b>顺延次数 +1</b>；预计完成日期将重新计算。连续顺延 3 次时，建议拆分或放弃任务。
           </span>
         </div>
         <Foot onClose={onClose} submitLabel="确认延期" />
@@ -221,7 +220,7 @@ export function BlockModal({
       open
       onClose={onClose}
       title="标记阻塞"
-      subtitle={`${task.title} · 阻塞不会自动解除，也不会被静默丢弃`}
+      subtitle={`${task.title} · 解除阻塞后可继续执行`}
     >
       <form
         className="modal__form"
@@ -245,7 +244,7 @@ export function BlockModal({
         <div className="impact-box">
           <Info className="icon" aria-hidden="true" />
           <span>
-            阻塞任务仍会进入明天的计划并保持阻塞状态；解除后恢复为待开始。连续阻塞不会自动降级。
+            阻塞任务仍会进入明天的计划并保持阻塞状态，解除后恢复为待开始。
           </span>
         </div>
         <Foot onClose={onClose} submitLabel="确认阻塞" />
@@ -358,7 +357,7 @@ export function AbandonTaskDialog({
       subtitle={task.title}
       body={
         <p>
-          放弃后任务会归档，<strong>不计入完成率分母</strong>，历史执行记录仍然保留。这个操作在正式版应支持撤销。
+          放弃后任务会归档，<strong>不计入完成率</strong>，历史执行记录仍然保留。
         </p>
       }
       confirmText="确认放弃"
@@ -441,7 +440,7 @@ export function AddTaskModal({
         </div>
         <div className="impact-box">
           <Info className="icon" aria-hidden="true" />
-          <span>添加后会立即出现在今日任务中。若超出容量，会标记为 over_capacity，但不会静默丢弃。</span>
+          <span>任务将加入今日计划；如果超出容量，会明确提示，不会丢失任务。</span>
         </div>
         <Foot onClose={onClose} submitLabel="添加任务" />
       </form>
@@ -450,23 +449,29 @@ export function AddTaskModal({
 }
 
 export function AdjustPlanModal({
+  capacity,
+  planned,
+  buffer,
   onClose,
   onAdd,
   onRegenerate,
   onOpenSettings,
 }: {
+  capacity: number;
+  planned: number;
+  buffer: number;
   onClose: () => void;
   onAdd: () => void;
   onRegenerate: () => void;
   onOpenSettings: () => void;
 }) {
   return (
-    <Modal open onClose={onClose} title="调整今日计划" subtitle="今日计划由容量和优先级自动生成，也可以手动补充">
+    <Modal open onClose={onClose} title="调整今日计划" subtitle="按容量和优先级安排任务">
       <div className="impact-box" style={{ marginBottom: 14 }}>
         <Target className="icon" aria-hidden="true" />
         <span>
-          有效容量 <b>240 分钟</b> · 已排入 <b>220 分钟</b> · 剩余缓冲 <b>20 分钟</b>。不建议再加超过
-          20 分钟的任务。
+          今日容量 <b>{capacity} 分钟</b>，已安排 <b>{planned} 分钟</b>。
+          {buffer >= 0 ? `还可安排 ${buffer} 分钟。` : `已超出 ${Math.abs(buffer)} 分钟，建议移出或拆分任务。`}
         </span>
       </div>
       <div className="stack" style={{ gap: 8 }}>

@@ -4,13 +4,11 @@ import {
   Ban,
   Check,
   Clock,
-  FileText,
   Play,
   RefreshCw,
   RotateCcw,
   SkipForward,
   Split,
-  Target,
   Trash2,
   Unlock,
   X,
@@ -70,7 +68,7 @@ export function TaskDetailSheet({
       : task.status === "blocked"
         ? `已阻塞 · ${task.blockReason || "等待解除阻塞"}`
         : task.status === "postponed"
-          ? "已延期到明天 · 新实例会继承顺延次数"
+          ? "已延期到明天 · 顺延次数已记录"
           : task.status === "skipped"
             ? `已跳过 · ${task.skipReason || "可在路线详情重新排期"}`
             : task.status === "abandoned"
@@ -219,12 +217,12 @@ export function TaskDetailSheet({
 
         <div className="sheet__section">
           <h3>产出要求</h3>
-          <p>{task.output || "尚未填写产出要求；导入时会产生 warning。"}</p>
+          <p>{task.output || "尚未填写产出要求"}</p>
         </div>
 
         <div className="sheet__section">
           <h3>验收标准</h3>
-          <p>{task.acceptance || "尚未填写验收标准；建议确认前补全。"}</p>
+          <p>{task.acceptance || "尚未填写验收标准"}</p>
         </div>
 
         {task.note ? (
@@ -247,21 +245,6 @@ export function TaskDetailSheet({
           </div>
         </div>
 
-        <div className="sheet__section">
-          <p className="muted" style={{ fontSize: 9.5 }}>
-            状态流转：pending → in_progress → completed；pending/in_progress → postponed / skipped /
-            blocked / abandoned；blocked → pending。所有高风险操作都应在正式版支持撤销或恢复。
-          </p>
-        </div>
-
-        <div className="sheet__section" style={{ display: "flex", gap: 12, color: "var(--ink-400)" }}>
-          <span style={{ display: "inline-flex", gap: 5, alignItems: "center" }}>
-            <Target className="icon icon--sm" aria-hidden="true" /> 路线任务
-          </span>
-          <span style={{ display: "inline-flex", gap: 5, alignItems: "center" }}>
-            <FileText className="icon icon--sm" aria-hidden="true" /> 有产出与验收
-          </span>
-        </div>
       </div>
     </Sheet>
   );

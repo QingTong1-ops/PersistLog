@@ -576,7 +576,7 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
         onClose={() => setArchiveOpen(false)}
         title="归档路线"
         subtitle="Java 后端实习准备 · 36 天"
-        body={<p>归档后不再生成每日任务，历史记录与看板数据保留。正式版应支持从归档恢复。</p>}
+        body={<p>归档后不再生成每日任务，历史执行记录会保留。</p>}
         confirmText="确认归档"
         onConfirm={async () => {
           setArchiveOpen(false);

@@ -15,7 +15,7 @@ export default function NotFound() {
         <span className="eyebrow">404</span>
         <h1 style={{ marginTop: 8, fontSize: 24, letterSpacing: "-0.035em" }}>找不到这个页面</h1>
         <p style={{ marginTop: 8, color: "var(--ink-600)", fontSize: 12, lineHeight: 1.8 }}>
-          链接可能已经变化，或者这个模块还没有进入 Phase 1。
+          链接可能已经变化，或者这个模块尚未开放。
         </p>
         <Link className="btn btn--primary" href="/today" style={{ marginTop: 18 }}>
           回到今日

@@ -80,13 +80,9 @@ export function RoutesView({ demoState }: { demoState?: string }) {
   return (
     <div className="view">
       <PageHeader
-        eyebrow="Plans · Phase 1"
+        eyebrow="计划管理"
         title="学习路线"
-        description={
-          loading
-            ? "正在从后端读取路线、阶段和任务…"
-            : "路线、阶段、周目标和任务保持清晰的层级关系。删除是归档，历史执行记录不会被物理删除。"
-        }
+        description={loading ? "正在读取路线、阶段和任务…" : "按阶段和周组织任务，持续跟踪路线进度。"}
         side={
           <>
             <Button variant="secondary" size="sm" onClick={() => setNewRouteOpen(true)}>

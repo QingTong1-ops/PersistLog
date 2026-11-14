@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
-  CheckCircle2,
   ChevronRight,
   LayoutGrid,
   Play,
@@ -17,6 +16,7 @@ import {
   Button,
   EmptyState,
   PageHeader,
+  ProgressRing,
 } from "@/components/ui";
 import { TaskRow } from "@/components/today/task-row";
 import { TaskDetailSheet, type TaskAction } from "@/components/today/task-detail-sheet";
@@ -139,22 +139,20 @@ export function TodayView({ demoState }: { demoState?: string }) {
         : "分钟超容量 · 建议拆分或移出任务";
 
   const heroTitle = !stats.considered.length
-    ? "今天没有安排任务。"
+    ? "今天没有安排任务"
     : allDone
-      ? "今天的计划已经完成。"
-      : nextTask?.status === "blocked"
-        ? `「${nextTask.title}」仍在阻塞，先解除阻塞再继续。`
-        : nextTask
-          ? `先把「${nextTask.title}」做掉，今天就能回到节奏里。`
-          : "今天的计划已经完成。";
+      ? "今天的计划已经完成"
+      : nextTask?.title ?? "今天的计划已经完成";
 
   const heroSub = !stats.considered.length
     ? "可以从路线添加任务，或导入一份新的 Markdown 计划。"
     : allDone
-      ? `${stats.considered.length} 项全部完成，累计活跃天数 +1。可以提前看明天，或把时间留给复盘。`
-      : `有效容量 ${effectiveCapacity} 分钟 · 已排入 ${stats.plannedTotal} 分钟 · ${
-          buffer >= 0 ? `剩余缓冲 ${buffer} 分钟` : `超出容量 ${Math.abs(buffer)} 分钟`
-        }`;
+      ? `${stats.considered.length} 项全部完成。可以查看明天的安排，或把时间留给复盘。`
+      : nextTask?.status === "blocked"
+        ? "当前任务处于阻塞状态，先解除阻塞再继续。"
+        : nextTask
+          ? `预计 ${nextTask.planned} 分钟 · ${nextTask.type} · ${nextTask.stage}`
+          : "可以提前看明天，或把时间留给复盘。";
 
   function describeError(cause: unknown) {
     const message = cause instanceof Error ? cause.message : "后端请求失败";
@@ -232,7 +230,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
         showToast(
           <>
             <strong>今天的计划已完成。</strong> 路线进度 {result.beforePercent}% →{" "}
-            {result.afterPercent}%，累计活跃天数 +1。
+            {result.afterPercent}%。
           </>
         );
       } else {
@@ -254,11 +252,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
       <PageHeader
         eyebrow={`Today · ${formatChineseDate(todayDate)}`}
         title="今天先做什么？"
-        description={
-          loading
-            ? "正在从后端读取今天的计划…"
-            : "计划已经排好。今天只需要确认、执行和记录，不用重新整理待办。"
-        }
+        description={loading ? "正在读取今天的计划…" : undefined}
         side={
           <span className="goal-pill">
             <i />
@@ -282,37 +276,16 @@ export function TodayView({ demoState }: { demoState?: string }) {
 
       <section className="focus-hero" aria-labelledby="hero-title">
         <div className="hero-left">
-          <div className="hero-progress" aria-label={`今日完成 ${stats.percent}%`}>
-            <strong>{stats.percent}%</strong>
-            <span>今日完成</span>
-          </div>
+          <ProgressRing percent={stats.percent} size={96} className="today-progress" />
           <div className="hero-copy">
-            <span className="hero-eyebrow">CURRENT FOCUS · 当前焦点</span>
+            <span className="hero-eyebrow">下一步任务</span>
             <h2 id="hero-title">{heroTitle}</h2>
             <p>{heroSub}</p>
-            <div className="hero-metrics">
-              <div className="hero-metric">
-                <strong>
-                  {stats.completed.length} / {stats.considered.length}
-                </strong>
-                <span>任务完成</span>
-              </div>
-              <div className="hero-metric">
-                <strong>{stats.carry.length}</strong>
-                <span>项自动顺延</span>
-              </div>
-              <div className="hero-metric">
-                <strong>
-                  {routeDone} / {routeTotal}
-                </strong>
-                <span>路线任务</span>
-              </div>
-            </div>
           </div>
         </div>
         <div className="hero-actions">
           <Button
-            variant="light"
+            variant="primary"
             onClick={() => {
               if (!tasks.length) {
                 showToast("<strong>今天没有任务。</strong> 可以导入一份计划，或从路线添加一项任务。", "risk");
@@ -328,7 +301,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
             <Play className="icon" aria-hidden="true" />
             开始下一项
           </Button>
-          <Button variant="on-dark" onClick={() => openModal("adjust")}>
+          <Button variant="secondary" onClick={() => openModal("adjust")}>
             调整计划
           </Button>
         </div>
@@ -497,24 +470,18 @@ export function TodayView({ demoState }: { demoState?: string }) {
             <div className="card__head">
               <div>
                 <h2 id="next-title">接下来</h2>
-                <p>今天的节奏与明天的生成时点。</p>
               </div>
             </div>
             <div className="next-card__body">
               <div className="next-item">
-                <span className="next-date">今日</span>
-                <p>当前计划 {stats.considered.length} 项，预计 {stats.plannedTotal} 分钟</p>
-                <b>{stats.pending.length ? "进行中" : "已完成"}</b>
-              </div>
-              <div className="next-item">
                 <span className="next-date">明日 04:00</span>
-                <p>日界线后自动生成新的每日计划</p>
+                <p>生成新的每日计划</p>
                 <b>自动</b>
               </div>
               <div className="next-item">
-                <span className="next-date">今晚</span>
-                <p>20:30 晚报：汇总完成与顺延</p>
-                <b>企微</b>
+                <span className="next-date">今晚 20:30</span>
+                <p>汇总今日完成与顺延</p>
+                <b>{wecomConnected ? "企微已连接" : "企微未配置"}</b>
               </div>
             </div>
           </section>
@@ -598,28 +565,23 @@ export function TodayView({ demoState }: { demoState?: string }) {
             </div>
           </section>
 
-          <section className="card" aria-labelledby="insight-title">
-            <div className="card__head">
-              <div>
-                <h2 id="insight-title">执行提示</h2>
-                <p>基于当前计划状态的规则提示，不是 AI 评分。</p>
+          {stats.carry.length ? (
+            <section className="card" aria-labelledby="insight-title">
+              <div className="card__head">
+                <div>
+                  <h2 id="insight-title">顺延提醒</h2>
+                </div>
               </div>
-            </div>
-            <div className="insight-list">
-              {stats.carry.length ? (
+              <div className="insight-list">
                 <div className="insight insight--warn">
                   <TriangleAlert className="icon" aria-hidden="true" />
                   <span>
-                    {stats.carry.length} 项任务从昨天顺延。连续顺延 3 次会提示拆分、降级或放弃，避免一项任务拖住整条路线。
+                    {stats.carry.length} 项任务从昨天顺延。连续顺延 3 次时，建议拆分、降级或放弃任务。
                   </span>
                 </div>
-              ) : null}
-              <div className="insight insight--good">
-                <CheckCircle2 className="icon" aria-hidden="true" />
-                <span>今天的完成记录会进入执行看板；今晚 20:30 晚报会汇总未完成项和新的预计完成日期。</span>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </aside>
       </div>
 
@@ -632,7 +594,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
                 {primaryRoute ? `第 ${primaryRoute.day} / ${primaryRoute.days} 天` : "尚无路线"}
               </span>
             </h2>
-            <p>按当前剩余工作量和近期吞吐估算，不使用主观能力评分。</p>
+            <p>根据剩余工作量和近期完成速度估算。</p>
           </div>
           <Link className="card__link" href={`/routes/${primaryRoute?.id ?? 1}`}>
             查看路线
@@ -702,7 +664,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
             try {
               await postponeTask(modalTask.id, reason);
               closeModal();
-              showToast("<strong>已延期到明天。</strong> 旧实例标记 postponed，次日会生成新的 pending 实例；连续顺延 3 次会提示拆分。");
+              showToast("<strong>已延期到明天。</strong> 顺延次数已更新；连续顺延 3 次时，建议拆分或移出任务。");
             } catch (cause) {
               describeError(cause);
             }
@@ -750,7 +712,7 @@ export function TodayView({ demoState }: { demoState?: string }) {
                 { title: title2, minutes: minutes2 },
               ]);
               closeModal();
-              showToast("<strong>已拆分为子任务。</strong> 当前后端按 parts 数量生成子实例，标题由后端自动编号。");
+              showToast("<strong>已拆分为两项子任务。</strong>");
             } catch (cause) {
               describeError(cause);
             }
@@ -792,6 +754,9 @@ export function TodayView({ demoState }: { demoState?: string }) {
       ) : null}
       {modal === "adjust" ? (
         <AdjustPlanModal
+          capacity={effectiveCapacity}
+          planned={stats.plannedTotal}
+          buffer={buffer}
           onClose={closeModal}
           onAdd={() => {
             closeModal();

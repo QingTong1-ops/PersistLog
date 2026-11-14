@@ -11,7 +11,6 @@ import {
   Info,
   LogOut,
   RefreshCw,
-  Server,
   Shield,
   Sparkles,
   User,
@@ -310,7 +309,7 @@ function ProfilePanel() {
         <div className="toggle-row">
           <div>
             <strong>自动顺延未完成任务</strong>
-            <p>日界线后把 pending / in_progress / blocked 实例放入下一天，并更新预测日期。</p>
+            <p>日界线后将待开始、进行中和阻塞任务放入下一天，并更新预计完成日期。</p>
           </div>
           <Toggle checked={autoCarry} onChange={setAutoCarry} label="自动顺延" />
         </div>
@@ -342,7 +341,7 @@ interface NotificationEvent {
 }
 
 const INITIAL_EVENTS: NotificationEvent[] = [
-  { id: "morning", name: "早报", description: "今日计划已生成 · 必须带 today_link", time: "07:30", enabled: true },
+  { id: "morning", name: "早报", description: "发送今日计划与今日页链接", time: "07:30", enabled: true },
   { id: "evening", name: "晚报", description: "今日有未完成任务 · 汇总完成与顺延", time: "20:30", enabled: true },
   { id: "overdue", name: "逾期", description: "有逾期任务 · 可被免打扰丢弃", time: "20:00", enabled: true },
   { id: "carry", name: "顺延", description: "日界线后发生顺延 · 附新的预测日期", time: "04:10", enabled: true },
@@ -742,86 +741,54 @@ function AIPanel() {
 
   return (
     <section className="card settings-panel">
-      <PanelHead title="AI 授权" description="AI 只把计划结构化，不替用户生成路线；Phase 1 不接入真实模型。" />
+      <PanelHead title="AI 授权" description="管理计划文本的解析授权。" />
       <div className="settings-section">
         <div className="settings-section__title">
           <h3>计划解析授权</h3>
-          <span>scope ai_import · version v1</span>
         </div>
         <div className="consent-card">
           <div className="consent-card__head">
             <strong>
               <Shield className="icon" aria-hidden="true" />
-              计划文本可用于 AI 结构化
+              允许 AI 解析计划文本
             </strong>
             <Button variant="danger" size="xs" onClick={() => setConfirmOpen(true)}>
               {consentGranted ? "撤销授权" : "重新授权"}
             </Button>
           </div>
-          <p>
-            只有在你上传 Markdown 并确认后，计划文本才会发送给第三方 AI。不会发送账号密码、简历、面试记录或通知配置。
-          </p>
+          <p>仅处理你确认上传的 Markdown，不读取账号密码、简历、面试记录或通知配置。</p>
           <div className="consent-meta">
             <span>授权状态：<b>{consentGranted ? "已授权" : "未授权"}</b></span>
             <span>授权版本：<b>v1</b></span>
-            <span>最近使用：<b>2026-10-19 09:15</b></span>
           </div>
         </div>
         <div className="insight" style={{ marginTop: 12 }}>
           <Info className="icon" aria-hidden="true" />
-          <span>撤销后不能导入新的 Markdown；已有路线、任务和今日页不受影响，也可以继续手动创建任务。</span>
+          <span>撤销后不能导入新计划，已有路线和任务不受影响。</span>
         </div>
       </div>
 
-      <div className="settings-section">
-        <div className="settings-section__title">
-          <h3>当前 AI Provider</h3>
-          <Tag variant="neutral">Stub</Tag>
+      <details className="settings-section settings-technical">
+        <summary>
+          <Info className="icon" aria-hidden="true" />
+          解析服务与数据边界
+        </summary>
+        <div className="settings-technical__body">
+          <p>当前使用本地解析服务，未接入外部模型。</p>
+          <p>解析结果经过校验并由你确认后，才会创建路线。</p>
         </div>
-        <div className="channel-card" style={{ borderColor: "var(--line)", background: "#fbfcff" }}>
-          <span className="channel-icon" style={{ color: "var(--ink-600)" }}>
-            <Server className="icon" aria-hidden="true" />
-          </span>
-          <div className="channel-copy">
-            <div className="channel-copy__title">
-              <strong>本地 Stub Provider</strong>
-              <Tag variant="neutral">未配置真实模型</Tag>
-            </div>
-            <p>当前用于开发与验收，不访问外网。正式接入前，非 stub Provider 会明确返回未配置错误，不会静默降级。</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-section__title">
-          <h3>数据处理边界</h3>
-        </div>
-        <ul className="aside-list">
-          <li>
-            <Check className="icon" aria-hidden="true" />
-            <span>只发送当前上传的计划文本，不发送历史路线或执行记录。</span>
-          </li>
-          <li>
-            <Check className="icon" aria-hidden="true" />
-            <span>AI 输出必须经过规则校验和用户确认，才能创建路线。</span>
-          </li>
-          <li>
-            <Check className="icon" aria-hidden="true" />
-            <span>AI 不执行代码、不做沙箱判题、不生成能力分数。</span>
-          </li>
-        </ul>
-      </div>
+      </details>
 
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         title={consentGranted ? "撤销 AI 解析授权" : "重新授权 AI 解析"}
-        subtitle="scope ai_import · version v1"
+        subtitle="仅用于 Markdown 计划解析"
         body={
           <p>
             {consentGranted
               ? "撤销后不能导入新的 Markdown，已有路线、任务和今日页不受影响。你可以继续手动创建任务。"
-              : "重新授权后，上传 Markdown 时计划文本可以发送给第三方 AI 做结构化解析。"}
+              : "授权后，可使用 AI 结构化解析你上传的 Markdown 计划。"}
           </p>
         }
         confirmText={consentGranted ? "确认撤销" : "确认授权"}
@@ -848,7 +815,7 @@ function DataPanel() {
 
   return (
     <section className="card settings-panel">
-      <PanelHead title="数据与账号" description="数据属于用户。导出、删除账号和审计能力按阶段开放。" />
+      <PanelHead title="数据与账号" description="管理账号与当前登录状态。" />
       <div className="settings-section">
         <div className="settings-section__title">
           <h3>账号</h3>
@@ -882,7 +849,7 @@ function DataPanel() {
               const ok = await refresh();
               showToast(
                 ok
-                  ? "<strong>会话已刷新。</strong> Access Token 保存在内存，Refresh Token 在 HttpOnly Cookie。"
+                  ? "<strong>登录状态已刷新。</strong>"
                   : "<strong>会话已失效。</strong> 请重新登录。",
                 ok ? "success" : "risk"
               );
@@ -897,13 +864,13 @@ function DataPanel() {
       <div className="settings-section">
         <div className="settings-section__title">
           <h3>数据管理</h3>
-          <span>Phase 1 后续开放</span>
+          <span>暂未开放</span>
         </div>
         <div className="danger-zone">
           <div className="danger-row">
             <div>
               <strong>
-                导出全部数据 <Tag variant="neutral">后续</Tag>
+                导出全部数据 <Tag variant="neutral">暂未开放</Tag>
               </strong>
               <p>导出路线、任务、每日计划、执行记录和通知配置为 JSON。</p>
             </div>
@@ -914,7 +881,7 @@ function DataPanel() {
           <div className="danger-row">
             <div>
               <strong>
-                删除账号 <Tag variant="neutral">后续</Tag>
+                删除账号 <Tag variant="neutral">暂未开放</Tag>
               </strong>
               <p>删除前需要二次确认和邮件验证；当前版本不提供。</p>
             </div>
@@ -935,13 +902,11 @@ function DataPanel() {
               <strong>审计日志</strong>
               <span>导入确认、路线调整、通知渠道变更</span>
             </div>
-            <Tag variant="neutral">Phase 1 内部</Tag>
+            <Tag variant="neutral">暂未开放</Tag>
             <Button
               variant="ghost"
               size="xs"
-              onClick={() =>
-                showToast("<strong>审计日志接口已存在。</strong> Phase 1 不做管理后台，仅通过运维工具查看。")
-              }
+              onClick={() => showToast("<strong>当前版本暂不支持查看审计日志。</strong>")}
             >
               查看
             </Button>
@@ -949,7 +914,7 @@ function DataPanel() {
           <div className="outbox-row">
             <div>
               <strong>登录设备</strong>
-              <span>当前设备 · Windows · Chrome</span>
+              <span>当前浏览器会话</span>
             </div>
             <span className="status status--active">当前</span>
             <span />

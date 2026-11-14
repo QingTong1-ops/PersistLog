@@ -92,7 +92,7 @@ function Sidebar() {
           <button
             className="nav-item is-locked"
             type="button"
-            onClick={() => showToast("<strong>代码练习将在 Phase 2 开放。</strong> 当前先把计划执行跑起来。")}
+            onClick={() => showToast("<strong>代码练习尚未开放。</strong>")}
           >
             <Code2 className="icon" aria-hidden="true" />
             <span>代码练习</span>
@@ -101,7 +101,7 @@ function Sidebar() {
           <button
             className="nav-item is-locked"
             type="button"
-            onClick={() => showToast("<strong>错题复习将在 Phase 3 开放。</strong> Phase 1 先做执行闭环。")}
+            onClick={() => showToast("<strong>错题复习尚未开放。</strong>")}
           >
             <BookOpen className="icon" aria-hidden="true" />
             <span>错题复习</span>
@@ -308,7 +308,7 @@ function Topbar() {
           </div>
         </div>
         <div className="topbar-actions">
-          <span className="proto-badge">Phase 1 · 执行层</span>
+          <span className="proto-badge">每日执行</span>
           <span className="date-chip">
             <Calendar className="icon" aria-hidden="true" />
             {formatChineseDate(todayDate)}
