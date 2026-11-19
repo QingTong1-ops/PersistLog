@@ -143,7 +143,7 @@ function Sidebar() {
 
 function DevNav({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const { completeAll, clearToday, resetDemo, live } = useAppStore();
+
 
   if (!open) return null;
 
@@ -200,9 +200,6 @@ function DevNav({ open, onClose }: { open: boolean; onClose: () => void }) {
             <button className="dev-nav__link" type="button" onClick={() => go("/import")}>
               <Upload className="icon" aria-hidden="true" /> 导入上传
             </button>
-            <button className="dev-nav__link" type="button" onClick={() => go("/import?state=preview")}>
-              <Upload className="icon" aria-hidden="true" /> 导入预览与问题
-            </button>
           </div>
         </div>
 
@@ -224,58 +221,6 @@ function DevNav({ open, onClose }: { open: boolean; onClose: () => void }) {
           </div>
         </div>
 
-        <div className="dev-nav__section">
-          <h3>状态演示</h3>
-          <div className="dev-nav__grid">
-            {live ? (
-              <p className="muted" style={{ fontSize: 11, lineHeight: 1.7 }}>
-                当前是真实后端数据，演示动作已禁用；`?state=` 只在未登录的 mock 模式生效。
-              </p>
-            ) : (
-              <>
-                <button
-              className="dev-nav__link"
-              type="button"
-              onClick={() => {
-                completeAll();
-                go("/today");
-              }}
-            >
-              <LayoutGrid className="icon" aria-hidden="true" /> 今日全部完成
-            </button>
-            <button
-              className="dev-nav__link"
-              type="button"
-              onClick={() => {
-                clearToday();
-                go("/today");
-              }}
-            >
-              <LayoutGrid className="icon" aria-hidden="true" /> 今日无任务
-            </button>
-            <button className="dev-nav__link" type="button" onClick={() => go("/import?state=error")}>
-              <Flag className="icon" aria-hidden="true" /> 导入解析失败
-            </button>
-            <button className="dev-nav__link" type="button" onClick={() => go("/routes?state=empty")}>
-              <RouteIcon className="icon" aria-hidden="true" /> 路线空状态
-            </button>
-            <button className="dev-nav__link" type="button" onClick={() => go("/dashboard?state=empty")}>
-              <BarChart3 className="icon" aria-hidden="true" /> 看板空状态
-            </button>
-            <button
-              className="dev-nav__link"
-              type="button"
-              onClick={() => {
-                resetDemo();
-                go("/today");
-              }}
-            >
-              <Target className="icon" aria-hidden="true" /> 重置演示数据
-            </button>
-              </>
-            )}
-          </div>
-        </div>
       </section>
     </div>
   );

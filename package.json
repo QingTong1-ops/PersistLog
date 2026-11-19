@@ -3,11 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node scripts/run-mode.mjs dev live",
+    "dev:mock": "node scripts/run-mode.mjs dev mock",
+    "dev:live": "node scripts/run-mode.mjs dev live",
+    "build": "node scripts/run-mode.mjs build live",
+    "build:mock": "node scripts/run-mode.mjs build mock",
+    "build:live": "node scripts/run-mode.mjs build live",
+    "start": "node scripts/run-mode.mjs start live",
+    "start:mock": "node scripts/run-mode.mjs start mock",
+    "start:live": "node scripts/run-mode.mjs start live",
+    "test:modes": "node --test tests/modes/*.test.cjs",
+    "test:modes:smoke": "node tests/modes/http-smoke.mjs",
+    "test:modes:dev": "node tests/modes/dev-smoke.mjs",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:mock": "tsc --noEmit -p tsconfig.mock.json",
+    "typecheck:live": "tsc --noEmit -p tsconfig.live.json"
   },
   "dependencies": {
     "lucide-react": "1.59.0",

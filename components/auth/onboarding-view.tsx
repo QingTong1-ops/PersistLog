@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth/auth-provider";
 import { useAppStore } from "@/lib/store/app-store";
 import { live } from "@/lib/api/live";
 import { cn } from "@/lib/utils";
+import { IS_MOCK } from "@/lib/config/data-source";
 
 const STEPS = [
   { id: 1, label: "档案与容量" },
@@ -103,7 +104,7 @@ export function OnboardingView() {
       }
 
       await refreshLive();
-      showToast("<strong>引导完成。</strong> 档案、目标与授权已保存，今日页已接入真实计划。");
+      showToast(IS_MOCK ? "<strong>演示引导完成。</strong> 档案、目标和授权仅保存在演示数据中。" : "<strong>引导完成。</strong> 档案、目标与授权已保存。");
       router.push("/today");
     } catch (cause) {
       showToast(

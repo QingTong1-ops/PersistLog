@@ -4,9 +4,9 @@
 
 **技术栈**：Next.js 16（App Router）+ React 19 + TypeScript；当前工程仍通过 `uwp_components` 承载旧版视觉适配
 
-**数据状态**：默认通过 Next.js rewrite `/api/v1/*` 调用本地 FastAPI；未登录时保留 mock 设计数据用于原型预览
+**数据状态**：由启动/构建命令选择全项目 Mock 或 Live。默认 Live；Mock 包含 P1 演示登录与数据，不依赖后端；Live 失败不会回退为示例。
 
-**日期**：2026-11-15
+**日期**：2026-11-19
 
 **远程仓库**：<https://github.com/QingTong1-ops/PersistLog.git>
 
@@ -19,7 +19,19 @@
 
 ## 1. 快速开始
 
-要求：Node.js ≥ 22，pnpm ≥ 12；本地后端 FastAPI 已启动。
+要求：Node.js ≥ 22，项目依赖已安装。使用 pnpm；也可使用 `npm run <脚本名>`，不要因此重新生成另一份依赖锁文件。
+
+### 无后端预览（全项目 Mock）
+
+```powershell
+pnpm dev:mock
+```
+
+进入 `/login`，已预填虚拟账号 `demo@persistlog.test` / `PreviewOnly!`；点击登录后查看 P1 页面。演示登录不验证真实账号，注册仅重置演示账户，不创建真实用户。**请勿输入真实密码、Webhook、私人计划等信息。**
+
+页面持续显示“Mock · 演示模式”，可通过“重置演示”清空本标签页模拟数据并返回登录。任务、档案等写操作只保存在当前标签页的独立 `sessionStorage`，刷新保留；关闭标签页后清除。不同标签页是独立演示副本，不模拟真实多账户权限。
+
+### 后端联调（Live）
 
 ```powershell
 # 终端 1：后端（仓库根目录）
@@ -30,10 +42,10 @@ cd D:\code\persistLog\persistLog
 cd D:\code\persistLog\persistLogFrontend
 pnpm install
 Copy-Item .env.example .env.local
-pnpm dev
+pnpm dev:live
 ```
 
-打开 <http://localhost:3000>。前端通过 `next.config.ts` 的 rewrite 把 `/api/v1/*` 转到 `BACKEND_API_URL`，浏览器只看到同源地址，Refresh Cookie 不跨 host。
+打开 <http://localhost:3000>。仅 Live 使用 `next.config.ts` rewrite，把 `/api/v1/*` 转到 `BACKEND_API_URL`。Mock 禁用此代理，所有已支持的数据请求在浏览器本地处理，不发送 Cookie、计划或通知给后端。
 
 本地联调种子账号（仅开发库）：`lin.frontend@example.com` / `persistlog123`。
 
@@ -45,11 +57,39 @@ pnpm dev
 
 | 命令 | 作用 |
 | --- | --- |
-| `pnpm dev` | 启动开发服务器（Turbopack） |
-| `pnpm build` | 生产构建 + TypeScript 检查 |
-| `pnpm start` | 启动生产构建 |
+| `pnpm dev:mock` | 全项目演示模式；P1 本地适配器，P2/P3 后续沿用同一选择 |
+| `pnpm dev:live` / `pnpm dev` | 全项目真实接口模式 |
+| `pnpm build:mock` | 构建演示版本到 `.next/mock` |
+| `pnpm build:live` / `pnpm build` | 构建真实接口版本到 `.next/live` |
+| `pnpm start:mock` | 启动已完成的 Mock 构建 |
+| `pnpm start:live` / `pnpm start` | 启动已完成的 Live 构建 |
 | `pnpm lint` | ESLint |
-| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm typecheck` | 检查工程源码，不依赖某次生成的 `.next` 类型 |
+| `pnpm typecheck:mock` / `pnpm typecheck:live` | 检查源码及对应构建的路由类型 |
+| `pnpm test:modes` | 启动参数、Mock P1 流程、Live 不回退及认证刷新测试 |
+| `pnpm test:modes:smoke` | 两种 build 完成后验证 HTTP 路由壳、登录入口、构建标记及代理隔离 |
+| `pnpm test:modes:dev` | 实际启动两种 dev 模式并检查登录页；测试仅结束自己创建的服务 |
+
+命令使用**英文冒号**。跨平台 Node 启动器 `scripts/run-mode.mjs` 注入 `NEXT_PUBLIC_DATA_SOURCE=mock|live`，无需改 `.env.local`，不接受页面 URL 参数切换模式。命令选择优先于继承的环境变量；不要直接用 `next dev/start` 绕过入口。
+
+开发模式切换需要先结束旧进程再启动。需要并行预览时用不同端口，例如 `pnpm dev:mock --port 3100` 与 `pnpm dev:live --port 3101`。浏览器入口 `/` 和 `/login` 均保持登录注册行为，不因切换数据源自动登录。
+
+生产示例：`pnpm build:mock` → `pnpm start:mock`。**模式在构建时固定，不能用 start 将 Mock 产物变成 Live。** 两套产物、开发缓存、TypeScript 增量缓存分开；启动器验证模式和 BUILD_ID，未构建/标记不匹配会拒绝启动，而不是误用另一套产物。`next-env.d.ts` 是 Next 自动生成文件，可能随最后一次运行变化；类型检查使用稳定引用和分模式配置，不依赖它选择数据源。
+
+### P1 Mock 覆盖与限制
+
+| 模块 | 演示覆盖 |
+| --- | --- |
+| 登录/注册/会话 | 虚拟身份、刷新恢复、退出、重置；不写真实认证 Cookie，不保存密码 |
+| 今日/路线 | 任务读取、新增、开始/完成/延期/跳过/阻塞/解除/放弃/拆分；路线读取、新建、状态切换、容量调整；进度同步 |
+| 执行看板 | 基于演示任务生成 7/30 天概览、趋势、分布及演示预测 |
+| 导入 | 本地固定示例预览、编辑、确认、取消、回滚；**不解析上传文件、不调用 AI** |
+| 档案/目标/授权 | 当前已接入表单的本地保存和刷新读取 |
+| 通知 | 渠道、偏好、Outbox、测试/重发的本地模拟；**不会真正发送企微消息，也不保存 Webhook 原文** |
+
+未实现的 Mock 请求明确返回 `MOCK_NOT_IMPLEMENTED`，绝不转发真实后端。当前 P1 原有未开放功能、占位按钮不会因为模式配置变成真实能力；本轮也未新增 P2/P3 页面或接口。Mock 的调度/解析/预测只用于效果预览，不作为后端算法或真实联调验收证据。
+
+实现与验证细节见 [数据源运行说明](docs/data-source-modes.md)。
 
 ---
 
@@ -69,18 +109,9 @@ pnpm dev
 | `/settings/ai` | AI 授权 | 真实 `PUT /consents`（通过 store） |
 | `/settings/data` | 数据与账号 | 退出登录、会话刷新真实 |
 
-> `?state=...` 设计演示只在未登录的 mock 模式生效；登录后不会被演示状态覆盖真实数据。
+上表描述 Live 接入范围；Mock 使用相同页面与 DTO，经统一请求层换成本地适配器。旧 `?state=` 入口不再作为数据模式/业务状态切换方式；请在 Mock 中操作任务/导入来预览状态。
 
-状态演示：
-
-- `/today?state=done`：今日全部完成
-- `/today?state=empty`：今日无任务
-- `/import?state=preview`：导入预览
-- `/import?state=error`：导入解析失败
-- `/routes?state=empty`：无路线
-- `/dashboard?state=empty`：无执行记录
-
-开发环境顶栏「页面地图」可打开所有路由和状态演示；生产构建默认隐藏，可通过 `NEXT_PUBLIC_SHOW_DEV_NAV=true` 打开。
+开发环境顶栏「页面地图」用于导航；生产构建默认隐藏，可通过 `NEXT_PUBLIC_SHOW_DEV_NAV=true` 打开。该选项不改变数据源。
 
 ---
 
@@ -145,7 +176,7 @@ persistLogFrontend/
 - 视图组件是 Client Component（`"use client"`），负责交互和服务端状态。
 - `(app)/layout.tsx` 提供 `SessionGate` + `AppShell`；未登录跳 `/login`。
 - `(auth)` 使用独立全屏布局；登录成功后进入 `/today`，注册后进入 `/onboarding`。
-- 设计演示 `?state=` 只在 mock 模式生效，不会 mutate 真实后端数据。
+- 数据源仅由命令决定；现有登录与路由守卫在两种模式下都保留。
 
 ### 4.2 状态层
 
@@ -157,7 +188,7 @@ persistLogFrontend/
 - 通知连接状态、AI 授权状态。
 - 派生指标：完成率、容量、路线进度。
 
-未登录或未连后端时保留 `lib/mock-data.ts` 的演示数据，用于设计验收；登录后以真实数据为准。
+Store 从空状态加载所选适配器；Live 网络错误保留错误或已读取数据，不注入示例数据。登出/切换身份清空用户状态，过期响应不得回写。`lib/mock-data.ts` 中剩余历史常量/模板不是 Live 回退来源。
 
 ### 4.3 API 层
 
@@ -288,6 +319,9 @@ git branch -vv
 | 文档 | 内容 |
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | 技术架构、数据流、API 接入方式 |
+| [docs/data-source-modes.md](docs/data-source-modes.md) | 全项目启动/构建模式、P1 Mock 覆盖和验证记录 |
+| [docs/p2-engineering-plan.md](docs/p2-engineering-plan.md) | P2 任务计划与 Mock/Live 接入步骤 |
+| [docs/p3-engineering-plan.md](docs/p3-engineering-plan.md) | P3 任务计划与 Mock/Live 接入步骤 |
 | [docs/phase1-acceptance.md](docs/phase1-acceptance.md) | Phase 1 验收、回填/预览/加任务证据与上线检查 |
 | [docs/frontend-design-guidelines.md](docs/frontend-design-guidelines.md) | **当前 P1 页面设计协作基准**：视觉、布局、动效、细节与文字内容 |
 | [design/p2p3/README.md](design/p2p3/README.md) | **P2 / P3 规划原型**：页面、主流程、异常状态、数据口径与工程边界 |
@@ -298,4 +332,4 @@ git branch -vv
 ---
 
 **维护者**：恒序 persistLog  
-**最后更新**：2026-11-15
+**最后更新**：2026-11-19

@@ -5,11 +5,6 @@ export const metadata: Metadata = {
   title: "导入计划",
 };
 
-export default async function ImportPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ state?: string }>;
-}) {
-  const { state } = await searchParams;
-  return <ImportView key={state ?? "default"} demoState={state} />;
+export default function ImportPage() {
+  return <ImportView />;
 }

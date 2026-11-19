@@ -1,4 +1,14 @@
+import { IS_MOCK } from "@/lib/config/data-source";
+
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1").replace(/\/$/, "");
+
+async function request(path: string, init: RequestInit): Promise<Response> {
+  if (IS_MOCK) {
+    const { mockRequest } = await import("@/lib/api/mock/p1");
+    return mockRequest(path, init);
+  }
+  return fetch(`${API_BASE_URL}${path}`, init);
+}
 
 export class ApiError extends Error {
   status: number;
@@ -67,7 +77,7 @@ export function refreshSession(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const response = await request("/auth/refresh", {
       method: "POST",
       credentials: "include",
       cache: "no-store",
@@ -135,7 +145,7 @@ export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Prom
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
-  let response = await fetch(`${API_BASE_URL}${path}`, {
+  let response = await request(path, {
     ...requestInit,
     headers,
     credentials: "include",
@@ -155,7 +165,7 @@ export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Prom
       throw await readError(response);
     }
     headers.set("Authorization", `Bearer ${token}`);
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await request(path, {
       ...requestInit,
       headers,
       credentials: "include",

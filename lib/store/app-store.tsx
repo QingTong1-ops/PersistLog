@@ -1,69 +1,28 @@
 "use client";
 
-/* eslint-disable react-hooks/set-state-in-effect -- the store hydrates from the authenticated API session. */
-
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  INITIAL_ROUTE_STATES,
-  INITIAL_ROUTES,
-  INITIAL_TASKS,
-  DEMO_USER,
-  ROUTE_TOTAL_TASKS,
-} from "@/lib/mock-data";
+/* eslint-disable react-hooks/set-state-in-effect -- hydrate the selected data adapter and clear on logout. */
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { live, type JobTarget } from "@/lib/api/live";
+import { live, type JobTarget, type OccurrenceAction } from "@/lib/api/live";
 import { mapProfile, mapRoutes, mapToday, TASK_TYPE_TO_API } from "@/lib/api/mappers";
-import type {
-  DemoUser,
-  NewTaskInput,
-  RouteRecord,
-  RouteStatus,
-  SplitPart,
-  Task,
-} from "@/lib/types";
-import { clamp, routeDoneCount, routePercent, taskStats } from "@/lib/utils";
+import type { DemoUser, NewTaskInput, RouteRecord, RouteStatus, SplitPart, Task } from "@/lib/types";
+import { clamp, taskStats } from "@/lib/utils";
+import { IS_MOCK } from "@/lib/config/data-source";
+import { useRouter } from "next/navigation";
 
-type TaskActionResult = {
-  task: Task;
-  beforePercent: number;
-  afterPercent: number;
-  allDone: boolean;
-};
-
-interface RouteProgressState {
-  done: number;
-  percent: number;
-  total: number;
-}
-
+const EMPTY_PROFILE: DemoUser = { name: "", initial: "", email: "", goal: "", targetDate: "", timezone: "Asia/Shanghai", dailyMinutes: 0, capacityFactor: 0 };
+const EMPTY_PROGRESS = { done: 0, percent: 0, total: 0 };
+type ActionResult = { task: Task; beforePercent: number; afterPercent: number; allDone: boolean };
 interface AppStoreValue {
-  tasks: Task[];
-  routes: RouteRecord[];
-  routeStates: Record<number, RouteStatus>;
-  consentGranted: boolean;
-  profile: DemoUser;
-  todayDate: string;
-  jobTargets: JobTarget[];
-  stageNames: string[];
-  wecomConnected: boolean;
-  live: boolean;
-  loading: boolean;
-  error: string | null;
-  stats: ReturnType<typeof taskStats>;
-  routeDone: number;
-  routePercent: number;
-  routeTotal: number;
+  tasks: Task[]; routes: RouteRecord[]; routeStates: Record<number, RouteStatus>;
+  consentGranted: boolean; profile: DemoUser; todayDate: string; jobTargets: JobTarget[];
+  stageNames: string[]; wecomConnected: boolean;
+  /** Legacy name: true means adapter-backed, in BOTH mock and live builds. */
+  live: boolean; loading: boolean; error: string | null;
+  stats: ReturnType<typeof taskStats>; routeDone: number; routePercent: number; routeTotal: number;
   refreshLive: () => Promise<void>;
   startTask: (id: string) => Promise<Task | undefined>;
-  completeTask: (id: string, actual: number, note: string) => Promise<TaskActionResult | undefined>;
+  completeTask: (id: string, actual: number, note: string) => Promise<ActionResult | undefined>;
   postponeTask: (id: string, reason: string) => Promise<void>;
   skipTask: (id: string, reason: string, note: string) => Promise<void>;
   blockTask: (id: string, reason: string) => Promise<void>;
@@ -72,542 +31,119 @@ interface AppStoreValue {
   abandonTask: (id: string) => Promise<void>;
   splitTask: (id: string, parts: SplitPart[]) => Promise<void>;
   addTask: (input: NewTaskInput) => Promise<Task>;
-  completeAll: () => Promise<void>;
-  clearToday: () => Promise<void>;
+  completeAll: () => Promise<void>; clearToday: () => Promise<void>;
   setRouteStatus: (id: number, status: RouteStatus) => Promise<void>;
-  setConsentGranted: (granted: boolean) => Promise<void>;
-  resetDemo: () => void;
+  setConsentGranted: (granted: boolean) => Promise<void>; resetDemo: () => void;
 }
-
 const AppStoreContext = createContext<AppStoreValue | null>(null);
 
-function clone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const { status: authStatus } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>(() => clone(INITIAL_TASKS));
-  const [routes, setRoutes] = useState<RouteRecord[]>(() => clone(INITIAL_ROUTES));
-  const [routeStates, setRouteStates] =
-    useState<Record<number, RouteStatus>>(() => ({ ...INITIAL_ROUTE_STATES }));
-  const [consentGranted, setConsent] = useState(true);
-  const [profile, setProfile] = useState<DemoUser>(DEMO_USER);
-  const [todayDate, setTodayDate] = useState("2026-10-19");
+  const { status: authStatus, user, logout } = useAuth();
+  const router = useRouter();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [routes, setRoutes] = useState<RouteRecord[]>([]);
+  const [profile, setProfile] = useState<DemoUser>(EMPTY_PROFILE);
+  const [todayDate, setTodayDate] = useState("");
   const [jobTargets, setJobTargets] = useState<JobTarget[]>([]);
   const [stageNames, setStageNames] = useState<string[]>([]);
+  const [consentGranted, setConsent] = useState(false);
   const [wecomConnected, setWecomConnected] = useState(false);
-  const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [liveProgress, setLiveProgress] = useState<RouteProgressState>({
-    done: 0,
-    percent: 0,
-    total: 0,
-  });
+  const generation = useRef(0);
+  const primary = routes.find(r => r.status === "active") ?? routes[0];
+  const progress = primary ? { done: primary.doneCount, percent: primary.progress, total: primary.taskCount } : EMPTY_PROGRESS;
+  const capacity = Math.round(profile.dailyMinutes * profile.capacityFactor);
+  const stats = taskStats(tasks, capacity);
 
-  const stats = useMemo(
-    () => taskStats(tasks, Math.max(30, Math.round(profile.dailyMinutes * profile.capacityFactor))),
-    [profile.capacityFactor, profile.dailyMinutes, tasks]
-  );
-  const localRouteDone = useMemo(() => routeDoneCount(tasks), [tasks]);
-  const localRoutePercent = useMemo(() => routePercent(tasks), [tasks]);
-  const routeDone = isLive ? liveProgress.done : localRouteDone;
-  const routePercentValue = isLive ? liveProgress.percent : localRoutePercent;
-  const routeTotal = isLive ? liveProgress.total : ROUTE_TOTAL_TASKS;
-
-  const fetchToday = useCallback(async () => {
-    const today = await live.today.get();
-    const nextTasks = mapToday(today);
-    setTasks(nextTasks);
-    setTodayDate(today.date);
-    return nextTasks;
-  }, []);
-
-  const fetchRoutes = useCallback(async () => {
-    const [allRoutes, jobs] = await Promise.all([live.routes.list(), live.profile.jobs()]);
-    const routeList = allRoutes.filter((route) => route.status !== "archived");
-    const details = await Promise.all(routeList.map((route) => live.routes.get(route.id)));
-    const mapped = mapRoutes(routeList, details, jobs, todayDate);
-    const primary =
-      mapped.find((route) => route.status === "active") ??
-      mapped[0];
-    const nextProgress: RouteProgressState = primary
-      ? { done: primary.doneCount, percent: primary.progress, total: primary.taskCount }
-      : { done: 0, percent: 0, total: 0 };
-
-    setRoutes(mapped);
-    setJobTargets(jobs);
-    setStageNames(
-      details
-        .find((detail) => detail.id === primary?.apiId)
-        ?.stages.map((stage) => stage.name.replace(/（.*$/, "").trim()) ?? []
-    );
-    setRouteStates(
-      Object.fromEntries(mapped.map((route) => [route.id, route.status])) as Record<
-        number,
-        RouteStatus
-      >
-    );
-    setLiveProgress(nextProgress);
-    return { routes: mapped, progress: nextProgress };
-  }, [todayDate]);
-
-  const refreshLive = useCallback(async () => {
+  const load = useCallback(async () => {
     if (authStatus !== "authenticated") return;
-    setLoading(true);
-    setError(null);
+    const version = ++generation.current;
+    setLoading(true); setError(null);
     try {
-      const [today, profileData, jobs, consents] = await Promise.all([
-        live.today.get(),
-        live.profile.get(),
-        live.profile.jobs(),
-        live.profile.consents(),
+      const [today, profileData, jobs, consents, routeList, channels] = await Promise.all([
+        live.today.get(), live.profile.get(), live.profile.jobs(), live.profile.consents(),
+        live.routes.list(), live.notifications.channels(),
       ]);
-      const channels = await live.notifications.channels().catch(() => []);
-      setWecomConnected(channels.some((channel) => channel.status === "active"));
-      const routeList = (await live.routes.list()).filter((route) => route.status !== "archived");
-      const details = await Promise.all(routeList.map((route) => live.routes.get(route.id)));
-
-      const mappedRoutes = mapRoutes(routeList, details, jobs, today.date);
-      const primary = mappedRoutes.find((route) => route.status === "active") ?? mappedRoutes[0];
-      const nextProgress: RouteProgressState = primary
-        ? { done: primary.doneCount, percent: primary.progress, total: primary.taskCount }
-        : { done: 0, percent: 0, total: 0 };
-
-      setTasks(mapToday(today));
-      setTodayDate(today.date);
-      setProfile(mapProfile(profileData, jobs));
-      setJobTargets(jobs);
-      setRoutes(mappedRoutes);
-      setStageNames(
-        details
-          .find((detail) => detail.id === primary?.apiId)
-          ?.stages.map((stage) => stage.name.replace(/（.*$/, "").trim()) ?? []
-      );
-      setRouteStates(
-        Object.fromEntries(mappedRoutes.map((route) => [route.id, route.status])) as Record<
-          number,
-          RouteStatus
-        >
-      );
-      setLiveProgress(nextProgress);
-      setConsent(
-        consents.some(
-          (consent) =>
-            consent.scope === "ai_import" && Boolean(consent.granted_at) && !consent.revoked_at
-        )
-      );
-      setIsLive(true);
+      const active = routeList.filter(r => r.status !== "archived");
+      const details = await Promise.all(active.map(r => live.routes.get(r.id)));
+      if (version !== generation.current) return;
+      const mapped = mapRoutes(active, details, jobs, today.date);
+      const main = mapped.find(r => r.status === "active") ?? mapped[0];
+      const nextTasks = mapToday(today);
+      setTasks(nextTasks); setTodayDate(today.date); setProfile(mapProfile(profileData, jobs));
+      setJobTargets(jobs); setRoutes(mapped);
+      setStageNames(details.find(r => r.id === main?.apiId)?.stages.map(s => s.name) ?? []);
+      setConsent(consents.some(c => c.scope === "ai_import" && c.granted_at && !c.revoked_at));
+      setWecomConnected(channels.some(c => c.status === "active"));
+      return { tasks: nextTasks, progress: main?.progress ?? 0 };
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "无法连接后端";
-      setError(message);
-      setIsLive(false);
-    } finally {
-      setLoading(false);
-    }
+      if (version === generation.current) setError(cause instanceof Error ? cause.message : "无法加载计划，请重试");
+      throw cause;
+    } finally { if (version === generation.current) setLoading(false); }
   }, [authStatus]);
 
+  const refreshLive = useCallback(async () => { await load().catch(() => undefined); }, [load]);
   useEffect(() => {
-    if (authStatus === "authenticated") {
-      void refreshLive();
-    }
-    if (authStatus === "anonymous") {
-      setIsLive(false);
-      setError(null);
-    }
-  }, [authStatus, refreshLive]);
+    const gate = generation;
+    // Clear all user-scoped data before hydrating another identity. Never seed live failures with fixtures.
+    generation.current++;
+    setTasks([]); setRoutes([]); setProfile(EMPTY_PROFILE); setTodayDate("");
+    setJobTargets([]); setStageNames([]); setConsent(false); setWecomConnected(false);
+    setError(null); setLoading(false);
+    if (authStatus === "authenticated") void refreshLive();
+    return () => { gate.current++; };
+  }, [authStatus, user?.id, refreshLive]);
 
-  const refreshAfterAction = useCallback(async () => {
-    const [nextTasks, routeResult] = await Promise.all([fetchToday(), fetchRoutes()]);
-    return { tasks: nextTasks, routes: routeResult };
-  }, [fetchRoutes, fetchToday]);
-
-  const patchTask = useCallback(
-    (id: string, patch: Partial<Task> | ((task: Task) => Partial<Task>)) => {
-      setTasks((current) =>
-        current.map((task) =>
-          task.id === id
-            ? { ...task, ...(typeof patch === "function" ? patch(task) : patch) }
-            : task
-        )
-      );
+  async function act(id: string, action: OccurrenceAction, body?: Record<string, unknown>) {
+    const task = tasks.find(t => t.id === id);
+    if (!task?.occurrenceId || authStatus !== "authenticated") throw new Error("任务状态已变化，请刷新后重试");
+    await live.today.action(task.occurrenceId, action, body);
+    return load();
+  }
+  const value: AppStoreValue = {
+    tasks, routes, profile, todayDate, jobTargets, stageNames, consentGranted, wecomConnected,
+    routeStates: Object.fromEntries(routes.map(r => [r.id, r.status])), live: true, loading, error, stats,
+    routeDone: progress.done, routePercent: progress.percent, routeTotal: progress.total, refreshLive,
+    startTask: async (id) => { const result = await act(id, "start"); return result?.tasks.find(t => t.id === id); },
+    completeTask: async (id, actual, note) => {
+      const task = tasks.find(t => t.id === id); if (!task) return;
+      const result = await act(id, "complete", { actual_minutes: clamp(actual || task.planned, 0, 600), note: note || undefined });
+      if (!result) return;
+      const nextStats = taskStats(result.tasks, capacity);
+      return { task, beforePercent: progress.percent, afterPercent: result.progress,
+        allDone: nextStats.considered.length > 0 && nextStats.completed.length === nextStats.considered.length };
     },
-    []
-  );
-
-  const startTask = useCallback(
-    async (id: string) => {
-      const task = tasks.find((item) => item.id === id);
-      if (!task) return undefined;
-      if (isLive && task.occurrenceId) {
-        await live.today.action(task.occurrenceId, "start");
-        await fetchToday();
-      } else {
-        patchTask(id, { status: "in_progress" });
-      }
-      return { ...task, status: "in_progress" as const };
+    postponeTask: async (id, reason) => { await act(id, "postpone", { reason }); },
+    skipTask: async (id, reason, note) => { await act(id, "skip", { reason, note }); },
+    blockTask: async (id, reason) => { await act(id, "block", { reason }); },
+    unblockTask: async (id) => { await act(id, "unblock"); },
+    restoreTask: async () => { throw new Error("当前接口尚未支持恢复该任务，请调整计划"); },
+    abandonTask: async (id) => { await act(id, "abandon"); },
+    splitTask: async (id, parts) => { await act(id, "split", { parts: clamp(parts.length, 2, 4) }); },
+    addTask: async (input) => {
+      if (authStatus !== "authenticated") throw new Error("请先登录");
+      const note = [input.output && `产出：${input.output}`, input.acceptance && `验收：${input.acceptance}`].filter(Boolean).join("\n");
+      const result = await live.today.addItem({ title: input.title, estimated_minutes: clamp(input.planned, 15, 120), task_type: TASK_TYPE_TO_API[input.type], priority: "P1", note });
+      await load();
+      const created = mapToday(result).reverse().find(t => t.title === input.title);
+      if (!created) throw new Error("未找到新任务，请刷新列表确认");
+      return created;
     },
-    [fetchToday, isLive, patchTask, tasks]
-  );
-
-  const completeTask = useCallback(
-    async (id: string, actual: number, note: string) => {
-      const task = tasks.find((item) => item.id === id);
-      if (!task) return undefined;
-      const beforePercent = routePercentValue;
-      const nextActual = clamp(Number(actual) || task.planned, 0, 600);
-
-      if (isLive && task.occurrenceId) {
-        await live.today.action(task.occurrenceId, "complete", {
-          actual_minutes: nextActual,
-          note: note || undefined,
-        });
-        const result = await refreshAfterAction();
-        const nextStats = taskStats(result.tasks);
-        return {
-          task,
-          beforePercent,
-          afterPercent: result.routes.progress.percent,
-          allDone:
-            nextStats.considered.length > 0 &&
-            nextStats.completed.length === nextStats.considered.length,
-        };
-      }
-
-      const nextTasks = tasks.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: "completed" as const,
-              actual: nextActual,
-              note: note || item.note,
-            }
-          : item
-      );
-      const nextStats = taskStats(nextTasks);
-      setTasks(nextTasks);
-      return {
-        task,
-        beforePercent,
-        afterPercent: routePercent(nextTasks),
-        allDone:
-          nextStats.considered.length > 0 &&
-          nextStats.completed.length === nextStats.considered.length,
-      };
+    completeAll: async () => { if (!IS_MOCK) throw new Error("仅演示模式允许批量演示操作"); for (const t of tasks) if (t.occurrenceId && !["completed", "abandoned"].includes(t.status)) await live.today.action(t.occurrenceId, "complete", { actual_minutes: t.planned }); await load(); },
+    clearToday: async () => { throw new Error("请使用任务操作调整计划，不能仅清空页面数据"); },
+    setRouteStatus: async (id, status) => {
+      const r = routes.find(r => r.id === id); if (!r?.apiId) throw new Error("路线不存在，请刷新");
+      const action = status === "paused" ? "pause" : status === "archived" ? "archive" : r.status === "paused" ? "resume" : "activate";
+      await live.routes.action(r.apiId, action); await load();
     },
-    [isLive, refreshAfterAction, routePercentValue, tasks]
-  );
-
-  const postponeTask = useCallback(
-    async (id: string, reason: string) => {
-      const task = tasks.find((item) => item.id === id);
-      if (isLive && task?.occurrenceId) {
-        await live.today.action(task.occurrenceId, "postpone");
-        await fetchToday();
-        return;
-      }
-      patchTask(id, {
-        status: "postponed",
-        postponedTo: "次日",
-        postponeReason: reason,
-      });
-    },
-    [fetchToday, isLive, patchTask, tasks]
-  );
-
-  const skipTask = useCallback(
-    async (id: string, reason: string, note: string) => {
-      const task = tasks.find((item) => item.id === id);
-      if (isLive && task?.occurrenceId) {
-        await live.today.action(task.occurrenceId, "skip", { reason });
-        await fetchToday();
-        return;
-      }
-      patchTask(id, (item) => ({
-        status: "skipped",
-        skipReason: reason,
-        note: note || item.note,
-      }));
-    },
-    [fetchToday, isLive, patchTask, tasks]
-  );
-
-  const blockTask = useCallback(
-    async (id: string, reason: string) => {
-      const task = tasks.find((item) => item.id === id);
-      if (isLive && task?.occurrenceId) {
-        await live.today.action(task.occurrenceId, "block", { reason });
-        await fetchToday();
-        return;
-      }
-      patchTask(id, { status: "blocked", blockReason: reason });
-    },
-    [fetchToday, isLive, patchTask, tasks]
-  );
-
-  const unblockTask = useCallback(
-    async (id: string) => {
-      const task = tasks.find((item) => item.id === id);
-      if (isLive && task?.occurrenceId) {
-        await live.today.action(task.occurrenceId, "unblock");
-        await fetchToday();
-        return;
-      }
-      patchTask(id, { status: "pending", blockReason: undefined });
-    },
-    [fetchToday, isLive, patchTask, tasks]
-  );
-
-  const restoreTask = useCallback(
-    async (id: string) => {
-      if (isLive) return;
-      patchTask(id, {
-        status: "pending",
-        skipReason: undefined,
-        postponedTo: undefined,
-      });
-    },
-    [isLive, patchTask]
-  );
-
-  const abandonTask = useCallback(
-    async (id: string) => {
-      const task = tasks.find((item) => item.id === id);
-      if (isLive && task?.occurrenceId) {
-        await live.today.action(task.occurrenceId, "abandon");
-        await refreshAfterAction();
-        return;
-      }
-      patchTask(id, { status: "abandoned" });
-    },
-    [isLive, patchTask, refreshAfterAction, tasks]
-  );
-
-  const splitTask = useCallback(
-    async (id: string, parts: SplitPart[]) => {
-      const original = tasks.find((task) => task.id === id);
-      if (!original) return;
-      if (isLive && original.occurrenceId) {
-        await live.today.action(original.occurrenceId, "split", {
-          parts: clamp(parts.length, 2, 4),
-        });
-        await refreshAfterAction();
-        return;
-      }
-      const now = Date.now();
-      const children: Task[] = parts.map((part, index) => ({
-        id: `t${now}${index}`,
-        title: part.title,
-        type: original.type,
-        stage: original.stage,
-        source: original.source,
-        planned: clamp(part.minutes, 15, 120),
-        actual: 0,
-        status: "pending",
-        carry: 0,
-        why: `由「${original.title}」拆分；原任务已归档。`,
-        output: original.output,
-        acceptance: original.acceptance,
-        note: "",
-      }));
-      setTasks((current) => [
-        ...current.map((task) =>
-          task.id === id ? { ...task, status: "abandoned" as const } : task
-        ),
-        ...children,
-      ]);
-    },
-    [isLive, refreshAfterAction, tasks]
-  );
-
-  const addTask = useCallback(
-    async (input: NewTaskInput) => {
-      if (isLive) {
-        const note = [input.output && `产出：${input.output}`, input.acceptance && `验收：${input.acceptance}`]
-          .filter(Boolean)
-          .join("\n");
-        const today = await live.today.addItem({
-          title: input.title,
-          estimated_minutes: clamp(input.planned, 15, 120),
-          task_type: TASK_TYPE_TO_API[input.type],
-          priority: "P1",
-          note: note || undefined,
-        });
-        const nextTasks = mapToday(today);
-        setTasks(nextTasks);
-        setTodayDate(today.date);
-        return (
-          [...nextTasks].reverse().find((task) => task.title === input.title) ?? nextTasks[nextTasks.length - 1]
-        );
-      }
-
-      const task: Task = {
-        id: `local${Date.now()}`,
-        title: input.title,
-        type: input.type,
-        stage: "今日计划 · 手动添加",
-        source: "手动",
-        planned: clamp(input.planned, 15, 120),
-        actual: 0,
-        status: "pending",
-        carry: 0,
-        why: "用户手动加入今日计划；会占用今日容量并进入执行统计。",
-        output: input.output,
-        acceptance: input.acceptance,
-        note: "",
-      };
-      setTasks((current) => [...current, task]);
-      return task;
-    },
-    [isLive]
-  );
-
-  const completeAll = useCallback(async () => {
-    if (isLive) {
-      for (const task of tasks) {
-        if (task.occurrenceId && !["completed", "abandoned"].includes(task.status)) {
-          await live.today.action(task.occurrenceId, "complete", {
-            actual_minutes: task.planned,
-          });
-        }
-      }
-      await refreshAfterAction();
-      return;
-    }
-    setTasks((current) =>
-      current.map((task) =>
-        task.status === "abandoned"
-          ? task
-          : { ...task, status: "completed" as const, actual: task.planned }
-      )
-    );
-  }, [isLive, refreshAfterAction, tasks]);
-
-  const clearToday = useCallback(async () => {
-    if (isLive) return;
-    setTasks([]);
-  }, [isLive]);
-
-  const setRouteStatus = useCallback(
-    async (id: number, status: RouteStatus) => {
-      const route = routes.find((item) => item.id === id);
-      if (isLive && route?.apiId) {
-        const action =
-          status === "paused"
-            ? "pause"
-            : status === "archived"
-              ? "archive"
-              : route.status === "paused"
-                ? "resume"
-                : "activate";
-        await live.routes.action(route.apiId, action);
-        await fetchRoutes();
-      }
-      setRouteStates((current) => ({ ...current, [id]: status }));
-    },
-    [fetchRoutes, isLive, routes]
-  );
-
-  const setConsentGranted = useCallback(
-    async (granted: boolean) => {
-      setConsent(granted);
-      if (isLive) {
-        await live.profile.setConsent({ scope: "ai_import", version: "v1", granted });
-      }
-    },
-    [isLive]
-  );
-
-  const resetDemo = useCallback(() => {
-    setTasks(clone(INITIAL_TASKS));
-    setRoutes(clone(INITIAL_ROUTES));
-    setRouteStates({ ...INITIAL_ROUTE_STATES });
-    setConsent(true);
-    setIsLive(false);
-    setLiveProgress({ done: 0, percent: 0, total: 0 });
-  }, []);
-
-  const value = useMemo<AppStoreValue>(
-    () => ({
-      tasks,
-      routes,
-      routeStates,
-      consentGranted,
-      profile,
-      todayDate,
-      jobTargets,
-      stageNames,
-      wecomConnected,
-      live: isLive,
-      loading,
-      error,
-      stats,
-      routeDone,
-      routePercent: routePercentValue,
-      routeTotal,
-      refreshLive,
-      startTask,
-      completeTask,
-      postponeTask,
-      skipTask,
-      blockTask,
-      unblockTask,
-      restoreTask,
-      abandonTask,
-      splitTask,
-      addTask,
-      completeAll,
-      clearToday,
-      setRouteStatus,
-      setConsentGranted,
-      resetDemo,
-    }),
-    [
-      tasks,
-      routes,
-      routeStates,
-      consentGranted,
-      profile,
-      todayDate,
-      jobTargets,
-      stageNames,
-      wecomConnected,
-      isLive,
-      loading,
-      error,
-      stats,
-      routeDone,
-      routePercentValue,
-      routeTotal,
-      refreshLive,
-      startTask,
-      completeTask,
-      postponeTask,
-      skipTask,
-      blockTask,
-      unblockTask,
-      restoreTask,
-      abandonTask,
-      splitTask,
-      addTask,
-      completeAll,
-      clearToday,
-      setRouteStatus,
-      setConsentGranted,
-      resetDemo,
-    ]
-  );
-
+    setConsentGranted: async (granted) => { await live.profile.setConsent({ scope: "ai_import", version: "v1", granted }); setConsent(granted); },
+    resetDemo: () => { if (IS_MOCK) void import("@/lib/api/mock/p1").then(async ({ resetMockData }) => { await logout(); resetMockData(); router.replace("/login"); }); },
+  };
   return <AppStoreContext.Provider value={value}>{children}</AppStoreContext.Provider>;
 }
-
 export function useAppStore() {
   const context = useContext(AppStoreContext);
-  if (!context) {
-    throw new Error("useAppStore must be used inside AppStoreProvider");
-  }
+  if (!context) throw new Error("useAppStore must be used inside AppStoreProvider");
   return context;
 }
-
-export { ROUTE_TOTAL_TASKS };

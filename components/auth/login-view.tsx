@@ -10,10 +10,10 @@ import { Button, useToast } from "@/components/ui";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { IS_MOCK } from "@/lib/config/data-source";
 
 type AuthMode = "login" | "register";
 
-const isDev = process.env.NODE_ENV === "development";
 const demoEmail = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "";
 const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "";
 
@@ -22,8 +22,8 @@ export function LoginView() {
   const { showToast } = useToast();
   const { login, register } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
-  const [account, setAccount] = useState(demoEmail || (isDev ? "demo@persistlog.dev" : ""));
-  const [password, setPassword] = useState(demoPassword || (isDev ? "Demo2026!" : ""));
+  const [account, setAccount] = useState(IS_MOCK ? "demo@persistlog.test" : demoEmail);
+  const [password, setPassword] = useState(IS_MOCK ? "PreviewOnly!" : demoPassword);
   const [name, setName] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -60,11 +60,11 @@ export function LoginView() {
     try {
       if (isRegister) {
         await register({ email, password, displayName: name.trim() });
-        showToast("<strong>账号已创建。</strong> 接下来设置档案、目标和第一份计划。");
+        showToast(IS_MOCK ? "<strong>已重置演示账户。</strong> 未创建真实账号。" : "<strong>账号已创建。</strong> 接下来设置档案、目标和第一份计划。");
         router.push("/onboarding");
       } else {
         await login(email, password);
-        showToast("<strong>登录成功。</strong> 正在加载你的计划和执行记录。");
+        showToast(IS_MOCK ? "<strong>已进入演示账户。</strong> 所有操作仅用于预览。" : "<strong>登录成功。</strong> 正在加载你的计划和执行记录。");
         router.push("/today");
       }
     } catch (cause) {
@@ -216,10 +216,10 @@ export function LoginView() {
             </Button>
           </form>
 
-          {isDev ? (
+          {IS_MOCK ? (
             <div className="auth-hint">
-              <strong>开发环境</strong>
-              已预填测试账号，仅用于本地联调。
+              <strong>演示账户</strong>
+              已预填虚拟账号；登录不校验真实账号，注册只重置本标签页演示数据。
             </div>
           ) : null}
           <p className="auth-legal">继续即表示同意《服务条款》与《隐私政策》。</p>

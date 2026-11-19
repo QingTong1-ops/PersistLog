@@ -66,7 +66,8 @@ app/layout.tsx（RootLayout）
 | `lib/auth/` | 会话初始化、登录、刷新、登出 | 业务数据 |
 | `lib/store/` | 跨页面 today/routes/profile/授权状态 | 服务端持久化 |
 | `lib/api/` | fetch、Bearer、401 刷新、端点、映射 | UI 逻辑 |
-| `lib/mock-data.ts` | 未登录时的设计演示数据 | 生产数据 |
+| `lib/mock-data.ts` | 历史设计常量和导入模板；不再作为 Store 失败回退 | 真实数据 |
+| `lib/config/data-source.ts` / `lib/api/mock/p1.ts` | 构建期数据源选择、Mock 请求与隔离会话 | Live 失败回退、真实通知发送 |
 | `app/globals.css` / `app/uwp.css` / `app/optimized.css` | 业务布局、旧版 UWP 兼容层、当前视觉覆盖 | 组件内联样式 |
 | `docs/frontend-design-guidelines.md` | 当前 P1 视觉、布局、动效、细节与文字协作基准 | 业务数据与 API |
 | `design/p2p3/` | P2 / P3 页面规划、静态交互与接入口径 | 真实业务、API 持久化或 AI 调用 |
@@ -129,6 +130,8 @@ resetDemo()
 ## 5. API 接入
 
 ### 5.1 客户端
+
+2026-11-19 起，全项目模式由 `scripts/run-mode.mjs` 选择：`dev/build/start:mock` 使用本地 P1 演示适配器，`:live` 使用真实 API，默认 Live。参见 [数据源运行说明](data-source-modes.md)。`apiFetch` 与认证刷新统一选择传输方式；Mock 禁用 API rewrite，不发送企微/AI 请求。Store 不再在请求失败后退回旧演示数据。P2/P3 后续沿用本配置，不通过 URL 选择模式。
 
 `lib/api/client.ts`：
 

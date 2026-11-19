@@ -1,0 +1,28 @@
+.indicator {
+  position: fixed;
+  z-index: 90;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 12px;
+  background: var(--primary-soft);
+  color: var(--text-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.indicator strong { color: var(--primary); }
+:global(html[data-source="mock"]) :global(.main) { padding-bottom: 168px; }
+:global(html[data-source="mock"]) :global(.auth-layout) { padding-bottom: 88px; }
+.indicator button {
+  flex: none;
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 8px;
+}
+@media (max-width: 860px) { .indicator { bottom: calc(76px + env(safe-area-inset-bottom)); } }

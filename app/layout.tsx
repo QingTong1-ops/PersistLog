@@ -7,6 +7,8 @@ import { UwpRoot } from "@/components/uwp-root";
 import { AuthProvider } from "@/lib/auth/auth-provider";
 import { AppStoreProvider } from "@/lib/store/app-store";
 import { ToastProvider } from "@/components/ui";
+import { DATA_SOURCE } from "@/lib/config/data-source";
+import { DataSourceIndicator } from "@/components/data-source-indicator";
 
 export const metadata: Metadata = {
   title: {
@@ -24,12 +26,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" data-scroll-behavior="smooth">
+    <html lang="zh-CN" data-scroll-behavior="smooth" data-source={DATA_SOURCE}>
       <body>
         <UwpRoot>
           <AuthProvider>
             <AppStoreProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>{children}<DataSourceIndicator /></ToastProvider>
             </AppStoreProvider>
           </AuthProvider>
         </UwpRoot>

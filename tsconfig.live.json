@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "tsBuildInfoFile": ".next/live/typecheck.tsbuildinfo" },
+  "include": ["types/**/*.d.ts", "app/**/*.ts", "app/**/*.tsx", "components/**/*.ts", "components/**/*.tsx", "lib/**/*.ts", "lib/**/*.tsx", "next.config.ts", ".next/live/types/**/*.ts", ".next/live/dev/types/**/*.ts"]
+}

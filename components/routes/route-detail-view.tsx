@@ -23,7 +23,6 @@ import {
   Tag,
   useToast,
 } from "@/components/ui";
-import { INITIAL_ROUTES } from "@/lib/mock-data";
 import { useAppStore } from "@/lib/store/app-store";
 import { live, type RouteDetail } from "@/lib/api/live";
 import { mapRouteStages, daysBetween, type StageView } from "@/lib/api/mappers";
@@ -56,113 +55,6 @@ interface StageTask {
   status: TaskStatus;
 }
 
-interface StageWeek {
-  title: string;
-  meta: string;
-  tasks: StageTask[];
-}
-
-interface StageData {
-  title: string;
-  meta: string;
-  progress: string;
-  width: number;
-  open: boolean;
-  weeks: StageWeek[];
-}
-
-const STAGES: StageData[] = [
-  {
-    title: "阶段一 · 基础夯实",
-    meta: "10/02 – 10/12 · 12 个任务",
-    progress: "12 / 12 · 100%",
-    width: 100,
-    open: true,
-    weeks: [
-      {
-        title: "第 1 周 · 网络基础",
-        meta: "10/02 – 10/05 · 5 项",
-        tasks: [
-          { title: "TCP 三次握手与状态机", type: "八股", minutes: 45, date: "10/02", status: "completed" },
-          { title: "HTTP 强缓存与协商缓存", type: "八股", minutes: 45, date: "10/03", status: "completed" },
-          { title: "HTTPS 握手与证书链", type: "八股", minutes: 40, date: "10/04", status: "completed" },
-        ],
-      },
-      {
-        title: "第 2 周 · JVM 与集合",
-        meta: "10/06 – 10/12 · 7 项",
-        tasks: [
-          { title: "JVM 内存区域", type: "八股", minutes: 50, date: "10/06", status: "completed" },
-          { title: "GC 收集器对比", type: "八股", minutes: 45, date: "10/08", status: "completed" },
-          { title: "HashMap 扩容与红黑树", type: "八股", minutes: 45, date: "10/10", status: "completed" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "阶段二 · 算法与八股",
-    meta: "10/13 – 10/26 · 14 个任务 · 当前阶段",
-    progress: "9 / 14 · 64%",
-    width: 64,
-    open: true,
-    weeks: [
-      {
-        title: "第 3 周 · 树与图",
-        meta: "10/13 – 10/19 · 6 项",
-        tasks: [
-          { title: "二叉树遍历与复杂度", type: "算法", minutes: 60, date: "10/14", status: "completed" },
-          { id: "t1", title: "完成 2 道二叉树中等题", type: "算法", minutes: 60, date: "10/19", status: "completed" },
-          { id: "t4", title: "回答 3 道 JVM 高频问题", type: "八股", minutes: 35, date: "10/19", status: "pending" },
-          { title: "图的最短路径 · Dijkstra", type: "算法", minutes: 60, date: "10/18", status: "blocked" },
-        ],
-      },
-      {
-        title: "第 4 周 · 动态规划",
-        meta: "10/20 – 10/26 · 5 项",
-        tasks: [
-          { title: "区间 DP · 3 道中等题", type: "算法", minutes: 60, date: "10/20", status: "pending" },
-          { title: "背包问题 · 状态转移", type: "算法", minutes: 60, date: "10/22", status: "pending" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "阶段三 · 工程与项目",
-    meta: "10/27 – 11/02 · 10 个任务",
-    progress: "5 / 10 · 50%",
-    width: 50,
-    open: false,
-    weeks: [
-      {
-        title: "第 5 周 · 缓存与订单",
-        meta: "10/27 – 11/02 · 10 项",
-        tasks: [
-          { id: "t3", title: "完成订单系统缓存方案", type: "工程", minutes: 70, date: "10/18 → 10/19", status: "postponed" },
-          { title: "缓存穿透 / 击穿 / 雪崩", type: "八股", minutes: 45, date: "10/18", status: "completed" },
-          { title: "压测报告与容量结论", type: "工程", minutes: 60, date: "11/01", status: "pending" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "阶段四 · 简历与冲刺",
-    meta: "11/03 – 11/06 · 6 个任务",
-    progress: "0 / 6 · 0%",
-    width: 0,
-    open: false,
-    weeks: [
-      {
-        title: "第 6 周 · 简历与模拟面试",
-        meta: "11/03 – 11/06 · 6 项",
-        tasks: [
-          { title: "简历项目重写 · 订单系统", type: "简历", minutes: 60, date: "11/03", status: "pending" },
-          { title: "3 次模拟面试 · 项目追问", type: "面试", minutes: 90, date: "11/05", status: "pending" },
-        ],
-      },
-    ],
-  },
-];
-
 type DetailTab = "structure" | "versions" | "settings";
 
 export function RouteDetailView({ routeId }: { routeId: string }) {
@@ -177,13 +69,18 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
     tasks,
     live: isLive,
     refreshLive,
+    loading: routesLoading,
+    error: routesError,
   } = useAppStore();
-  const route = routes.find((item) => String(item.id) === routeId) ?? routes[0] ?? INITIAL_ROUTES[0];
+  const selectedRoute = routes.find((item) => String(item.id) === routeId);
+  const route = selectedRoute ?? { id: 0, apiId: undefined, name: "", status: "draft" as const,
+    taskCount: 0, doneCount: 0, progress: 0, targetDate: "", forecast: "", startDate: "",
+    endDate: "", days: 0, dailyCapacity: 0, job: "" };
   const status = routeStates[route.id] ?? route.status;
   const statusMeta = ROUTE_STATUS[status] ?? ROUTE_STATUS.active;
   const isPrimary = isLive ? false : route.id === 1;
   const [detail, setDetail] = useState<RouteDetail | null>(null);
-  const [stages, setStages] = useState<StageView[]>(STAGES);
+  const [stages, setStages] = useState<StageView[]>([]);
   const [tab, setTab] = useState<DetailTab>("structure");
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -202,7 +99,7 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
   useEffect(() => {
     if (!isLive || !route.apiId) {
       setDetail(null);
-      setStages(STAGES);
+      setStages([]);
       return;
     }
     let cancelled = false;
@@ -248,6 +145,15 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
       if (found) return found.status;
     }
     return task.status;
+  }
+
+  if (!selectedRoute) {
+    return <div className="view"><EmptyState
+      icon={<RouteIcon className="icon" aria-hidden="true" />}
+      title={routesLoading ? "正在读取路线…" : routesError ? "路线加载失败" : "未找到这条路线"}
+      description={routesError ?? "请等待加载完成或返回路线列表。"}
+      actions={<><Button onClick={() => void refreshLive()}>重新读取</Button><Link href="/routes">返回路线列表</Link></>}
+    /></div>;
   }
 
   return (
