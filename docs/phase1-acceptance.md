@@ -12,7 +12,7 @@
 
 Phase 1 前后端主链路已闭环，可以进入「真实使用 7 天」的收尾观察期。
 
-Phase 1 联调验收使用的是上一版 UWP / Windows 10 实现；验收完成后，正式视觉基线已切换为 `design/optimized/`。optimized 基线包含浅色 / 深色主题、现代卡片布局、完整 dashboard / today 参考，其他页面待按同一 token 体系迁移。
+Phase 1 联调验收使用的是当时的 UWP / Windows 10 实现；本文保留该阶段的业务验收记录。当前页面经过视觉精修，以 `docs/frontend-design-guidelines.md` 和 React 实现为准。旧版截图仅作为当时的验收证据，不代表当前视觉；不恢复重复的 P1 静态设计原型与预览图。P2 / P3 的规划原型单独放在 `design/p2p3/`，不属于本次 P1 验收范围。
 
 | 能力 | 状态 | 说明 |
 |---|---|---|
@@ -128,7 +128,7 @@ Phase 1 联调验收使用的是上一版 UWP / Windows 10 实现；验收完成
 2. 引导步骤 3 的文件选择仍是占位，导入在 `/import` 完成。
 3. 没有自动化 E2E；当前为 lint/typecheck/build + 手工验收。
 4. 时间戳仍按 UTC 解析（后端暂未补 `Z`）。
-5. Phase 2/3 页面未开始。
+5. Phase 2/3 的 React 页面与真实接口尚未开始；规划原型见 `design/p2p3/README.md`，不属于已验收功能。
 
 ---
 

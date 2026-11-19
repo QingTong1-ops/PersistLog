@@ -1,10 +1,15 @@
 # 恒序 persistLog · Frontend
 
-**当前状态**：Phase 1 页面已完成并完成前后端联调；`design/optimized/` 已确定为新的正式视觉基线，工程页面正在迁移
+**当前状态**：Phase 1 页面已完成前后端联调与本轮视觉精修；以当前 React 页面和 `docs/frontend-design-guidelines.md` 为实现基准
+
 **技术栈**：Next.js 16（App Router）+ React 19 + TypeScript；当前工程仍通过 `uwp_components` 承载旧版视觉适配
-**数据状态**：默认通过 Next.js rewrite `/api/v1/*` 调用本地 FastAPI；未登录时保留 mock 设计数据用于原型预览  
-**日期**：2026-11-13
-**远程仓库**：<https://github.com/QingTong1-ops/PersistLog.git>  
+
+**数据状态**：默认通过 Next.js rewrite `/api/v1/*` 调用本地 FastAPI；未登录时保留 mock 设计数据用于原型预览
+
+**日期**：2026-11-15
+
+**远程仓库**：<https://github.com/QingTong1-ops/PersistLog.git>
+
 **分支**：`frontend-master`
 
 > 恒序把「计划 / 困境」翻译成「今天做什么」，再把「今天做了什么」翻译成「有没有更接近目标」。
@@ -120,10 +125,13 @@ persistLogFrontend/
 │  ├─ api/live.ts                # auth/today/imports/routes/dashboard/notifications
 │  ├─ api/mappers.ts             # API → Task/Route/Dashboard 映射
 │  └─ utils.ts                   # 状态标签、任务统计、路线进度
+├─ design/
+│  ├─ README.md                  # 原型索引与草稿边界
+│  └─ p2p3/                      # P2 / P3 页面原型、共享样式与交互说明
 ├─ docs/
 │  ├─ architecture.md            # 技术架构与接入说明
-│  └─ screenshots/               # 工程实现截图
-├─ design/                       # 正式视觉基线、历史原型、页面规格与设计预览
+│  ├─ frontend-design-guidelines.md # P1 页面设计协作规范
+│  └─ screenshots/               # 工程实现与历史验收截图
 └─ .env.example
 ```
 
@@ -164,14 +172,13 @@ persistLogFrontend/
 
 ### 4.4 样式
 
-当前视觉基线已切换为 `design/optimized/`；现有工程正在从 UWP 皮肤迁移：
+当前页面以 `docs/frontend-design-guidelines.md` 和 React 实现为基准：
 
-- `design/optimized/assets/app.css` 与 `deepmind-*.css` 定义正式浅色 / 深色 token、布局、卡片与响应式规则。
-- `design/optimized/README.md` 是新的视觉基线说明，包含 dashboard / today 的浅色与深色参考。
-- 当前 `app/optimized.css` 已接入根布局，统一覆盖 Shell、Today、Dashboard、Routes、Import、Settings、Auth 的共享视觉 token；`app/uwp.css`、`uwp-root.tsx` 与 `uwp_components` 暂作为兼容层保留。
-- 新页面应优先复用 optimized token 与现有业务组件，不再新增 UWP 专属视觉规则。
-- 信息层级收紧：隐藏 eyebrow / phase badge / colored tags，标签改为正文内联文本，页面标题与说明合并为一个头部。
-- optimized 基线要求支持浅色 / 深色主题、216px 侧栏、12 列桌面网格和 390px 窄屏布局。
+- `app/optimized.css` 已接入根布局，提供当前 Shell、Today、Dashboard、Routes、Import、Settings、Auth 的共享视觉 token 和响应式覆盖。
+- `app/globals.css`、`app/uwp.css`、`uwp-root.tsx` 与 `uwp_components` 暂作为兼容层保留；新页面不再扩展 UWP 专属视觉规则。
+- 新页面优先复用 optimized token 与现有业务组件，保持浅色工作区、216px 桌面侧栏、12px 卡片圆角和清晰的信息层级。
+- 桌面主内容必须位于 `.app-shell` 第二列；窄屏按 `860 / 640 / 560 / 420px` 断点重排，具体规则见设计协作规范。
+- 不恢复已清理的 P1 静态原型和重复预览图；需要回溯旧方案时查阅 Git 历史。P2 / P3 规划原型仅在 `design/p2p3/`，不代表真实功能已经实现。深色主题不作为当前已验收能力。
 
 ---
 
@@ -221,7 +228,7 @@ pnpm build       # 通过
 - 后端 `pytest` 全绿。
 - 桌面 1440px 与移动端 390px 布局通过。
 
-截图（以下为 Phase 1 联调时的旧版 UWP 验收截图；optimized 基线迁移完成后将更新）：
+截图（以下为 Phase 1 联调时的旧版 UWP 验收记录，不代表当前页面视觉）：
 
 | 今日 | 执行看板 |
 | --- | --- |
@@ -243,13 +250,11 @@ pnpm build       # 通过
 
 ## 7. 已知限制
 
-0. `design/optimized/` 已确定为正式视觉基线；全部页面原型已补齐，工程页面仍在迁移中。
-
 1. 引导步骤 3 的文件选择仍是占位，导入在 `/import` 完成。
 2. 企微测试发送需要有效 Webhook；`send_time` 已存储但定时调度仍按后端默认时间。
 3. 没有自动化 E2E；当前为 lint/typecheck/build + 浏览器手工验收。
 4. 时间戳仍按 UTC 解析（后端当前不带 `Z`）。
-5. Phase 2/3 页面（practice / quiz / mistakes / capability）未开始。
+5. Phase 2/3 的 React 页面与真实接口尚未开始；规划原型和接入说明见 `design/p2p3/README.md`，不视为已验收功能。
 
 ---
 
@@ -284,12 +289,8 @@ git branch -vv
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | 技术架构、数据流、API 接入方式 |
 | [docs/phase1-acceptance.md](docs/phase1-acceptance.md) | Phase 1 验收、回填/预览/加任务证据与上线检查 |
-| [design/optimized/README.md](design/optimized/README.md) | **正式视觉基线**：optimized 浅色 / 深色 dashboard 与 today |
-| [design/optimized/index.html](design/optimized/index.html) | 全页面原型入口：今日、看板、路线、导入、设置、登录、引导 |
-| [design/visual-proposal.html](design/visual-proposal.html) | 产品导向的视觉提案 demo，可直接用浏览器打开 |
-| [design/visual-design.md](design/visual-design.md) | 历史设计方向、token、组件、信息架构 |
-| [design/page-spec.md](design/page-spec.md) | 逐页规格、状态机、API 映射、验收点 |
-| [design/persistlog-phase1-prototype.html](design/persistlog-phase1-prototype.html) | 静态设计原型 |
+| [docs/frontend-design-guidelines.md](docs/frontend-design-guidelines.md) | **当前 P1 页面设计协作基准**：视觉、布局、动效、细节与文字内容 |
+| [design/p2p3/README.md](design/p2p3/README.md) | **P2 / P3 规划原型**：页面、主流程、异常状态、数据口径与工程边界 |
 | [docs/01-产品与功能.md](https://github.com/QingTong1-ops/PersistLog/blob/backend-main/docs/01-产品与功能.md) | 产品范围、功能规格、验收 |
 | [docs/02-技术设计.md](https://github.com/QingTong1-ops/PersistLog/blob/backend-main/docs/02-技术设计.md) | 架构、数据、API、算法 |
 | [docs/openapi.json](https://github.com/QingTong1-ops/PersistLog/blob/backend-main/docs/openapi.json) | 当前后端契约 |
@@ -297,4 +298,4 @@ git branch -vv
 ---
 
 **维护者**：恒序 persistLog  
-**最后更新**：2026-11-13
+**最后更新**：2026-11-15

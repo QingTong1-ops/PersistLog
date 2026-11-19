@@ -1,9 +1,9 @@
 # 恒序 persistLog · 前端技术架构
 
 - **版本**：v0.2（Phase 1 页面 + 前后端联调）
-- **日期**：2026-10-19
+- **更新日期**：2026-11-15
 - **对应代码**：`persistLogFrontend/`
-- **设计依据**：[`design/visual-design.md`](../design/visual-design.md)、[`design/page-spec.md`](../design/page-spec.md)
+- **设计依据**：[P1 页面设计协作规范](frontend-design-guidelines.md) 与当前 React 实现；[P2 / P3 规划原型](../design/p2p3/README.md)
 
 ---
 
@@ -13,7 +13,7 @@
 | --- | --- |
 | 框架 | Next.js 16（App Router） |
 | UI | React 19 + TypeScript 5.9 |
-| 样式 | 正式基线为 `design/optimized/` 的浅色 / 深色 token；当前未迁移页面仍使用 UWP 兼容层 |
+| 样式 | `app/optimized.css` 当前浅色视觉覆盖；`app/globals.css` / `app/uwp.css` 提供基础布局与兼容规则 |
 | 组件 | 业务组件优先；`uwp_components` 仅作为迁移期间的旧版兼容层 |
 | 图标 | lucide-react |
 | 包管理 | pnpm 12 |
@@ -67,8 +67,9 @@ app/layout.tsx（RootLayout）
 | `lib/store/` | 跨页面 today/routes/profile/授权状态 | 服务端持久化 |
 | `lib/api/` | fetch、Bearer、401 刷新、端点、映射 | UI 逻辑 |
 | `lib/mock-data.ts` | 未登录时的设计演示数据 | 生产数据 |
-| `app/globals.css` / `app/uwp.css` / `app/optimized.css` | 业务布局、旧版 UWP 兼容层、optimized 正式视觉覆盖 | 组件内联样式 |
-| `design/optimized/` | 正式视觉基线、浅色 / 深色 token、dashboard / today 参考实现 | 业务数据与 API |
+| `app/globals.css` / `app/uwp.css` / `app/optimized.css` | 业务布局、旧版 UWP 兼容层、当前视觉覆盖 | 组件内联样式 |
+| `docs/frontend-design-guidelines.md` | 当前 P1 视觉、布局、动效、细节与文字协作基准 | 业务数据与 API |
+| `design/p2p3/` | P2 / P3 页面规划、静态交互与接入口径 | 真实业务、API 持久化或 AI 调用 |
 
 ---
 
@@ -179,16 +180,16 @@ notifications.channels / createChannel / updateChannel / deleteChannel /
 
 ---
 
-## 6. 设计系统迁移
+## 6. 设计系统与样式边界
 
-`design/optimized/` 已确定为新的正式视觉基线，优先级高于历史 `design/prototype.*` 与旧版 UWP 皮肤。
+当前 P1 设计基准是 [P1 页面设计协作规范](frontend-design-guidelines.md) 与 React 实现，不恢复已清理的 P1 静态原型和重复规格。P2 / P3 规划原型统一放在 [design/p2p3/](../design/p2p3/README.md)，用于后续页面与交互协作；未经 React、真实接口和浏览器验收，不视为已实现功能。
 
-- 浅色 token、布局、卡片、侧栏、dashboard / today 结构以 `design/optimized/assets/app.css` 为准。
-- 深色主题以 `design/optimized/assets/deepmind-app.css` 与 `deepmind-dark.css` 为准。
-- 正式基线要求支持 216px 桌面侧栏、可折叠导航、12 列网格、12px 卡片圆角、浅色 / 深色主题，以及 390px 窄屏布局。
-- 当前 `app/optimized.css` 已由根布局加载，先统一 Shell、Today、Dashboard、Routes、Import、Settings、Auth 的共享 token 和响应式行为；`components/uwp-root.tsx`、`app/uwp.css` 与 `uwp_components` 暂作为迁移期间的旧版兼容层保留，不再扩展新的 UWP 专属样式。
-- `design/prototype.css`、`prototype.js` 与旧版截图保留作为历史参考，不再作为新页面实现依据。
-- 图标继续使用 `lucide-react`，业务组件应将颜色、间距、圆角和主题值集中到正式 token 中。
+- `app/optimized.css` 由根布局最后加载，提供当前浅色工作区的共享 token、布局和响应式覆盖。
+- `app/globals.css`、`app/uwp.css`、`components/uwp-root.tsx` 与 `uwp_components` 暂作为旧版兼容层保留，不再扩展新的 UWP 专属样式。
+- 新样式优先使用 `--primary`、`--text-*`、`--surface-*` 等 optimized token；旧 `--brand-*` / `--ink-*` 变量只用于兼容映射。
+- 桌面侧栏为 216px，卡片圆角为 12px；工作台使用 `.app-shell`，不能将通用 `.app` 当作工作台网格容器。
+- 图标继续使用 `lucide-react`，业务组件应将颜色、间距、圆角和主题值集中到当前 token 中。
+- 历史设计可通过 Git 回溯；旧原型中的深色主题、假数据和未落地交互不作为当前实现依据。
 
 ---
 
@@ -196,23 +197,25 @@ notifications.channels / createChannel / updateChannel / deleteChannel /
 
 | 断点 | 行为 |
 | --- | --- |
-| > 1200 | 220px 侧边栏 + 多列 |
-| ≤ 1024 | 侧边栏收窄；今日/导入/看板单列 |
-| ≤ 860 | 隐藏侧边栏；顶部品牌 + 底部 4 导航 |
-| ≤ 640 | 任务两行、表单单列、设置导航 2×2、弹窗底部抽屉 |
-| ≤ 420 | KPI 单列、按钮全宽 |
+| > 1200 | 216px 侧栏 + 多列主内容 |
+| 861–1200 | 196px 侧栏；861–1100 沿用隐藏侧栏文字的紧凑导航 |
+| ≤ 860 | 隐藏侧栏；顶部品牌 + 底部 4 导航，主要内容单列，指标双列 |
+| ≤ 640 | 今日 Hero 与容量卡重排，主要按钮触控高度至少 44px |
+| ≤ 560 | 页头与操作区纵向排列，表单单列 |
+| ≤ 420 | KPI 单列、Hero 操作按钮全宽 |
 
-移动端入口：今日 / 看板 / 路线 / 我的；导入从今日空态和路线页进入。
+移动端入口：今日 / 看板 / 路线 / 我的；导入从今日空态和路线页进入。完整约束见设计协作规范。
 
 ---
 
 ## 8. 可访问性
 
-- 所有按钮可键盘操作；Modal/Sheet 支持 Esc、焦点进入与关闭恢复。
+- 可交互控件保留键盘焦点与可读名称；图标按钮提供明确的 `aria-label`。
 - 进度环有 `aria-label` 和文本百分比；图表有总体 `aria-label`。
 - 状态使用文字 + 颜色；不仅靠色点。
-- `prefers-reduced-motion` 关闭过渡。
-- 抽屉/弹窗打开时锁滚动；关闭时恢复。
+- `prefers-reduced-motion` 将动画和过渡压至极短时长。
+- Sheet 已处理 Esc 和锁滚动；Modal 基于 ContentDialog，不能据此假定所有弹层都支持 Esc、完整焦点陷阱与焦点恢复。
+- 新增或修改弹层时，逐项验证焦点进入、Tab 顺序、焦点恢复、Esc、背景交互和锁滚动。
 
 ---
 
@@ -261,3 +264,4 @@ pnpm build
 - `components/dashboard/dashboard-view.tsx`：Phase 2 代码评分趋势区块。
 - `components/settings/settings-view.tsx`：Phase 3 复习参数面板。
 - `app/globals.css`：新增组件前先复用现有 token/类。
+- [P2 / P3 页面原型](../design/p2p3/README.md)：页面路由、主流程、异常状态与领域组件基准；先核对接口再实现，不直接搬运演示数据。
