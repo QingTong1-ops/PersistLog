@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="P3 AI 诊断、路线预览、局部调整与用户确认原型。">
+  <title>诊断与路线生成 · P3 原型 · 恒序</title>
+  <link rel="stylesheet" href="assets/prototype.css">
+  <script defer src="assets/prototype.js"></script>
+</head>
+<body data-page="route-generate">
+  <template id="page-content">
+    <header class="page-head"><div><h1>诊断与路线生成</h1><p>从简历、目标和困境生成路线草案，调整并确认后才进入计划。</p></div><span class="tag">不会覆盖执行中的路线</span></header>
+    <ol class="stepper" aria-label="路线生成步骤"><li class="is-active" data-step-indicator="1">1. 填写背景</li><li data-step-indicator="2">2. 预览与调整</li><li data-step-indicator="3">3. 确认草案</li></ol>
+
+    <section data-route-step="1">
+      <form id="route-input-form" class="split">
+        <section class="card"><div class="card__head"><div><h2>背景与目标</h2><p>以下为示例输入，不包含真实简历或个人信息。</p></div><span class="tag">演示内容</span></div><div class="card__body"><div class="form-grid">
+          <div class="field"><label for="target-role">目标岗位</label><input id="target-role" required value="Java 后端开发实习生"></div>
+          <div class="field"><label for="target-date">目标日期</label><input id="target-date" type="date" value="2027-02-28" required></div>
+          <div class="field"><label for="daily-time">每日可投入时间</label><select id="daily-time"><option value="120">120 分钟</option><option value="90">90 分钟</option><option value="180">180 分钟</option></select><p class="field__hint">示例按 80% 有效容量计算。</p></div>
+          <div class="field"><label for="route-period">路线周期</label><select id="route-period"><option value="12">12 周</option><option value="8">8 周</option><option value="16">16 周</option></select></div>
+          <div class="field field--full"><label for="resume-text">简历与项目摘要</label><textarea id="resume-text" required style="min-height:140px">熟悉 Java 基础，完成过一个订单服务项目。使用 Spring Boot、MySQL 和 Redis 实现了基础接口，但对缓存一致性、幂等设计和项目复盘不够熟练。</textarea></div>
+          <div class="field field--full"><label for="dilemma-text">当前困境</label><textarea id="dilemma-text" required>能跟着教程完成接口，但独立排查问题较慢；回答项目问题时容易只讲功能，无法说明设计取舍。</textarea><p class="field__hint">只填写与求职相关的技能、表达、时间或面试反馈。</p></div>
+          <div class="field field--full"><label class="checkbox"><input type="checkbox" required checked>同意将上述示例内容发送给第三方 AI 生成诊断与路线草案</label><p class="field__hint">真实实现需要记录对应授权；撤回授权不影响已有路线。</p></div>
+        </div></div></section>
+        <div class="stack">
+          <section class="card"><div class="card__head"><div><h2>生成后你可以</h2><p>先检查，再决定是否采用。</p></div></div><div class="card__body"><ul class="check-list"><li><strong>调整强度和侧重</strong><p>改变每周任务量，检查总工作量是否超过容量。</p></li><li><strong>锁定不需改写的阶段</strong><p>局部重生成时，已锁定阶段保持不变。</p></li><li><strong>保留路线版本</strong><p>确认后形成新草案，不覆盖已有执行记录。</p></li></ul></div></section>
+          <div class="notice notice--warning">如果时间不足或目标过高，页面必须明确提示，并提供降低强度、延长周期或缩小范围的选择。</div>
+          <section class="card"><div class="card__head"><div><h2>求职平台入口</h2><p>只打开目标网站，不传输账户、简历、任务或错题。</p></div></div><div class="card__body"><div class="actions"><a class="btn btn--sm" href="https://leetcode.cn/" target="_blank" rel="noopener noreferrer">LeetCode<svg class="icon" aria-hidden="true"><use href="#icon-external"></use></svg></a><a class="btn btn--sm" href="https://www.nowcoder.com/" target="_blank" rel="noopener noreferrer">牛客<svg class="icon" aria-hidden="true"><use href="#icon-external"></use></svg></a></div></div></section>
+        </div>
+        <div class="form-actions" style="grid-column:1/-1"><button class="btn btn--primary" type="submit">查看诊断与路线草案</button></div>
+      </form>
+    </section>
+
+    <section data-route-step="2" hidden>
+      <div class="stack">
+        <section class="card"><div class="card__head"><div><h2>诊断摘要</h2><p>基于示例输入的预置结果，不是真实 AI 诊断。</p></div><span class="tag">产品示意</span></div><div class="card__body"><div class="stat-strip"><div class="stat-item"><span class="stat-item__label">已有基础</span><strong class="stat-item__value" style="font-size:20px">能完成基础接口</strong><span class="stat-item__note">来自用户填写的项目摘要</span></div><div class="stat-item"><span class="stat-item__label">优先补足</span><strong class="stat-item__value" style="font-size:20px">缓存与幂等</strong><span class="stat-item__note">先结合现有订单项目</span></div><div class="stat-item"><span class="stat-item__label">表达重点</span><strong class="stat-item__value" style="font-size:20px">说明设计取舍</strong><span class="stat-item__note">每周安排一次项目复盘</span></div></div></div></section>
+        <section class="card"><div class="card__head"><div><h2>路线草案</h2><p id="route-capacity-label">12 周 · 每日 120 分钟 · 有效容量约 134.4 小时</p></div><label class="filters"><span class="sr-only">调整每周任务强度</span><select id="route-intensity"><option value="72">稳健 · 每周 6 项</option><option value="84">标准 · 每周 7 项</option><option value="96">集中 · 每周 8 项</option></select></label></div><div class="card__body">
+          <div class="stat-strip" style="border:1px solid var(--line);border-radius:8px"><div class="stat-item"><span class="stat-item__label">任务总量</span><strong class="stat-item__value" id="route-task-count" style="font-size:22px">72 项任务</strong></div><div class="stat-item"><span class="stat-item__label">预计工作量</span><strong class="stat-item__value" id="route-hours" style="font-size:22px">108 小时</strong></div><div class="stat-item"><span class="stat-item__label">剩余容量</span><strong class="stat-item__value" id="route-buffer" style="font-size:22px">26.4 小时</strong></div></div>
+          <div class="notice notice--error" id="route-capacity-warning" role="alert" style="margin-top:14px" hidden></div>
+          <div class="stack" style="margin-top:20px;gap:14px">
+            <section style="padding:16px;border:1px solid var(--line);border-radius:8px"><div class="list-row" style="padding:0;border:0"><div><h3>第 1 阶段 · 基础与验证</h3><p class="list-row__meta" data-stage-summary="0">第 1–4 周 · 24 项任务 · 36 小时</p></div><span class="tag tag--neutral">保留原结构</span></div><p class="small muted" style="margin-top:12px">产出：缓存对比表、幂等设计说明与自测记录；每周至少一个可验收产出。</p></section>
+            <section style="padding:16px;border:1px solid var(--line);border-radius:8px"><div class="list-row" style="padding:0;border:0"><div><h3>第 2 阶段 · 订单项目实践</h3><p class="list-row__meta" data-stage-summary="1">第 5–8 周 · 24 项任务 · 36 小时</p></div><label class="checkbox" style="width:fit-content"><input id="route-lock-stage" type="checkbox">锁定此阶段</label></div><p class="small muted" style="margin-top:12px">产出：缓存一致性方案、幂等接口实现与异常恢复说明。</p><div class="actions" style="margin-top:12px"><button class="btn btn--sm" type="button" id="regenerate-stage">仅调整此阶段</button></div><p class="notice notice--good" id="stage-update" style="margin-top:12px" hidden>第 2 阶段已增加一次异常恢复演练（演示）；第 1、3 阶段未改变。</p></section>
+            <section style="padding:16px;border:1px solid var(--line);border-radius:8px"><div class="list-row" style="padding:0;border:0"><div><h3>第 3 阶段 · 表达与复盘</h3><p class="list-row__meta" data-stage-summary="2">第 9–12 周 · 24 项任务 · 36 小时</p></div><span class="tag tag--neutral">保留原结构</span></div><p class="small muted" style="margin-top:12px">产出：项目讲解提纲、追问记录与每周复盘；每 7 天保留缓冲与复盘空间。</p></section>
+          </div>
+        </div><div class="card__foot"><div class="form-actions"><button class="btn" id="route-edit" type="button">返回修改背景</button><button class="btn btn--primary" id="accept-route" type="button">确认路线草案</button></div></div></section>
+      </div>
+    </section>
+
+    <section data-route-step="3" hidden>
+      <div class="split">
+        <section class="card"><div class="card__head"><div><h2>确认新草案</h2><p>确认前最后检查路线范围与已有数据的影响。</p></div></div><div class="card__body"><ul class="check-list"><li><strong>新建一份路线草案</strong><p>不覆盖正在执行的路线，不改写已有完成记录。</p></li><li><strong>保留本次输入与调整</strong><p>诊断、强度、锁定阶段和局部调整都进入版本记录。</p></li><li><strong>由你决定何时启用</strong><p>创建草案不等于替换当前主路线，启用前仍可检查。</p></li></ul><div class="notice notice--good" id="route-confirmed" role="status" style="margin-top:18px" hidden>已完成确认流程演示。未调用 AI，也未创建或修改真实路线。</div></div></section>
+        <section class="card"><div class="card__head"><div><h2>草案摘要</h2><p>Java 后端开发实习生</p></div></div><div class="card__body"><div class="meta" style="margin-top:0"><span id="confirm-route-period">12 周</span><span id="confirm-task-count">72 项任务</span><span id="confirm-daily-time">每天 120 分钟</span></div><div class="form-actions"><button class="btn" id="route-back" type="button">返回调整</button><button class="btn btn--primary" id="confirm-route" type="button">创建路线草稿</button></div></div></section>
+      </div>
+    </section>
+  </template>
+  <div id="prototype-root"></div>
+  <noscript><p class="no-script">请启用 JavaScript，以浏览和操作这个静态原型。</p></noscript>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="P2 网页代码与文件提交原型，提交后进入独立异步评审页。">
+  <title>提交代码 · P2 原型 · 恒序</title>
+  <link rel="stylesheet" href="assets/prototype.css">
+  <script defer src="assets/prototype.js"></script>
+  <script defer src="assets/practice-review.js"></script>
+</head>
+<body data-page="practice-detail">
+  <template id="page-content">
+    <header class="page-head"><div><h1>提交代码</h1><p>补充自测与复杂度说明。提交成功后进入独立评审页，无需停留在表单等待。</p></div><div class="page-head__actions"><a class="btn" href="practice.html">返回提交历史</a></div></header>
+    <div class="notice notice--info" style="margin-bottom:20px">这是异步交互演示，不会真正调用 Agent 或上传代码。选择文件后仅在浏览器本地读入编辑区，不执行文件。</div>
+    <p class="notice" id="draft-restored" role="status" style="margin-bottom:20px" hidden>已恢复当前标签页中的代码与说明；尚未创建真实提交。</p>
+    <form id="practice-form" class="stack">
+      <section class="card"><div class="card__head"><div><h2>练习信息</h2><p>这些信息会与代码快照一起进入本次评审。</p></div><span class="tag">提交示例</span></div><div class="card__body"><div class="form-grid">
+        <div class="field field--full"><label for="practice-title">题目名称</label><input id="practice-title" required value="实现支持过期时间的 LRU 缓存"></div>
+        <div class="field"><label for="practice-language">语言</label><select id="practice-language"><option>Python 3.11</option><option>Java 17</option><option>JavaScript</option><option>TypeScript</option></select></div>
+        <div class="field"><label for="practice-difficulty">难度</label><select id="practice-difficulty"><option>中等</option><option>简单</option><option>困难</option><option>未标记</option></select></div>
+        <div class="field"><label for="practice-source">题目来源</label><input id="practice-source" value="学习路线 · 第 3 阶段" readonly></div>
+        <div class="field"><label for="practice-tags">标签</label><input id="practice-tags" value="缓存, 数据结构"></div>
+        <div class="field"><label for="time-complexity">自己判断的时间复杂度</label><input id="time-complexity" value="平均 O(1)" required></div>
+        <div class="field"><label for="space-complexity">自己判断的空间复杂度</label><input id="space-complexity" value="O(capacity)" required></div>
+        <div class="field field--full"><label for="practice-notes">思路说明（可选）</label><textarea id="practice-notes">使用 OrderedDict 维护访问顺序，写入时保存过期时间；希望重点检查边界与过期处理。</textarea></div>
+      </div></div></section>
+
+      <section class="card"><div class="card__head"><div><h2>代码</h2><p>评审页将保留这次提交的完整代码快照。</p></div><span class="tag tag--neutral" id="code-file-tag">solution.py</span></div><div class="card__body"><div class="field"><label for="code-input">粘贴代码</label><textarea class="code-editor" id="code-input" required spellcheck="false">from collections import OrderedDict
+from time import monotonic
+
+class LRUCache:
+    def __init__(self, capacity: int, ttl: float):
+        self.capacity = capacity
+        self.ttl = ttl
+        self.entries = OrderedDict()
+
+    def get(self, key: str):
+        entry = self.entries.get(key)
+        if entry is None:
+            return None
+        return entry[0]
+
+    def put(self, key: str, value: int):
+        self.entries[key] = (value, monotonic() + self.ttl)
+        self.entries.move_to_end(key)
+        if len(self.entries) > self.capacity:
+            self.entries.popitem(last=False)</textarea></div><div class="field" style="margin-top:14px"><label for="code-file">或选择代码文件</label><input id="code-file" type="file" accept=".py,.java,.js,.ts,.txt"><p class="field__hint" id="code-file-name">支持文本代码文件，最大 200 KB；仅在本地读取，不上传或执行。</p></div></div></section>
+
+      <section class="card"><div class="card__head"><div><h2>自测与说明</h2><p>允许未测，但不会据此给出正确性分。</p></div></div><div class="card__body"><div class="form-grid">
+        <div class="field field--full"><label for="test-status">自测情况</label><select id="test-status"><option value="provided">已填写自测结果</option><option value="untested">尚未自测</option></select></div>
+        <div class="field"><label for="test-passed">通过用例数</label><input id="test-passed" data-test-field type="number" min="0" value="3" required></div>
+        <div class="field"><label for="test-total">总用例数</label><input id="test-total" data-test-field type="number" min="1" value="4" required></div>
+        <div class="field field--full"><label for="test-failed">失败用例（可选）</label><textarea id="test-failed" data-test-field>过期键再次读取时，仍返回旧值。</textarea></div>
+      </div><p class="field-error" id="test-error" role="alert" hidden>通过用例数不能大于总用例数，请检查后再提交。</p><div style="margin-top:16px"><label class="checkbox"><input type="checkbox" required checked>本次代码由我本人独立完成</label><label class="checkbox"><input type="checkbox" required checked>真实提交时，同意将本次代码与说明发送给第三方 AI 做静态评审</label></div></div></section>
+      <div class="notice notice--info"><strong>评审范围：</strong>静态风险、复杂度、代码质量、自测与表达。不执行代码，不提供 AC 判定，不测运行时间或内存。</div>
+      <div class="form-actions" style="margin-top:0"><button class="btn" id="save-code-draft" type="button">保存草稿</button><button class="btn btn--primary" id="practice-submit" type="submit">提交并开始异步评审</button></div>
+    </form>
+  </template>
+  <div id="prototype-root"></div>
+  <noscript><p class="no-script">请启用 JavaScript，以浏览和操作这个静态原型。</p></noscript>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="P2 代码评分、自测通过率和改进项趋势原型。">
+  <title>代码评分趋势 · P2 原型 · 恒序</title>
+  <link rel="stylesheet" href="assets/prototype.css">
+  <script defer src="assets/prototype.js"></script>
+  <script defer src="assets/practice-review.js"></script>
+</head>
+<body data-page="code-dashboard">
+  <template id="page-content">
+    <header class="page-head"><div><h1>执行看板</h1><p>新增的代码评审区块关注代码质量变化，不把单次评分当作能力结论。</p></div><div class="page-head__actions"><a class="btn" href="practice.html">查看提交历史</a><a class="btn btn--primary" href="practice-detail.html">提交代码</a></div></header>
+    <div class="segmented" aria-label="趋势时间范围"><button type="button" data-trend-range="7" aria-pressed="false">近 7 天</button><button type="button" data-trend-range="30" aria-pressed="true">近 30 天</button></div>
+    <div class="stack">
+      <section class="card stat-strip" aria-label="代码评分演示统计">
+        <div class="stat-item"><span class="stat-item__label">代码提交</span><strong class="stat-item__value" id="trend-count">12</strong><span class="stat-item__note">次 · 当前时间范围</span></div>
+        <div class="stat-item"><span class="stat-item__label">平均评审得分</span><strong class="stat-item__value" id="trend-average">76</strong><span class="stat-item__note">满分 100 · 已评分提交</span></div>
+        <div class="stat-item"><span class="stat-item__label">最高评审得分</span><strong class="stat-item__value" id="trend-high">88</strong><span class="stat-item__note">满分 100 · 单次提交</span></div>
+        <div class="stat-item"><span class="stat-item__label">改进项完成</span><strong class="stat-item__value" id="trend-improved">5 / 8</strong><span class="stat-item__note">用户标记已改 · 项</span></div>
+      </section>
+      <div class="split">
+        <section class="card"><div class="card__head"><div><h2>代码评分趋势</h2><p id="trend-range-label">近30天 · 演示数据</p></div><a class="btn btn--sm" href="practice-review.html?submission=04">评审示例</a></div><div class="card__body"><svg class="chart" id="code-trend-chart" viewBox="0 0 720 230" role="img" aria-label="近30天代码评分演示趋势"></svg><div class="legend"><span><i></i>评审平均分 / 100</span><span><i class="is-good"></i>自测通过率 / %</span></div><p class="field__hint" style="margin-top:12px">自测通过率只统计用户填写了自测结果的提交；它不是系统判题结果。</p></div></section>
+        <div class="stack">
+          <section class="card"><div class="card__head"><div><h2>评分口径</h2><p>趋势只用于比较代码评审结果。</p></div></div><div class="card__body"><ul class="check-list"><li><strong>看提交，不看打卡</strong><p>只有实际代码提交与有效评审进入趋势。</p></li><li><strong>看改进是否完成</strong><p>后续提交可以关联上次改进，用户主动确认是否已处理。</p></li><li><strong>没有结果就不补分</strong><p>待评审、失败和未评估记录不进入平均分。</p></li></ul></div></section>
+          <div class="notice notice--info">本区块接入现有执行看板，不新增“能力准备度”。完整能力证据在 P3 单独展示。</div>
+        </div>
+      </div>
+      <section class="card"><div class="card__head"><div><h2>最近提交</h2><p>评分、风险与自测结果同时展示，点击任一记录查看完整详情。</p></div><a class="btn btn--sm" href="practice.html">全部记录</a></div><div class="card__body"><ul class="list" id="dashboard-history-list" aria-label="最近提交与评审入口"></ul></div></section>
+    </div>
+  </template>
+  <div id="prototype-root"></div>
+  <noscript><p class="no-script">请启用 JavaScript，以浏览和操作这个静态原型。</p></noscript>
+</body>
+</html>

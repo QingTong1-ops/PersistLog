@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="恒序 persistLog P2 代码反馈与 P3 复盘、错题、能力看板页面原型。">
+  <title>恒序 persistLog · P2 / P3 页面原型</title>
+  <link rel="stylesheet" href="assets/prototype.css">
+  <script defer src="assets/prototype.js"></script>
+</head>
+<body data-page="index">
+  <template id="page-content">
+    <section class="card directory-hero">
+      <span class="focus-label">P2 / P3 · 页面设计基准</span>
+      <h1>从执行记录，到代码反馈与长期记忆</h1>
+      <p>沿用当前工作台，把代码提交、提问、错题和能力证据串成可以继续行动的流程。本目录全部使用演示数据，不会提交代码、调用 AI 或修改真实路线。</p>
+      <div class="meta"><span>浅色工作区</span><span>桌面与窄屏</span><span>键盘可操作</span><span>静态本地原型</span></div>
+    </section>
+
+    <section class="directory-section" aria-labelledby="phase2-title">
+      <div class="directory-section__head"><h2 id="phase2-title">P2 · 代码反馈</h2><p>网页提交代码，查看有证据的静态评审；不运行代码。</p></div>
+      <div class="directory-grid">
+        <a class="directory-card" href="practice.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg></span>
+          <h3>代码练习</h3><p>从今日算法任务进入提交，筛选历史记录与评审状态。</p>
+          <div class="directory-card__foot"><code>/practice</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="practice-detail.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-file"></use></svg></span>
+          <h3>提交代码</h3><p>填写代码、自测与复杂度说明，提交后进入独立评审页。</p>
+          <div class="directory-card__foot"><code>/practice/new</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="practice-review.html?submission=04">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg></span>
+          <h3>异步评审详情</h3><p>代码与核心反馈同屏对照，过程摘要可折叠，下方继续改进与复盘。</p>
+          <div class="directory-card__foot"><code>/practice/{id}</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="code-dashboard.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-chart"></use></svg></span>
+          <h3>代码评分趋势</h3><p>在既有看板中加入提交次数、评分、自测与改进项趋势。</p>
+          <div class="directory-card__foot"><code>/dashboard · 算法评审</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="directory-section" aria-labelledby="phase3-title">
+      <div class="directory-section__head"><h2 id="phase3-title">P3 · 反馈与记忆</h2><p>让用户确认路线，让回答进入复习，让能力结论有证据。</p></div>
+      <div class="directory-grid">
+        <a class="directory-card" href="route-generate.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-route"></use></svg></span>
+          <h3>诊断与路线生成</h3><p>填写背景、预览草案、调整强度并锁定不需改写的阶段。</p>
+          <div class="directory-card__foot"><code>/routes/generate</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="quiz.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-message"></use></svg></span>
+          <h3>每日提问</h3><p>4 道文字题、示例反馈、追问与生成错题的入口。</p>
+          <div class="directory-card__foot"><code>/quiz</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="mistakes.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-book"></use></svg></span>
+          <h3>错题与复习</h3><p>筛选错题，查看原始回答，按掌握情况更新复习队列。</p>
+          <div class="directory-card__foot"><code>/mistakes</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="capability.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-target"></use></svg></span>
+          <h3>能力看板</h3><p>准备度、证据覆盖率、未评估状态与可追溯的证据记录。</p>
+          <div class="directory-card__foot"><code>/dashboard · 能力区块</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="review-settings.html">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg></span>
+          <h3>复习设置</h3><p>调整复习间隔、每日配额与容量上限，预览调度结果。</p>
+          <div class="directory-card__foot"><code>/settings/review</code><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="practice-review.html?submission=01&state=failed">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg></span>
+          <h3>评审失败</h3><p>失败原因与代码同时保留，重试追加一条记录，不覆盖旧结果。</p>
+          <div class="directory-card__foot"><span>查看失败示例</span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+        <a class="directory-card" href="practice-review.html?submission=04&state=insufficient">
+          <span class="directory-card__icon"><svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg></span>
+          <h3>证据不足</h3><p>没有自测证据时保留静态建议，但正确性和总分显示为未评估。</p>
+          <div class="directory-card__foot"><span>查看未评分示例</span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="directory-section card card__body" style="padding-top:20px" aria-labelledby="flow-title">
+      <h2 id="flow-title" style="margin-bottom:14px">跨页面主流程</h2>
+      <div class="flow"><span>今日任务</span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg><span>代码提交</span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg><span>证据与改进</span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg><span>每日提问</span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg><span>错题复习</span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg><span>能力证据</span></div>
+      <details class="details" style="margin-top:16px"><summary>原型范围与工程边界</summary><div class="details__body">P2 不包含代码执行、隐藏测试、性能实测、沙箱、CLI、Git 或 IDE。P3 的 AI 路线必须经过预览和用户确认，不能直接覆盖执行中的路线；能力证据不足时显示“未评估”，不显示 0 分。P1 页面不在本原型内，侧栏对应入口只用于说明归属。</div></details>
+    </section>
+  </template>
+  <div id="prototype-root"></div>
+  <noscript><p class="no-script">请启用 JavaScript，以浏览和操作这个静态原型。</p></noscript>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="P3 错题复习间隔、每日配额与容量调度设置原型。">
+  <title>复习设置 · P3 原型 · 恒序</title>
+  <link rel="stylesheet" href="assets/prototype.css">
+  <script defer src="assets/prototype.js"></script>
+</head>
+<body data-page="review-settings">
+  <template id="page-content">
+    <header class="page-head"><div><h1>复习设置</h1><p>调整复习节奏和每日投入，让错题进入现有计划，而不是形成一套独立任务。</p></div><a class="btn" href="mistakes.html">返回错题库</a></header>
+    <div class="notice notice--info" style="margin-bottom:20px">此页仅在本地预览输入效果，不保存到账户。默认节奏为第 2、3、7、14、28 天，每日最多 10 题。</div>
+    <form id="review-settings-form" class="split">
+      <div class="stack">
+        <section class="card"><div class="card__head"><div><h2>复习间隔</h2><p>使用递增至 365 天以内的正整数，相邻阶段不能重复。</p></div><span class="tag tag--good">间隔重复</span></div><div class="card__body"><div class="form-grid interval-fields" id="interval-fields">
+          <div class="field"><label for="interval-1">第 1 阶段</label><div><input id="interval-1" data-interval type="number" min="1" max="365" step="1" value="2" required></div><p class="field__hint">天</p></div>
+          <div class="field"><label for="interval-2">第 2 阶段</label><div><input id="interval-2" data-interval type="number" min="1" max="365" step="1" value="3" required></div><p class="field__hint">天</p></div>
+          <div class="field"><label for="interval-3">第 3 阶段</label><div><input id="interval-3" data-interval type="number" min="1" max="365" step="1" value="7" required></div><p class="field__hint">天</p></div>
+          <div class="field"><label for="interval-4">第 4 阶段</label><div><input id="interval-4" data-interval type="number" min="1" max="365" step="1" value="14" required></div><p class="field__hint">天</p></div>
+          <div class="field"><label for="interval-5">第 5 阶段</label><div><input id="interval-5" data-interval type="number" min="1" max="365" step="1" value="28" required></div><p class="field__hint">天</p></div>
+        </div><p class="field-error" id="review-settings-error" role="alert" hidden>复习间隔必须是递增的正整数，请检查相邻阶段。</p></div></section>
+        <section class="card"><div class="card__head"><div><h2>每日调度</h2><p>到期优先，超过今日配额的复习顺延，不随意丢弃。</p></div></div><div class="card__body"><div class="form-grid">
+          <div class="field"><label for="review-limit">每日复习上限</label><input id="review-limit" type="number" min="1" max="100" step="1" value="10" required><p class="field__hint">每日最多 1–100 道到期题。</p></div>
+          <div class="field"><label for="review-capacity">占今日学习容量上限</label><input id="review-capacity" type="number" min="1" max="100" step="1" value="35" required><p class="field__hint">默认 35%，与每日题数上限共同生效。</p></div>
+          <div class="field field--full"><label for="review-priority">到期任务安排</label><select id="review-priority"><option>优先复习到期题，再安排新任务</option><option>复习与新任务交替进行</option></select><p class="field__hint">具体调度由后端执行，页面只预览设置。</p></div>
+        </div></div></section>
+        <div class="form-actions" style="margin-top:0"><button class="btn" id="review-settings-reset" type="button">恢复默认</button><button class="btn btn--primary" type="submit">应用设置示例</button></div>
+      </div>
+      <div class="stack">
+        <section class="card"><div class="card__head"><div><h2>间隔预览</h2><p>从进入复习计划起计算的阶段示意。</p></div></div><div class="card__body"><div class="timeline" aria-label="复习间隔预览"><div class="timeline__item"><div class="timeline__dot"></div><strong id="preview-day-0">第 2 天</strong>初次回顾</div><div class="timeline__line"></div><div class="timeline__item"><div class="timeline__dot"></div><strong id="preview-day-1">第 3 天</strong>再次确认</div><div class="timeline__line"></div><div class="timeline__item"><div class="timeline__dot"></div><strong id="preview-day-2">第 7 天</strong>阶段巩固</div><div class="timeline__line"></div><div class="timeline__item"><div class="timeline__dot"></div><strong id="preview-day-3">第 14 天</strong>长期记忆</div><div class="timeline__line"></div><div class="timeline__item"><div class="timeline__dot"></div><strong id="preview-day-4">第 28 天</strong>周期复盘</div></div><p class="notice" id="review-quota-preview" style="margin-top:14px">每日最多 10 题，预计用时不超过今日容量的 35%。</p></div></section>
+        <section class="card"><div class="card__head"><div><h2>答完后的调度</h2><p>三种结果分别影响复习阶段。</p></div></div><div class="card__body"><ul class="check-list"><li><strong>答错</strong><p>回退一阶段，并在次日再次出现；不因为偶然答错而删除记录。</p></li><li><strong>答对，但不确定</strong><p>保持当前阶段，下次继续复习这道题。</p></li><li><strong>答对且确定</strong><p>进入下一阶段，按新间隔安排复习。</p></li></ul><details class="details"><summary>与每日计划的关系</summary><div class="details__body">到期复习优先占用设定容量；如果超过题数或时间上限，剩余题目顺延。已经答错而需要次日重现的题，不受普通新任务挤压。真实保存时还需考虑并发修改和已有复习进度。</div></details></div></section>
+      </div>
+    </form>
+  </template>
+  <div id="prototype-root"></div>
+  <noscript><p class="no-script">请启用 JavaScript，以浏览和操作这个静态原型。</p></noscript>
+</body>
+</html>

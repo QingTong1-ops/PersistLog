@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="P3 每日文字提问、示例反馈、追问和错题生成原型。">
+  <title>每日提问 · P3 原型 · 恒序</title>
+  <link rel="stylesheet" href="assets/prototype.css">
+  <script defer src="assets/prototype.js"></script>
+</head>
+<body data-page="quiz">
+  <template id="page-content">
+    <header class="page-head"><div><h1>每日提问</h1><p>4 道文字题，来自今日任务、历史错题与简历项目；不使用语音作答。</p></div><div class="page-head__actions"><button class="btn" id="quiz-timer" type="button">限时 10 分钟</button><a class="btn" href="mistakes.html">查看错题本</a></div></header>
+    <div class="notice notice--info" style="margin-bottom:20px">本页反馈是预置文案，仅演示结果结构，与输入内容无关，不会调用 AI 或写入错题本。</div>
+    <section class="card" style="margin-bottom:20px;padding:16px 20px"><div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:8px"><span class="small muted" id="quiz-progress-text">0 / 4 题已作答</span><span class="small muted">可暂停，不自动提交</span></div><div class="progress" id="quiz-progress" role="progressbar" aria-label="提问作答进度" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><span id="quiz-progress-bar" style="width:0%"></span></div></section>
+    <div class="quiz-layout">
+      <nav class="question-nav" aria-label="每日提问题目"><button type="button" class="is-active" data-question-index="0"><span class="question-number">1</span><span class="question-label">基础 · HTTP 缓存</span></button><button type="button" data-question-index="1"><span class="question-number">2</span><span class="question-label">原理 · JVM</span></button><button type="button" data-question-index="2"><span class="question-number">3</span><span class="question-label">项目 · 订单服务</span></button><button type="button" data-question-index="3"><span class="question-number">4</span><span class="question-label">场景 · 缓存一致性</span></button></nav>
+      <div class="stack">
+        <section class="card"><div class="card__body answer-panel" style="padding-top:20px">
+          <div id="quiz-complete" class="empty" hidden><h3>本次提问已演示完成</h3><p>可以回到题目检查回答，或前往错题本体验复习流程。</p><div class="actions" style="justify-content:center"><button class="btn" id="quiz-reset" type="button">重新演示</button><a class="btn btn--primary" href="mistakes.html">进入错题复习</a></div></div>
+          <form id="quiz-form">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><span class="tag" id="quiz-type">基础</span><span class="small muted" id="quiz-position">第 1 / 4 题</span></div>
+            <h2 id="quiz-title">强缓存和协商缓存的区别是什么？</h2><p class="answer-source" id="quiz-source">今日任务 · HTTP 缓存</p>
+            <div class="field"><label class="sr-only" for="quiz-answer">输入文字回答</label><textarea id="quiz-answer" aria-describedby="quiz-hint quiz-error" placeholder="用自己的话写下回答，再查看示例反馈。"></textarea><p class="field__hint" id="quiz-hint">可以从是否发起请求、响应头与失效条件三个方面回答。</p></div>
+            <p class="field-error" id="quiz-error" role="alert" hidden>请先写下你的回答，再查看反馈。</p>
+            <p class="notice notice--warning" id="quiz-time-notice" style="margin-top:12px" hidden>10 分钟已到，可以继续作答后再提交。</p>
+            <div class="actions" style="margin-top:14px"><button class="btn btn--primary" id="quiz-submit" type="submit">完成本题，查看示例反馈</button></div>
+            <section class="quiz-feedback" id="quiz-feedback" aria-label="预置反馈示例" hidden>
+              <div class="notice notice--warning"><strong>示例反馈：</strong><span id="quiz-feedback-text"></span></div>
+              <div class="check-list" style="margin-top:16px"><div><strong>需要补足</strong><p>准确性、完整性与结构表达；具体反馈应以真实回答为依据。</p></div><div><strong>生成错题</strong><p>真实流程中，答错或低分可自动生成错题，并保留原始回答与来源。</p></div></div>
+              <div class="actions"><button class="btn" id="quiz-followup" type="button">查看一个追问</button><button class="btn btn--primary" id="quiz-next" type="button">下一题</button></div>
+              <div class="notice" id="followup-box" style="margin-top:14px" hidden><strong>追问：</strong><span id="quiz-followup-text"></span><div class="field" style="margin-top:12px"><label for="followup-answer">继续文字作答</label><textarea id="followup-answer" style="min-height:88px"></textarea></div><button class="btn btn--sm" type="button" style="margin-top:10px" data-toast="已演示追问入口；真实反馈需要由后端返回。">查看追问反馈说明</button></div>
+            </section>
+          </form>
+        </div></section>
+        <div class="notice">每日提问可关联低分能力项与历史错题。答错或低分进入错题流程，但不要求用户每天额外整理任务。</div>
+      </div>
+    </div>
+  </template>
+  <div id="prototype-root"></div>
+  <noscript><p class="no-script">请启用 JavaScript，以浏览和操作这个静态原型。</p></noscript>
+</body>
+</html>

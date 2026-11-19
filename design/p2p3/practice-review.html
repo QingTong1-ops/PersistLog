@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="P2 独立异步评审页：代码快照、过程摘要、进度、评分、改进和历史。">
+  <title>评审详情 · P2 原型 · 恒序</title>
+  <link rel="stylesheet" href="assets/prototype.css">
+  <script defer src="assets/prototype.js"></script>
+  <script defer src="assets/practice-review.js"></script>
+</head>
+<body data-page="practice-review">
+  <template id="page-content">
+    <div class="review-flow">
+      <header class="page-head"><div><div class="meta" style="margin:0 0 8px"><span id="review-submission-id">提交 #04</span><span id="review-attempt-label">第 2 次评审</span></div><h1 id="review-title">代码评审</h1><p id="review-subtitle">读取提交快照、查看评审进度，再根据证据改进。</p></div><div class="page-head__actions"><a class="btn" href="practice.html">返回提交历史</a><button class="btn" id="review-retry" type="button">重新评审</button></div></header>
+
+      <section class="card review-progress" aria-labelledby="review-progress-title">
+        <div class="card__head"><div><h2 id="review-progress-title">评审进度</h2><p id="review-status-detail">正在读取本次提交…</p></div><span class="tag" id="review-state-badge">评审中</span></div>
+        <div class="card__body">
+          <div class="notice notice--info" id="review-notice" role="status" aria-live="polite">提交成功，评审已开始。可以离开此页，稍后回来查看最新结果。</div>
+          <div class="agent-progress__meta"><span id="review-stage-label">等待接收代码快照</span><span class="num" id="review-elapsed">0 秒</span></div>
+          <div class="progress" id="review-progress-bar" role="progressbar" aria-label="评审任务进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><span id="review-progress-value" style="width:8%"></span></div>
+          <details class="details review-process" id="review-process">
+            <summary><span>评审过程摘要</span><span class="review-process__hint">读取范围与处理步骤</span></summary>
+            <ol class="agent-trace" id="review-trace" aria-label="评审过程摘要"></ol>
+          </details>
+          <div class="review-progress__footer"><span class="field__hint" id="review-last-updated">异步流程演示 · 不调用真实 Agent</span><button class="btn btn--sm" id="review-refresh" type="button">刷新评审进度</button></div>
+        </div>
+      </section>
+
+      <div class="review-workspace">
+        <section class="card review-code-card" aria-labelledby="review-code-title">
+          <div class="card__head"><div><h2 id="review-code-title">提交的代码</h2><p id="review-code-meta">代码快照 · 只读</p></div><button class="btn btn--sm" id="review-edit" type="button">修改并新建提交</button></div>
+          <div class="card__body"><pre class="code-block review-code" id="review-code" tabindex="0" aria-label="本次提交的代码快照"></pre><div class="meta" id="review-test-meta"></div></div>
+        </section>
+
+        <div id="review-results" class="stack">
+          <section class="card" id="review-waiting"><div class="empty"><h3>评审尚未完成</h3><p>结果生成后会显示在这里。代码、进度和提交历史现在就可以查看，不需要重复提交。</p></div></section>
+
+          <section class="card" id="review-error" hidden><div class="card__head"><div><h2>暂时无法完成评审</h2><p>代码和已填写的内容仍然保留。</p></div><span class="tag tag--risk">评审失败</span></div><div class="card__body"><div class="notice notice--error" role="alert"><strong>评审服务暂时不可用。</strong>可稍后重试，重试会新建一次评审记录，不覆盖失败原因。</div><div class="actions"><button class="btn btn--primary" id="review-error-retry" type="button">重试本次评审</button><button class="btn" id="review-error-edit" type="button">返回检查代码</button></div></div></section>
+
+          <div class="stack" id="review-result" hidden>
+            <section class="card" aria-labelledby="review-score-title"><div class="card__head"><div><h2 id="review-score-title">评分结果</h2><p>静态示例，不是运行判题结果。</p></div><span class="tag tag--neutral">预置评分</span></div><div class="card__body">
+              <div class="score-panel"><div><span class="focus-label">最新评审结果</span><div class="score-value" style="margin-top:10px" id="review-score">76<small> / 100</small></div></div><div class="score-meta" id="review-score-meta"></div></div>
+              <div class="notice notice--warning" id="review-insufficient" style="margin-top:20px" hidden>未提供自测结果。正确性维度与总分暂不评定，未评估不等于 0 分。</div>
+              <div class="rubric" id="review-rubric" style="margin-top:24px"></div>
+            </div></section>
+
+            <section class="card" aria-labelledby="review-finding-title"><div class="card__head"><div><h2 id="review-finding-title">扣分依据与建议</h2><p>定位代码行，说明问题与修改理由。</p></div><span class="tag">基于代码证据</span></div><div class="card__body"><div id="review-finding"></div></div></section>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack" id="review-details" hidden>
+        <section class="card" aria-labelledby="review-improvements-title"><div class="card__head"><div><h2 id="review-improvements-title">改进方向</h2><p>最多保留三项可执行修改，每项都附验证方式。</p></div><span class="tag" id="improvement-count">0 / 3 项已标记</span></div><div class="card__body"><ul class="improvement-list" id="review-improvements"></ul></div></section>
+
+        <section class="card" aria-labelledby="review-followup-title"><div class="card__head"><div><h2 id="review-followup-title">复盘追问</h2><p>围绕同一份代码继续追问，不另起一套练习。</p></div></div><div class="card__body"><ol class="followup-list" id="review-followups"></ol><div class="field" style="margin-top:16px"><label for="review-followup-answer">写下你的回答（可选）</label><textarea id="review-followup-answer" placeholder="说明你的设计取舍，以及如何验证。"></textarea></div><div class="actions" style="margin-top:14px"><button class="btn" id="followup-save" type="button">保存回答示例</button><a class="btn btn--primary" href="quiz.html">去每日提问练习</a></div></div></section>
+        <div class="notice notice--warning"><strong>未评估：</strong>真实运行时间、内存占用与隐藏测试。过程摘要只展示读取范围、检查步骤与结论依据，不暴露或伪造 Agent 内部思维链。</div>
+      </div>
+
+      <section class="card" aria-labelledby="review-attempts-title"><div class="card__head"><div><h2 id="review-attempts-title">本次提交的评审记录</h2><p>重试追加记录，不覆盖旧结果；最新状态单独显示在页面顶部。</p></div><span class="tag tag--neutral" id="review-attempt-count"></span></div><div class="card__body"><ol class="attempt-list" id="review-attempts"></ol></div></section>
+
+      <section class="card" aria-labelledby="review-history-title"><div class="card__head"><div><h2 id="review-history-title">其他提交历史</h2><p>点击记录可切换详情，不需要返回列表。</p></div><a class="btn btn--sm" href="practice.html">筛选全部提交</a></div><div class="card__body"><ul class="list" id="review-history-list" aria-label="评审页中的提交历史"></ul></div></section>
+    </div>
+  </template>
+  <div id="prototype-root"></div>
+  <noscript><p class="no-script">请启用 JavaScript，以浏览和操作这个静态原型。</p></noscript>
+</body>
+</html>
