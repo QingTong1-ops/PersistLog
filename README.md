@@ -1,12 +1,12 @@
 # 恒序 persistLog · Frontend
 
-**当前状态**：Phase 1 页面已完成前后端联调与本轮视觉精修；以当前 React 页面和 `docs/frontend-design-guidelines.md` 为实现基准
+**当前状态**：P1 保留现有实现；P2 代码提交、评审与看板已完成 Mock 页面工程化，Live 接口待接入；P3 尚未开始。视觉遵循 `docs/frontend-design-guidelines.md`。
 
 **技术栈**：Next.js 16（App Router）+ React 19 + TypeScript；当前工程仍通过 `uwp_components` 承载旧版视觉适配
 
 **数据状态**：由启动/构建命令选择全项目 Mock 或 Live。默认 Live；Mock 包含 P1 演示登录与数据，不依赖后端；Live 失败不会回退为示例。
 
-**日期**：2026-11-19
+**日期**：2026-11-20
 
 **远程仓库**：<https://github.com/QingTong1-ops/PersistLog.git>
 
@@ -57,7 +57,7 @@ pnpm dev:live
 
 | 命令 | 作用 |
 | --- | --- |
-| `pnpm dev:mock` | 全项目演示模式；P1 本地适配器，P2/P3 后续沿用同一选择 |
+| `pnpm dev:mock` | 全项目演示模式；P1/P2 本地适配器，P3 后续沿用同一选择 |
 | `pnpm dev:live` / `pnpm dev` | 全项目真实接口模式 |
 | `pnpm build:mock` | 构建演示版本到 `.next/mock` |
 | `pnpm build:live` / `pnpm build` | 构建真实接口版本到 `.next/live` |
@@ -69,6 +69,8 @@ pnpm dev:live
 | `pnpm test:modes` | 启动参数、Mock P1 流程、Live 不回退及认证刷新测试 |
 | `pnpm test:modes:smoke` | 两种 build 完成后验证 HTTP 路由壳、登录入口、构建标记及代理隔离 |
 | `pnpm test:modes:dev` | 实际启动两种 dev 模式并检查登录页；测试仅结束自己创建的服务 |
+| `pnpm test:p2` | P2 字段校验、草稿、快照、评审/重试、评分空值与统计测试 |
+| `pnpm test:p2:browser` | P2 无头浏览器流程和响应式验收，准备方式见下方验收文档 |
 
 命令使用**英文冒号**。跨平台 Node 启动器 `scripts/run-mode.mjs` 注入 `NEXT_PUBLIC_DATA_SOURCE=mock|live`，无需改 `.env.local`，不接受页面 URL 参数切换模式。命令选择优先于继承的环境变量；不要直接用 `next dev/start` 绕过入口。
 
@@ -87,7 +89,7 @@ pnpm dev:live
 | 档案/目标/授权 | 当前已接入表单的本地保存和刷新读取 |
 | 通知 | 渠道、偏好、Outbox、测试/重发的本地模拟；**不会真正发送企微消息，也不保存 Webhook 原文** |
 
-未实现的 Mock 请求明确返回 `MOCK_NOT_IMPLEMENTED`，绝不转发真实后端。当前 P1 原有未开放功能、占位按钮不会因为模式配置变成真实能力；本轮也未新增 P2/P3 页面或接口。Mock 的调度/解析/预测只用于效果预览，不作为后端算法或真实联调验收证据。
+未实现的 P1 Mock 请求明确返回 `MOCK_NOT_IMPLEMENTED`，绝不转发真实后端。P1 原有占位按钮不会因为模式配置变成真实能力。P2 使用独立领域数据源，Live 返回待接入状态；Mock 的评审/调度/解析/预测仅用于预览，不作为后端算法或联调证据。
 
 实现与验证细节见 [数据源运行说明](docs/data-source-modes.md)。
 
@@ -108,8 +110,19 @@ pnpm dev:live
 | `/settings/notifications` | 企业微信推送 | 渠道/偏好/Outbox 真实读取；创建/测试/删除已接 |
 | `/settings/ai` | AI 授权 | 真实 `PUT /consents`（通过 store） |
 | `/settings/data` | 数据与账号 | 退出登录、会话刷新真实 |
+| `/practice` | P2 代码练习 / 分页提交历史 | Mock 已实现；Live 待接入 |
+| `/practice/new` | P2 代码文件、自测、草稿与提交 | Mock 已实现；不执行或上传代码 |
+| `/practice/[id]` | P2 独立评审 / 证据 / 改进 / 追问 / 历史 | Mock 异步演示；Live 待接入 |
 
-上表描述 Live 接入范围；Mock 使用相同页面与 DTO，经统一请求层换成本地适配器。旧 `?state=` 入口不再作为数据模式/业务状态切换方式；请在 Mock 中操作任务/导入来预览状态。
+### P2 预览路径
+
+`pnpm dev:mock` → `/login` → 侧栏“代码练习”。窄屏使用主内容顶部“功能目录”。预置 `/practice/04` 为成功结果，`/practice/01` 为失败与重试，`/practice/06` 为证据不足。`/dashboard#code-feedback` 查看独立的代码趋势区块。
+
+提交的代码快照不可编辑；“修改并新建提交”进入副本表单。重试追加评审，不覆盖历史。未自测时不评定总分/正确性/等级。草稿、改进和追问仅保存在本标签页演示数据；右下角“重置演示”同时清除 P1/P2。P2 代码提交不自动完成今日任务。
+
+P2 真实端点、AI 调用与后端授权本轮均留空，接口模型清单见 `docs/p2-contract-matrix.md`；浏览器验证与复现见 `docs/p2-mock-acceptance.md`。
+
+上表 P1 行描述既有 Live 接入范围；P2 行明确区分 Mock 与待接入状态。旧 `?state=` 入口不再作为数据模式/业务状态切换方式；请在 Mock 中操作任务/导入来预览状态。
 
 开发环境顶栏「页面地图」用于导航；生产构建默认隐藏，可通过 `NEXT_PUBLIC_SHOW_DEV_NAV=true` 打开。该选项不改变数据源。
 
@@ -283,9 +296,9 @@ pnpm build       # 通过
 
 1. 引导步骤 3 的文件选择仍是占位，导入在 `/import` 完成。
 2. 企微测试发送需要有效 Webhook；`send_time` 已存储但定时调度仍按后端默认时间。
-3. 没有自动化 E2E；当前为 lint/typecheck/build + 浏览器手工验收。
+3. P2 已有可选无头浏览器流程验收；P1 全量真实接口 E2E 和 CI 仍待补充。
 4. 时间戳仍按 UTC 解析（后端当前不带 `Z`）。
-5. Phase 2/3 的 React 页面与真实接口尚未开始；规划原型和接入说明见 `design/p2p3/README.md`，不视为已验收功能。
+5. P2 已完成 Mock React 页面和主流程验证，但未做真实接口联调；P3 仍只有规划原型。不能把演示评分当作能力结论。
 
 ---
 
@@ -295,7 +308,7 @@ pnpm build       # 通过
 2. 补 Playwright：登录 → 导入 → 今日完成 → 看板 → 设置；CI 跑 lint/typecheck/build/E2E。
 3. 接真实企微 Webhook 验证测试发送、失败重试、Outbox。
 4. 补生产部署配置：同源反向代理、HTTPS Cookie、CORS 白名单与监控。
-5. 完成 7 天真实使用与 20 条任务数据后进入 Phase 2。
+5. 收集 P2 Mock 页面意见，后端契约交付后接入 Live；继续补齐 P1 真实使用记录。
 
 ---
 
@@ -321,6 +334,8 @@ git branch -vv
 | [docs/architecture.md](docs/architecture.md) | 技术架构、数据流、API 接入方式 |
 | [docs/data-source-modes.md](docs/data-source-modes.md) | 全项目启动/构建模式、P1 Mock 覆盖和验证记录 |
 | [docs/p2-engineering-plan.md](docs/p2-engineering-plan.md) | P2 任务计划与 Mock/Live 接入步骤 |
+| [docs/p2-contract-matrix.md](docs/p2-contract-matrix.md) | P2 页面与接口能力映射，Live 待接入边界 |
+| [docs/p2-mock-acceptance.md](docs/p2-mock-acceptance.md) | P2 Mock 实现、测试复现、浏览器验证与剩余边界 |
 | [docs/p3-engineering-plan.md](docs/p3-engineering-plan.md) | P3 任务计划与 Mock/Live 接入步骤 |
 | [docs/phase1-acceptance.md](docs/phase1-acceptance.md) | Phase 1 验收、回填/预览/加任务证据与上线检查 |
 | [docs/frontend-design-guidelines.md](docs/frontend-design-guidelines.md) | **当前 P1 页面设计协作基准**：视觉、布局、动效、细节与文字内容 |
@@ -332,4 +347,4 @@ git branch -vv
 ---
 
 **维护者**：恒序 persistLog  
-**最后更新**：2026-11-19
+**最后更新**：2026-11-20

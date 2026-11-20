@@ -14,10 +14,10 @@ export function PracticeView(props: { filter: HistoryFilter; page: number }) {
 }
 function Overview({ filter, page }: { filter: HistoryFilter; page: number }) {
   const router = useRouter();
-  const load = useCallback((signal: AbortSignal) => withPractice(api => ({ overview: api.overview(filter, page), stats: api.statistics(30) }), signal), [filter, page]);
+  const load = useCallback((signal: AbortSignal) => withPractice(async api => ({ overview: await api.overview(filter, page), stats: await api.statistics(30) }), signal), [filter, page]);
   const { data, error, loading, refresh } = usePracticeResource(load);
   const go = (status: string, target: number) => router.push('/practice?status=' + status + '&page=' + target);
-  return <div className={'view ' + styles.page}>
+  return <div className="view"><div className={styles.page}>
     <PageHeader title="代码练习" description="提交代码、自测和说明，在独立评审页查看进度与反馈。" side={<Link className="btn btn--primary" href="/practice/new">提交代码</Link>} />
     <DemoNotice />
     {error && <ErrorNotice message={error} retry={refresh} />}
@@ -37,5 +37,5 @@ function Overview({ filter, page }: { filter: HistoryFilter; page: number }) {
         </aside>
       </div>
     </>}
-  </div>;
+  </div></div>;
 }

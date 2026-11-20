@@ -1,5 +1,7 @@
 "use client";
 
+import Link from 'next/link';
+
 import {
   Ban,
   Check,
@@ -198,6 +200,7 @@ export function TaskDetailSheet({
         </Button>
       </div>
       <div className="sheet__body">
+        {['算法', '工程', '项目'].includes(task.type) && <Link className="btn btn--secondary" href={'/practice/new?task=' + encodeURIComponent(task.taskId ?? task.id)} onClick={onClose}>为此任务提交代码</Link>}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 13 }}>
           <Tag variant="neutral">{task.type}</Tag>
           <StatusBadge status={task.status} />

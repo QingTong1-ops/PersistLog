@@ -302,7 +302,7 @@ export function RouteDetailView({ routeId }: { routeId: string }) {
                           <div className="task-table__row" key={`${week.title}-${task.title}`}>
                             <span className="task-table__title">
                               <i className={cn("status-dot", DOT_CLASS[currentStatus])} />
-                              <span>{task.title}</span>
+                              <span>{task.title}{task.id && route.apiId && ['算法', '工程', '项目'].includes(task.type) && <><br /><Link href={'/practice/new?route=' + encodeURIComponent(route.apiId) + '&task=' + encodeURIComponent(task.id)}>提交代码 →</Link></>}</span>
                             </span>
                             <span className="task-table__meta">{task.type}</span>
                             <span className="task-table__meta">{task.minutes} 分钟</span>

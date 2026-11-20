@@ -18,6 +18,7 @@ import { live } from "@/lib/api/live";
 import { daysBetween, formatShortDate } from "@/lib/api/mappers";
 import type { DashboardDataset } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { CodeDashboardSection } from "@/components/dashboard/code-dashboard-section";
 
 const TYPE_COLORS = ["var(--brand-600)", "var(--teal-600)", "var(--sky-600)", "#e8aa4d", "#9b8afb", "#c7ccda"];
 
@@ -479,6 +480,7 @@ export function DashboardView({ demoState }: { demoState?: string }) {
           </details>
         </>
       )}
+      <CodeDashboardSection />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button, PageHeader } from '@/components/ui';
 import { useAppStore } from '@/lib/store/app-store';
+import { live } from '@/lib/api/live';
 import { EMPTY_INPUT, LANGUAGES, PracticeError, type SubmissionInput } from '@/lib/practice/types';
 import { MAX_CODE_BYTES, validateSubmission } from '@/lib/practice/validation';
 import { withPractice } from '@/lib/practice/service';
@@ -11,18 +12,23 @@ import { usePracticeResource } from '@/lib/practice/use-resource';
 import { DemoNotice, ErrorNotice, PracticeBoundary } from './common';
 import styles from './practice.module.css';
 
-type Props = { copyId?: string; taskId?: string; preset?: boolean };
+type Props = { copyId?: string; taskId?: string; routeId?: string; preset?: boolean };
 export function SubmissionForm(props: Props) { return <PracticeBoundary><LoadForm {...props} /></PracticeBoundary>; }
-function LoadForm({ copyId, taskId, preset }: Props) {
+function LoadForm({ copyId, taskId, routeId, preset }: Props) {
   const { tasks, loading: taskLoading } = useAppStore();
-  const load = useCallback((signal: AbortSignal) => withPractice(api => ({ draft: api.draft(), original: copyId ? api.detail(copyId).submission : null }), signal), [copyId]);
-  const { data, error, loading, refresh } = usePracticeResource(load);
-  const task = taskId ? tasks.find(t => t.id === taskId || t.taskId === taskId) : null;
+  const load = useCallback(async (signal: AbortSignal) => {
+    const [practice, route] = await Promise.all([withPractice(async api => ({ draft: await api.draft(), original: copyId ? (await api.detail(copyId)).submission : null }), signal), routeId ? live.routes.get(routeId) : null]);
+    return { ...practice, route };
+  }, [copyId, routeId]);
+  const { data, error, loading, refresh } = usePracticeResource(load, undefined, false);
+  const routeTask = data?.route?.stages.flatMap(s => s.weeks.flatMap(w => w.tasks)).find(t => t.id === taskId);
+  const task = routeTask ? { id: routeTask.id, taskId: routeTask.id, title: routeTask.title, source: '学习路线', stage: data?.route?.title ?? '' } : taskId ? tasks.find(t => t.id === taskId || t.taskId === taskId) : null;
   if (error) return <ErrorNotice message={error} retry={refresh} />;
   if (loading || !data || (taskId && taskLoading)) return <div className={styles.card} aria-busy="true">正在恢复草稿与任务信息…</div>;
   if (taskId && !task) return <ErrorNotice message="没有找到关联的今日任务，请从今日页重新进入。" />;
-  const initial = data.original ? { ...data.original.input, independent: false, consent: false } : task ? { ...EMPTY_INPUT, title: task.title, taskId: task.taskId ?? task.id, source: task.source + ' · ' + task.stage } : data.draft?.input ?? { ...EMPTY_INPUT, ...(preset ? { title: '实现支持过期时间的 LRU 缓存', difficulty: '中等', source: '学习路线 · 第 3 阶段（演示）', tags: '缓存, 数据结构' } : {}) };
-  return <Editor key={(copyId ?? '') + (taskId ?? '') + (data.draft?.id ?? 'new')} initial={initial} version={data.draft?.version ?? 0} parentId={copyId} replacing={!!data.draft && (!!copyId || !!task)} />;
+  const matchingDraft = data.draft && (copyId ? data.draft.input.originSubmissionId === copyId : task ? data.draft.input.taskId === (task.taskId ?? task.id) : true);
+  const initial = matchingDraft ? data.draft!.input : data.original ? { ...data.original.input, independent: false, consent: false, originSubmissionId: copyId } : task ? { ...EMPTY_INPUT, title: task.title, taskId: task.taskId ?? task.id, source: task.source + ' · ' + task.stage } : { ...EMPTY_INPUT, ...(preset ? { title: '实现支持过期时间的 LRU 缓存', difficulty: '中等', source: '学习路线 · 第 3 阶段（演示）', tags: '缓存, 数据结构' } : {}) };
+  return <Editor key={(copyId ?? '') + (taskId ?? '') + (data.draft?.id ?? 'new')} initial={initial} version={data.draft?.version ?? 0} parentId={initial.originSubmissionId} replacing={!!data.draft && !matchingDraft} />;
 }
 function Editor({ initial, version, parentId, replacing }: { initial: SubmissionInput; version: number; parentId?: string; replacing: boolean }) {
   const router = useRouter();
@@ -77,7 +83,7 @@ function Editor({ initial, version, parentId, replacing }: { initial: Submission
       'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? 'error-' + name : undefined };
     return <div className={styles.field}><label htmlFor={props.id}>{label}</label>{multiline ? <textarea {...props} /> : <input {...props} />}<FieldError name={name} message={errors[name]} /></div>;
   }
-  return <div className={'view ' + styles.page}><PageHeader title="提交代码" description="提交后进入独立评审页；代码快照不可修改，后续修改会形成新提交。" side={<Link className="btn btn--secondary" href="/practice" onClick={e => { if (dirty && !window.confirm('尚有未保存修改，仍返回历史？')) e.preventDefault(); }}>返回提交历史</Link>} /><DemoNotice />
+  return <div className="view"><div className={styles.page}><PageHeader title="提交代码" description="提交后进入独立评审页；代码快照不可修改，后续修改会形成新提交。" side={<Link className="btn btn--secondary" href="/practice" onClick={e => { if (dirty && !window.confirm('尚有未保存修改，仍返回历史？')) e.preventDefault(); }}>返回提交历史</Link>} /><DemoNotice />
     {replacing && <p className={styles.notice}>当前是新建副本。保存或提交会替换本标签页已有草稿，原提交不受影响。</p>}
     {notice && <p className={styles.notice} role="status">{notice}</p>}{error && <ErrorNotice message={error} />}
     {error && <Button onClick={async () => {
@@ -109,6 +115,6 @@ function Editor({ initial, version, parentId, replacing }: { initial: Submission
         <Button type="submit" variant="primary" disabled={busy || reading}>{busy ? '保存中…' : '提交并开始演示评审'}</Button>
       </div></div>
     </form>
-  </div>;
+  </div></div>;
 }
 function FieldError({ name, message }: { name: string; message?: string }) { return <p id={'error-' + name} className={styles.fieldError} role={message ? 'alert' : undefined}>{message ?? ''}</p>; }

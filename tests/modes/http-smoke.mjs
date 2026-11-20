@@ -36,7 +36,7 @@ for (const mode of ['mock', 'live']) {
       await delay(500);
     }
     assert.ok(ready, log);
-    for (const page of ['/login', '/today', '/dashboard', '/routes', '/routes/1', '/import', '/settings/profile', '/settings/notifications', '/settings/ai', '/settings/data', '/onboarding']) {
+    for (const page of ['/login', '/today', '/dashboard', '/routes', '/routes/1', '/import', '/settings/profile', '/settings/notifications', '/settings/ai', '/settings/data', '/onboarding', '/practice', '/practice/new', '/practice/04']) {
       const response = await fetch(base + page);
       const html = await response.text();
       assert.equal(response.status, 200, page);
@@ -45,7 +45,7 @@ for (const mode of ['mock', 'live']) {
     }
     const root = await fetch(base, { redirect: 'manual' });
     assert.equal(root.status, 307); assert.equal(root.headers.get('location'), '/login');
-    console.log(`${mode}: build marker, rewrite isolation, root redirect and 11 route shells passed`);
+    console.log(`${mode}: build marker, rewrite isolation, root redirect and 14 route shells passed`);
   } finally {
     child.kill();
     await new Promise(r => child.once('close', r));

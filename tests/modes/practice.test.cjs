@@ -84,3 +84,22 @@ test('P2 unknown submission and Live boundary do not fabricate results or call e
   await assert.rejects(live.withPractice(api => api.overview()), e => e.code === 'NOT_CONNECTED');
   assert.equal(calls, 0);
 });
+
+test('P2 copied draft preserves parent metadata and a reset identity cannot see prior data', () => {
+  const { api, input, createMockPractice, storage } = setup();
+  const copy = { ...input, title: '复制后的修改', originSubmissionId: '04', consent: false, independent: false };
+  api.saveDraft(copy, 0);
+  const restored = api.draft();
+  assert.equal(restored.input.originSubmissionId, '04'); assert.equal(restored.input.title, '复制后的修改');
+  const newId = api.submit({ ...restored.input, consent: true, independent: true }, 'copy', restored.version, restored.input.originSubmissionId);
+  assert.equal(api.detail(newId).submission.parentId, '04');
+  assert.notEqual(api.detail('04').submission.input.title, '复制后的修改');
+  const other = createMockPractice(storage, 'user:reset');
+  assert.throws(() => other.detail(newId), e => e.code === 'NOT_FOUND');
+});
+
+test('P2 storage failure is explicit and cannot report a successful write', () => {
+  const { createMockPractice } = setup();
+  const api = createMockPractice({ getItem: () => null, setItem: () => { throw new Error('quota'); } }, 'user');
+  assert.throws(() => api.overview(), e => e.code === 'STORAGE');
+});

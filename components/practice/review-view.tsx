@@ -1,22 +1,22 @@
 "use client";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, PageHeader } from '@/components/ui';
 import { withPractice } from '@/lib/practice/service';
 import { usePracticeResource } from '@/lib/practice/use-resource';
-import type { Followup, ReviewDetail } from '@/lib/practice/types';
+import type { Followup, ReviewDetail, PracticeOverview } from '@/lib/practice/types';
 import { DemoNotice, ErrorNotice, PracticeBoundary, Status, SubmissionHistory, dateLabel } from './common';
 import { ReviewProgress } from './review-progress';
 import styles from './practice.module.css';
 
-type ReviewData = { detail: ReviewDetail; history: ReturnType<import('@/lib/practice/mock').PracticeAdapter['overview']>['history'] };
+type ReviewData = { detail: ReviewDetail; history: PracticeOverview['history'] };
 const processing = (data: ReviewData) => ['pending', 'reviewing'].includes(data.detail.latest.status);
 export function ReviewView(props: { submissionId: string; reviewId?: string }) { return <PracticeBoundary><Review {...props} /></PracticeBoundary>; }
 
 function Review({ submissionId, reviewId }: { submissionId: string; reviewId?: string }) {
   const router = useRouter();
-  const load = useCallback((signal: AbortSignal) => withPractice(api => ({ detail: api.detail(submissionId, reviewId), history: api.overview().history.filter(s => s.id !== submissionId) }), signal), [submissionId, reviewId]);
+  const load = useCallback((signal: AbortSignal) => withPractice(async api => ({ detail: await api.detail(submissionId, reviewId), history: (await api.overview()).history.filter(s => s.id !== submissionId) }), signal), [submissionId, reviewId]);
   const { data, error, loading, refresh } = usePracticeResource(load, processing);
   const [actionError, setActionError] = useState(''), [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false), [range, setRange] = useState<[number, number] | null>(null);
@@ -44,7 +44,7 @@ function Review({ submissionId, reviewId }: { submissionId: string; reviewId?: s
   }
   const detail = data?.detail, a = detail?.selected, sub = detail?.submission, result = a?.result;
   const running = !!detail && ['pending', 'reviewing'].includes(detail.latest.status);
-  return <div className={'view ' + styles.page}>
+  return <div className="view"><div className={styles.page}>
     <PageHeader title={sub?.input.title ?? '代码评审'} description="保留本次代码快照，按评审版本查看结果和改进依据。" side={<div className={styles.actions}><Link className="btn btn--secondary" href="/practice">返回提交历史</Link><Button disabled={!data || running || busy} onClick={retry}>重新评审</Button></div>} />
     <DemoNotice />
     {error && <ErrorNotice message={error} retry={refresh} />}{actionError && <ErrorNotice message={actionError} retry={refresh} />}{notice && <p role="status" className={styles.notice}>{notice}</p>}
@@ -73,10 +73,10 @@ function Review({ submissionId, reviewId }: { submissionId: string; reviewId?: s
       </div>
       {result && <>
         <section className={styles.card}><div className={styles.head}><div><h2>改进方向</h2><p>最多三项，完成后由你主动标记。</p></div><span className={styles.muted}>{result.improvements.filter(i => i.completed).length} / {result.improvements.length} 项已标记</span></div>
-          <ul className={styles.list}>{result.improvements.map(item => <li className={styles.row} key={item.id}><div><strong>{item.title}</strong><p className={styles.muted}>改法：{item.method}</p><p className={styles.muted}>验证：{item.verification}</p></div><label className={styles.check}><input type="checkbox" checked={item.completed} disabled={busy} onChange={e => { const completed = e.currentTarget.checked; void perform(() => withPractice(api => api.improve(sub.id, a.id, item.id, completed, a.version)), '演示改进状态已保存。'); }} />已完成</label></li>)}</ul>
+          <ul className={styles.list}>{result.improvements.map(item => <li className={styles.row} key={item.id}><div><strong>{item.title}</strong><p className={styles.muted}>改法：{item.method}</p><p className={styles.muted}>验证：{item.verification}</p></div><ImprovementCheck completed={item.completed} busy={busy || loading} save={completed => perform(() => withPractice(api => api.improve(sub.id, a.id, item.id, completed, a.version)), '演示改进状态已保存。')} /></li>)}</ul>
         </section>
         <section className={styles.card}><div className={styles.head}><div><h2>复盘追问</h2><p>围绕同一份代码说明你的取舍，保存到当前评审记录。</p></div></div>
-          {result.followups.map(q => <Answer key={a.id + q.id} item={q} busy={busy} save={answer => perform(() => withPractice(api => api.answer(sub.id, a.id, q.id, answer, a.version)), '演示追问回答已保存。')} />)}
+          {result.followups.map(q => <Answer key={a.id + q.id} item={q} busy={busy || loading} save={answer => perform(() => withPractice(api => api.answer(sub.id, a.id, q.id, answer, a.version)), '演示追问回答已保存。')} />)}
           <p className={styles.muted}>每日提问属于 P3，本阶段不提供未实现的跳转入口。</p>
         </section>
       </>}
@@ -85,7 +85,7 @@ function Review({ submissionId, reviewId }: { submissionId: string; reviewId?: s
       </section>
       <section className={styles.card}><div className={styles.head}><h2>其他提交历史</h2><Link href="/practice">筛选全部提交 →</Link></div><SubmissionHistory items={data.history} />{!data.history.length && <p className={styles.empty}>没有其他提交。</p>}</section>
     </>}
-  </div>;
+  </div></div>;
 }
 function Answer({ item, busy, save }: { item: Followup; busy: boolean; save: (answer: string) => Promise<boolean> }) {
   const [answer, setAnswer] = useState(item.answer), [error, setError] = useState(''), [saved, setSaved] = useState(false);
@@ -94,4 +94,14 @@ function Answer({ item, busy, save }: { item: Followup; busy: boolean; save: (an
     <p id={'answer-error-' + item.id} role={error ? 'alert' : undefined} className={styles.fieldError}>{error}</p>
     <div className={styles.actions}><Button size="sm" type="submit" disabled={busy}>保存回答</Button>{saved && <span role="status" className={styles.muted}>已保存到当前演示评审</span>}</div>
   </form>;
+}
+
+function ImprovementCheck({ completed, busy, save }: { completed: boolean; busy: boolean; save: (value: boolean) => Promise<boolean> }) {
+  const [checked, setChecked] = useState(completed);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reconcile the optimistic checkbox with a refreshed stored value.
+  useEffect(() => setChecked(completed), [completed]);
+  return <label className={styles.check}><input type="checkbox" checked={checked} disabled={busy} onChange={async e => {
+    const value = e.currentTarget.checked; setChecked(value);
+    if (!await save(value)) setChecked(completed);
+  }} />已完成</label>;
 }

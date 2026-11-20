@@ -2,14 +2,15 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { IS_MOCK } from '@/lib/config/data-source';
+import { PRACTICE_LIVE_AVAILABLE } from '@/lib/practice/live';
 import { STATUS_LABEL, type Submission, type ReviewStatus, type CodeStatistics } from '@/lib/practice/types';
 import styles from './practice.module.css';
 
 export function PracticeBoundary({ children }: { children: React.ReactNode }) {
-  if (!IS_MOCK) return <section className={styles.card}><h2>代码练习接口待接入</h2><p className={styles.muted}>当前为 Live 模式，暂未启用提交、评审和评分查询。不会发送请求或显示演示结果。</p><Link href="/today">返回今日计划</Link></section>;
+  if (!IS_MOCK && !PRACTICE_LIVE_AVAILABLE) return <section className={styles.card}><h2>代码练习接口待接入</h2><p className={styles.muted}>当前为 Live 模式，暂未启用提交、评审和评分查询。不会发送请求或显示演示结果。</p><Link href="/today">返回今日计划</Link></section>;
   return <>{children}</>;
 }
-export function DemoNotice() { return <p className={styles.notice}>演示数据 · 代码与草稿仅保存在本标签页，不上传、不执行代码，也不调用 AI。请勿填写敏感信息。</p>; }
+export function DemoNotice() { return IS_MOCK ? <p className={styles.notice}>演示数据 · 代码与草稿仅保存在本标签页，不上传、不执行代码，也不调用 AI。请勿填写敏感信息。</p> : null; }
 export function Status({ value }: { value: ReviewStatus }) { return <span className={styles.badge} data-status={value}>{STATUS_LABEL[value]}</span>; }
 export function ErrorNotice({ message, retry }: { message: string; retry?: () => void }) {
   return <div className={styles.error} role="alert">{message}{retry ? <div className={styles.actions}><Button size="sm" onClick={retry}>重新读取</Button></div> : null}</div>;

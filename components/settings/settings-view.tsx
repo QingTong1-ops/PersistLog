@@ -741,7 +741,8 @@ function AIPanel() {
 
   return (
     <section className="card settings-panel">
-      <PanelHead title="AI 授权" description="管理计划文本的解析授权。" />
+      <PanelHead title="AI 授权" description="按用途管理授权；计划解析不包含代码评审。" />
+      <div className="settings-section"><div className="settings-section__title"><h3>代码静态评审</h3></div><p>代码评审采用逐次提交确认，不复用计划解析授权。目前仅在 Mock 中演示，本地保存代码与说明，不发送给第三方 AI。真实服务与授权接口尚未接入。</p><Link className="card__link" href="/practice">查看代码练习 →</Link></div>
       <div className="settings-section">
         <div className="settings-section__title">
           <h3>计划解析授权</h3>

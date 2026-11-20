@@ -18,6 +18,9 @@ export function DataSourceIndicator() {
           const { resetMockData } = await import("@/lib/api/mock/p1");
           await logout();
           resetMockData();
+          const { PRACTICE_STORAGE_KEY } = await import('@/lib/practice/mock');
+          sessionStorage.removeItem(PRACTICE_STORAGE_KEY);
+          for (const key of Object.keys(sessionStorage)) if (key.startsWith('persistlog:mock:review-ui:')) sessionStorage.removeItem(key);
           router.replace("/login");
         } catch { window.alert("无法重置演示存储，请允许此站点会话存储后重试。"); }
       }}>重置演示</button>

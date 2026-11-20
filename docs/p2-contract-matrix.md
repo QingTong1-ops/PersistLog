@@ -10,7 +10,7 @@
 | 结果/证据/改进/追问 | 五维评分、定位、标记与回答 | 预置结果，持久化模拟写入 | 待契约 |
 | `/dashboard` 代码区块 | 7/30 天统计、最近提交 | 同一 Mock 数据集聚合 | 待契约 |
 
-模型在 `lib/practice/types.ts`，不能当作后端 DTO。Live 统一返回 NOT_CONNECTED，不发送猜测的端点、不回退 Mock。页面调用 `lib/practice/service.ts`，未来只替换领域 Live 适配器。
+模型在 `lib/practice/types.ts`，不能当作后端 DTO。`repository.ts` 定义统一异步数据接口，Mock 和未来 HTTP 实现都通过该接口访问。Live 的 `getLivePractice()` 返回 NOT_CONNECTED，不发送猜测的端点、不回退 Mock；后端就绪后补齐该适配器并开放能力标记。页面只调用 `lib/practice/service.ts`。
 
 URL 仅保存业务筛选/定位：`/practice?status=failed&page=1`、`/practice/new?copy=提交ID`、`/practice/new?task=任务ID`、`/practice/提交ID?review=评审ID`。数据源仍只由启动/构建命令决定。
 

@@ -4,7 +4,7 @@ export type Language = typeof LANGUAGES[number];
 export type ReviewStatus = 'pending' | 'reviewing' | 'succeeded' | 'insufficient' | 'failed';
 export type HistoryFilter = 'all' | 'pending' | 'succeeded' | 'insufficient' | 'failed';
 export interface SubmissionInput {
-  title: string; language: Language; difficulty: string; source: string; taskId?: string;
+  title: string; language: Language; difficulty: string; source: string; taskId?: string; originSubmissionId?: string;
   tags: string; fileName: string; code: string; timeComplexity: string; spaceComplexity: string;
   notes: string; testStatus: 'provided' | 'untested'; passed: string; total: string; failedTest: string;
   independent: boolean; consent: boolean;
