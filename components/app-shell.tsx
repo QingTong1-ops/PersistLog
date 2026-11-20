@@ -24,6 +24,7 @@ import { IconButton, useToast } from "@/components/ui";
 import { useAppStore } from "@/lib/store/app-store";
 import { formatChineseDate, formatShortDate } from "@/lib/api/mappers";
 import { cn } from "@/lib/utils";
+import { MobileDirectory } from "@/components/practice/common";
 
 const NAV_LABELS: Record<string, string> = {
   today: "今日",
@@ -33,6 +34,7 @@ const NAV_LABELS: Record<string, string> = {
   settings: "设置",
   login: "登录",
   onboarding: "首次引导",
+  practice: "代码练习",
 };
 
 function navKeyFromPath(pathname: string) {
@@ -89,15 +91,11 @@ function Sidebar() {
 
         <div className="nav-group">
           <p className="nav-label">后续能力</p>
-          <button
-            className="nav-item is-locked"
-            type="button"
-            onClick={() => showToast("<strong>代码练习尚未开放。</strong>")}
-          >
+          <Link className={cn("nav-item", active === "practice" && "is-active")} href="/practice">
             <Code2 className="icon" aria-hidden="true" />
             <span>代码练习</span>
             <span className="nav-tag">P2</span>
-          </button>
+          </Link>
           <button
             className="nav-item is-locked"
             type="button"
@@ -233,7 +231,7 @@ function Topbar() {
   const { profile, todayDate } = useAppStore();
   const segments = pathname.split("/").filter(Boolean);
   const root = segments[0] ?? "today";
-  const pageLabel = root === "routes" && segments[1] ? "路线详情" : NAV_LABELS[root] ?? "今日";
+  const pageLabel = root === "practice" && segments[1] ? segments[1] === "new" ? "提交代码" : "评审详情" : root === "routes" && segments[1] ? "路线详情" : NAV_LABELS[root] ?? "今日";
   const showDevNav =
     process.env.NODE_ENV === "development" ||
     process.env.NEXT_PUBLIC_SHOW_DEV_NAV === "true";
@@ -315,7 +313,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="app-main">
         <Topbar />
-        <main className="main">{children}</main>
+        <main className="main"><MobileDirectory />{children}</main>
       </div>
       <MobileNav />
     </div>
