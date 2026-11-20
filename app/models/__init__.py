@@ -8,7 +8,7 @@ from app.models.notification import (
 from app.models.planning import DailyPlan, DailyPlanItem, TaskOccurrence
 from app.models.profile import JobTarget, UserConsent, UserProfile
 from app.models.route import Route, RouteStage, RouteVersion, RouteWeek, Task
-from app.models.system import AiRun, AuditLog, Job, StoredFile
+from app.models.system import AiRun, AuditLog, IdempotencyRecord, Job, StoredFile
 from app.models.user import RefreshToken, User
 
 __all__ = [
@@ -20,6 +20,7 @@ __all__ = [
     "StoredFile",
     "AiRun",
     "Job",
+    "IdempotencyRecord",
     "Route",
     "RouteVersion",
     "RouteStage",

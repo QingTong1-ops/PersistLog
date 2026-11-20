@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -29,3 +29,18 @@ def get_current_user(
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 DbSession = Annotated[Session, Depends(get_db)]
+
+
+class PaginationParams:
+    """Validated limit/offset for new list endpoints."""
+
+    def __init__(
+        self,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+        offset: Annotated[int, Query(ge=0)] = 0,
+    ) -> None:
+        self.limit = limit
+        self.offset = offset
+
+
+PaginationDep = Annotated[PaginationParams, Depends(PaginationParams)]

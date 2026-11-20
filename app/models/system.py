@@ -4,7 +4,18 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -46,9 +57,14 @@ class AiRun(Base):
     provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
     model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     prompt_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    schema_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    consent_scope: Mapped[str | None] = mapped_column(String(64), nullable=True)
     input_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     input_snapshot_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     output_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    validation_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    quality_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
+    quality_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
     token_usage_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -71,17 +87,58 @@ class Job(Base):
     )
     job_type: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    stage: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    steps_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
     progress: Mapped[Decimal] = mapped_column(
         Numeric(5, 2), nullable=False, default=Decimal("0.00")
     )
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
+    retryable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     result_ref: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    result_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     error_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
     )
+
+
+class IdempotencyRecord(Base):
+    __tablename__ = "idempotency_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "idempotency_key",
+            "method",
+            "path",
+            name="uk_idempotency_scope",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    path: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status_code: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    response_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="processing")
+    resource_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    resource_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
 
 
 class AuditLog(Base):

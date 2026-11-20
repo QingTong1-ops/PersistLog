@@ -32,6 +32,7 @@ EXPECTED_TABLES = {
     "notification_outbox",
     "jobs",
     "audit_logs",
+    "idempotency_records",
 }
 
 
@@ -58,3 +59,57 @@ def test_phase1_schema_tables_exist() -> None:
 
     missing = EXPECTED_TABLES - tables
     assert not missing, f"missing tables: {sorted(missing)}"
+
+
+def test_common_foundation_columns_exist() -> None:
+    settings = get_settings()
+    if not settings.test_database_url:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+
+    url = make_url(settings.test_database_url)
+    connection = pymysql.connect(
+        host=url.host or "127.0.0.1",
+        port=url.port or 3306,
+        user=url.username or "root",
+        password=url.password or "",
+        database=url.database,
+        charset="utf8mb4",
+    )
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SHOW COLUMNS FROM jobs")
+            job_columns = {row[0] for row in cursor.fetchall()}
+            cursor.execute("SHOW COLUMNS FROM ai_runs")
+            ai_columns = {row[0] for row in cursor.fetchall()}
+            cursor.execute("SHOW COLUMNS FROM idempotency_records")
+            idempotency_columns = {row[0] for row in cursor.fetchall()}
+    finally:
+        connection.close()
+
+    assert {
+        "stage",
+        "steps_json",
+        "attempt",
+        "max_attempts",
+        "retryable",
+        "result_version",
+        "idempotency_key",
+        "started_at",
+        "finished_at",
+    } <= job_columns
+    assert {
+        "schema_version",
+        "consent_scope",
+        "validation_json",
+        "quality_score",
+        "quality_json",
+    } <= ai_columns
+    assert {
+        "idempotency_key",
+        "request_hash",
+        "status_code",
+        "response_json",
+        "state",
+        "locked_until",
+        "expires_at",
+    } <= idempotency_columns

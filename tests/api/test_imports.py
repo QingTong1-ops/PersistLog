@@ -111,10 +111,12 @@ def test_import_preview_edit_confirm_rollback(client: TestClient) -> None:
         headers=auth_header(token),
     )
     assert route_detail.status_code == 200, route_detail.text
-    assert (
-        route_detail.json()["stages"][0]["weeks"][0]["tasks"][0]["title"]
-        == "TCP 三次握手（已编辑）"
-    )
+    titles = {
+        task["title"]
+        for task in route_detail.json()["stages"][0]["weeks"][0]["tasks"]
+    }
+    assert "TCP 三次握手（已编辑）" in titles
+    assert "HTTP 缓存" in titles
 
     repeated = client.post(
         f"/api/v1/imports/{import_id}/confirm",

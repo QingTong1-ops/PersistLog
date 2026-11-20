@@ -13,6 +13,7 @@ from app.api.v1.router import router as api_v1_router
 from app.core.config import Settings, get_settings
 from app.core.db import check_database, get_db
 from app.core.errors import AppError, install_exception_handlers
+from app.core.idempotency import IdempotencyMiddleware
 from app.core.logging import configure_logging
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     install_exception_handlers(app)
+
+    # Register CORS after idempotency so CORS remains the outer middleware and
+    # also decorates replayed responses.
+    app.add_middleware(IdempotencyMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

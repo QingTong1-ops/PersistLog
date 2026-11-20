@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy import DateTime, Integer, MetaData, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 NAMING_CONVENTION = {
@@ -16,6 +16,17 @@ NAMING_CONVENTION = {
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
+
+
+class VersionMixin:
+    """Optimistic concurrency version for mutable P2/P3 resources."""
+
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
+    )
 
 
 class TimestampMixin:

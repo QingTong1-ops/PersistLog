@@ -105,6 +105,7 @@ def check_rate_limit(key: str, limit: int, window_seconds: int) -> None:
             "请求过于频繁，请稍后再试",
             status_code=429,
             details={"retry_after": retry_after},
+            retryable=True,
         )
 
 

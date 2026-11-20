@@ -4760,9 +4760,50 @@
             "type": "string",
             "title": "Status"
           },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps"
+          },
           "progress": {
             "type": "number",
             "title": "Progress"
+          },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt",
+            "default": 0
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts",
+            "default": 2
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable",
+            "default": true
           },
           "result_ref": {
             "anyOf": [
@@ -4775,6 +4816,17 @@
             ],
             "title": "Result Ref"
           },
+          "result_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Version"
+          },
           "error": {
             "anyOf": [
               {
@@ -4786,6 +4838,36 @@
               }
             ],
             "title": "Error"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-10-20T01:02:03.000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
           },
           "created_at": {
             "type": "string",

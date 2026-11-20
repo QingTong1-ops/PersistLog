@@ -54,6 +54,7 @@ def _clean_account_tables() -> None:
             "notification_preferences",
             "notification_channels",
             "audit_logs",
+            "idempotency_records",
             "user_consents",
             "refresh_tokens",
             "job_targets",

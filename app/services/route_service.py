@@ -109,7 +109,7 @@ def _snapshot(db: Session, route: Route) -> dict[str, Any]:
                         Task.deleted_at.is_(None),
                         Task.status == "active",
                     )
-                    .order_by(Task.planned_date, Task.created_at)
+                    .order_by(Task.planned_date, Task.created_at, Task.id)
                 )
             )
             week_payloads.append(
@@ -217,7 +217,7 @@ def route_detail(db: Session, route: Route) -> RouteDetail:
                         Task.deleted_at.is_(None),
                         Task.status == "active",
                     )
-                    .order_by(Task.planned_date, Task.created_at)
+                    .order_by(Task.planned_date, Task.created_at, Task.id)
                 )
             )
             total_tasks += len(tasks)
