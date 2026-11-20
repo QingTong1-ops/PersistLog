@@ -1,8 +1,8 @@
 # 恒序 persistLog · AI Harness 设计
 
 > **版本** v0.1  
-> **日期** 2026-11-19  
-> **状态** 方向已确认；具体阈值待 M0.2 联调评审  
+> **日期** 2026-11-20
+> **状态** 核心已实现（M0.2）；任务级 Schema/评测样本随 P2/P3 接入
 > **适用范围** P2 代码评审、P3 路线诊断/调整、P3 每日提问反馈，以及后续所有 AI 任务  
 > **关系** 本文件是 [07-P2P3开发计划](07-P2P3开发计划.md) 中 M0 的 AI 质量门禁细化，不替代各业务 Schema。
 
@@ -21,6 +21,15 @@
 7. **失败可恢复**：保留用户输入，任务失败可重试；不生成假结果填空。
 
 目标不是“让 AI 永不编造”，而是**把可检测的编造拦在展示前，把不可检测的编造量化并抽样复核**。
+
+### 1.1 已实现（M0.2）
+
+- [harness.py](../app/ai/harness.py)：`AITaskSpec`、`AIGateway`、`ValidationIssue`、`QualityPolicy`、`evaluate_quality`。
+- [client.py](../app/ai/client.py)：通用 OpenAI-compatible JSON Provider。
+- [evals.py](../app/ai/evals.py)：`EvalCase` 与批量评测聚合。
+- [consent_service.py](../app/services/consent_service.py)：`ai_code_review`、`ai_route_generation`、`ai_quiz_feedback` 分用途授权。
+- 测试：接受/复核/拒绝、Schema 失败、安全违规、授权缺失、重试、Provider 4xx/5xx、评测聚合。
+- 尚未实现：具体 P2/P3 TaskSpec、黄金样本集、CLI 评测入口；这些随首个业务任务落地。
 
 ---
 
@@ -182,6 +191,7 @@ quality = 0.35 * grounding
 8. 检测“AC/隐藏测试/运行结果/实测性能/我执行了代码”等越界声明。
 9. 检测“忽略以上指令/泄露系统提示/输出非 JSON”等注入结果。
 10. 低质量/高风险输出转人工复核或失败，不静默展示。
+11. `HarnessResult.formal_data` 是写正式结果的唯一入口；`needs_review` 时读取会抛出 `AI_OUTPUT_NEEDS_REVIEW`，避免业务 service 误把待复核输出写进正式评分/证据。
 
 ---
 

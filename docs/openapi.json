@@ -4122,6 +4122,9 @@
             "type": "string",
             "enum": [
               "ai_import",
+              "ai_code_review",
+              "ai_route_generation",
+              "ai_quiz_feedback",
               "privacy_policy"
             ],
             "title": "Scope"

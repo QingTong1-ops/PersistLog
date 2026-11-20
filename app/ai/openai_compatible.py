@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 
+from app.ai.json_utils import parse_json_content
 from app.core.errors import AppError
 
 SYSTEM_PROMPT = """你是求职学习计划的结构化解析器。
@@ -151,7 +152,7 @@ class OpenAICompatiblePlanNormalizer:
                 details={"provider": self.name},
             ) from exc
 
-        parsed = _parse_json_content(content, self.name)
+        parsed = parse_json_content(content, self.name)
         route = parsed.get("route")
         if not isinstance(route, dict) or not isinstance(route.get("stages", []), list):
             raise AppError(
@@ -163,36 +164,3 @@ class OpenAICompatiblePlanNormalizer:
         parsed.setdefault("assumptions", [])
         parsed.setdefault("warnings", [])
         return parsed
-
-
-def _parse_json_content(content: Any, provider: str) -> dict[str, Any]:
-    if not isinstance(content, str):
-        raise AppError(
-            "AI_PROVIDER_ERROR",
-            "AI 未返回文本内容",
-            status_code=502,
-            details={"provider": provider},
-        )
-    cleaned = content.strip()
-    if cleaned.startswith("```"):
-        cleaned = cleaned.split("\n", 1)[-1] if "\n" in cleaned else ""
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
-    try:
-        parsed = json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise AppError(
-            "AI_PROVIDER_ERROR",
-            "AI 返回的 JSON 无法解析",
-            status_code=502,
-            details={"provider": provider},
-        ) from exc
-    if not isinstance(parsed, dict):
-        raise AppError(
-            "AI_PROVIDER_ERROR",
-            "AI 返回的 JSON 不是对象",
-            status_code=502,
-            details={"provider": provider},
-        )
-    return parsed

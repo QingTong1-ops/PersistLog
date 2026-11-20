@@ -1,6 +1,6 @@
 # 恒序 persistLog 文档
 
-**当前阶段**：Phase 1 后端已完成；Phase 2/3 计划已确认，M0.1 通用基础完成，M0.2 AI Harness 待开始
+**当前阶段**：Phase 1 后端已完成；Phase 2/3 计划已确认，M0.1 通用基础与 M0.2 AI Harness 已完成（待审查）
 
 **当前有效文档**：产品/技术/后端计划 3 份主文档 + 进度总结 + 前端对接 + 后续计划 + P2/P3 开发计划 + AI Harness 设计 + 1 份 DDL + OpenAPI 导出
 

@@ -6,7 +6,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.common import UTCDateTime
 
-ConsentScope = Literal["ai_import", "privacy_policy"]
+ConsentScope = Literal[
+    "ai_import",
+    "ai_code_review",
+    "ai_route_generation",
+    "ai_quiz_feedback",
+    "privacy_policy",
+]
 
 
 class ConsentUpdate(BaseModel):

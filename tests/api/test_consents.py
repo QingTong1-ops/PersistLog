@@ -31,6 +31,19 @@ def test_consent_grant_and_revoke(client: TestClient) -> None:
     assert revoked.json()["revoked_at"] is not None
 
 
+def test_purpose_specific_consent_scopes(client: TestClient) -> None:
+    body = register(client, email="consent-scopes@example.com")
+    headers = auth_header(body["access_token"])
+    for scope in ("ai_code_review", "ai_route_generation", "ai_quiz_feedback"):
+        response = client.put(
+            "/api/v1/consents",
+            headers=headers,
+            json={"scope": scope, "version": "v1", "granted": True},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["scope"] == scope
+
+
 def test_consent_invalid_scope(client: TestClient) -> None:
     body = register(client)
     response = client.put(
