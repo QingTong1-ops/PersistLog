@@ -33,6 +33,8 @@ EXPECTED_TABLES = {
     "jobs",
     "audit_logs",
     "idempotency_records",
+    "code_drafts",
+    "code_submissions",
 }
 
 
@@ -83,6 +85,10 @@ def test_common_foundation_columns_exist() -> None:
             ai_columns = {row[0] for row in cursor.fetchall()}
             cursor.execute("SHOW COLUMNS FROM idempotency_records")
             idempotency_columns = {row[0] for row in cursor.fetchall()}
+            cursor.execute("SHOW COLUMNS FROM code_drafts")
+            draft_columns = {row[0] for row in cursor.fetchall()}
+            cursor.execute("SHOW COLUMNS FROM code_submissions")
+            submission_columns = {row[0] for row in cursor.fetchall()}
     finally:
         connection.close()
 
@@ -113,3 +119,20 @@ def test_common_foundation_columns_exist() -> None:
         "locked_until",
         "expires_at",
     } <= idempotency_columns
+    assert {
+        "code_text",
+        "line_count",
+        "code_hash",
+        "self_test_json",
+        "version",
+        "status",
+    } <= draft_columns
+    assert {
+        "draft_id",
+        "source_submission_id",
+        "code_text",
+        "line_count",
+        "code_hash",
+        "consent_version",
+        "status",
+    } <= submission_columns

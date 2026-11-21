@@ -2146,6 +2146,683 @@
         }
       }
     },
+    "/api/v1/practice/context": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Context",
+        "operationId": "get_context_api_v1_practice_context_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "occurrence_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Occurrence Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeContextOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/practice/drafts": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "List Drafts",
+        "operationId": "list_drafts_api_v1_practice_drafts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PracticeDraftSummary_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Create Draft",
+        "operationId": "create_draft_api_v1_practice_drafts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeDraftCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeDraftOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/practice/drafts/{draft_id}": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Draft",
+        "operationId": "get_draft_api_v1_practice_drafts__draft_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeDraftOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Update Draft",
+        "operationId": "update_draft_api_v1_practice_drafts__draft_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeDraftUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeDraftOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Delete Draft",
+        "operationId": "delete_draft_api_v1_practice_drafts__draft_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Version"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/practice/drafts/{draft_id}/submit": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Submit Draft",
+        "operationId": "submit_draft_api_v1_practice_drafts__draft_id__submit_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Draft Id"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeDraftSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeSubmissionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/practice/submissions": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "List Submissions",
+        "operationId": "list_submissions_api_v1_practice_submissions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PracticeSubmissionSummary_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Create Submission",
+        "operationId": "create_submission_api_v1_practice_submissions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeSubmissionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeSubmissionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/practice/submissions/{submission_id}": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Submission",
+        "operationId": "get_submission_api_v1_practice_submissions__submission_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Submission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeSubmissionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/practice/submissions/{submission_id}/copy-to-draft": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Copy Submission To Draft",
+        "operationId": "copy_submission_to_draft_api_v1_practice_submissions__submission_id__copy_to_draft_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Submission Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeDraftOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/today": {
       "get": {
         "tags": [
@@ -5475,6 +6152,1291 @@
         ],
         "title": "OutboxOut"
       },
+      "Page_PracticeDraftSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeDraftSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[PracticeDraftSummary]"
+      },
+      "Page_PracticeSubmissionSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeSubmissionSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[PracticeSubmissionSummary]"
+      },
+      "PracticeContextOut": {
+        "properties": {
+          "task_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeTaskContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allowed_languages": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "python",
+                "java",
+                "javascript",
+                "typescript"
+              ]
+            },
+            "type": "array",
+            "title": "Allowed Languages"
+          },
+          "default_language": {
+            "type": "string",
+            "enum": [
+              "python",
+              "java",
+              "javascript",
+              "typescript"
+            ],
+            "title": "Default Language",
+            "default": "python"
+          }
+        },
+        "type": "object",
+        "title": "PracticeContextOut"
+      },
+      "PracticeDraftCreate": {
+        "properties": {
+          "problem_title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Problem Title"
+          },
+          "problem_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Source"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard",
+              "unrated"
+            ],
+            "title": "Difficulty",
+            "default": "unrated"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Tags"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "python",
+              "java",
+              "javascript",
+              "typescript"
+            ],
+            "title": "Language"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "code_text": {
+            "type": "string",
+            "maxLength": 204800,
+            "minLength": 1,
+            "title": "Code Text"
+          },
+          "self_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelfTest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_complexity": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Time Complexity"
+          },
+          "space_complexity": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Space Complexity"
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach"
+          },
+          "is_independent": {
+            "type": "boolean",
+            "title": "Is Independent",
+            "default": false
+          },
+          "capability_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 11,
+            "title": "Capability Codes"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_occurrence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Occurrence Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "problem_title",
+          "language",
+          "code_text",
+          "time_complexity",
+          "space_complexity"
+        ],
+        "title": "PracticeDraftCreate"
+      },
+      "PracticeDraftOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "problem_title": {
+            "type": "string",
+            "title": "Problem Title"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "source_submission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Submission Id"
+          },
+          "task_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeTaskContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
+          },
+          "problem_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Source"
+          },
+          "difficulty": {
+            "type": "string",
+            "title": "Difficulty"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "code_text": {
+            "type": "string",
+            "title": "Code Text"
+          },
+          "line_count": {
+            "type": "integer",
+            "title": "Line Count"
+          },
+          "code_hash": {
+            "type": "string",
+            "title": "Code Hash"
+          },
+          "self_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelfTest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_complexity": {
+            "type": "string",
+            "title": "Time Complexity"
+          },
+          "space_complexity": {
+            "type": "string",
+            "title": "Space Complexity"
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach"
+          },
+          "is_independent": {
+            "type": "boolean",
+            "title": "Is Independent"
+          },
+          "capability_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capability Codes"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_occurrence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Occurrence Id"
+          },
+          "last_submission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Submission Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "problem_title",
+          "language",
+          "version",
+          "status",
+          "updated_at",
+          "difficulty",
+          "file_name",
+          "code_text",
+          "line_count",
+          "code_hash",
+          "time_complexity",
+          "space_complexity",
+          "is_independent",
+          "created_at"
+        ],
+        "title": "PracticeDraftOut"
+      },
+      "PracticeDraftSubmit": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "PracticeDraftSubmit"
+      },
+      "PracticeDraftSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "problem_title": {
+            "type": "string",
+            "title": "Problem Title"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "source_submission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Submission Id"
+          },
+          "task_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeTaskContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "problem_title",
+          "language",
+          "version",
+          "status",
+          "updated_at"
+        ],
+        "title": "PracticeDraftSummary"
+      },
+      "PracticeDraftUpdate": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "problem_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Title"
+          },
+          "problem_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Source"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "easy",
+                  "medium",
+                  "hard",
+                  "unrated"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "python",
+                  "java",
+                  "javascript",
+                  "typescript"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "code_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 204800,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Text"
+          },
+          "self_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelfTest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_complexity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Complexity"
+          },
+          "space_complexity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Space Complexity"
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach"
+          },
+          "is_independent": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Independent"
+          },
+          "capability_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 11
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Codes"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_occurrence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Occurrence Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "PracticeDraftUpdate"
+      },
+      "PracticeSubmissionCreate": {
+        "properties": {
+          "problem_title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Problem Title"
+          },
+          "problem_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Source"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard",
+              "unrated"
+            ],
+            "title": "Difficulty",
+            "default": "unrated"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Tags"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "python",
+              "java",
+              "javascript",
+              "typescript"
+            ],
+            "title": "Language"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "code_text": {
+            "type": "string",
+            "maxLength": 204800,
+            "minLength": 1,
+            "title": "Code Text"
+          },
+          "self_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelfTest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_complexity": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Time Complexity"
+          },
+          "space_complexity": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Space Complexity"
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach"
+          },
+          "is_independent": {
+            "type": "boolean",
+            "title": "Is Independent",
+            "default": false
+          },
+          "capability_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 11,
+            "title": "Capability Codes"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_occurrence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Occurrence Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "problem_title",
+          "language",
+          "code_text",
+          "time_complexity",
+          "space_complexity"
+        ],
+        "title": "PracticeSubmissionCreate"
+      },
+      "PracticeSubmissionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "problem_title": {
+            "type": "string",
+            "title": "Problem Title"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "difficulty": {
+            "type": "string",
+            "title": "Difficulty"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "code_hash": {
+            "type": "string",
+            "title": "Code Hash"
+          },
+          "line_count": {
+            "type": "integer",
+            "title": "Line Count"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status",
+            "default": "not_started"
+          },
+          "evaluation_count": {
+            "type": "integer",
+            "title": "Evaluation Count",
+            "default": 0
+          },
+          "latest_evaluation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Evaluation Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
+          },
+          "draft_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Id"
+          },
+          "source_submission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Submission Id"
+          },
+          "task_occurrence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Occurrence Id"
+          },
+          "problem_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Source"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "code_text": {
+            "type": "string",
+            "title": "Code Text"
+          },
+          "self_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelfTest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_complexity": {
+            "type": "string",
+            "title": "Time Complexity"
+          },
+          "space_complexity": {
+            "type": "string",
+            "title": "Space Complexity"
+          },
+          "approach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach"
+          },
+          "is_independent": {
+            "type": "boolean",
+            "title": "Is Independent"
+          },
+          "capability_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capability Codes"
+          },
+          "consent_version": {
+            "type": "string",
+            "title": "Consent Version"
+          },
+          "consent_scope": {
+            "type": "string",
+            "title": "Consent Scope"
+          },
+          "task_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeTaskContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "problem_title",
+          "language",
+          "difficulty",
+          "code_hash",
+          "line_count",
+          "created_at",
+          "file_name",
+          "code_text",
+          "time_complexity",
+          "space_complexity",
+          "is_independent",
+          "consent_version",
+          "consent_scope"
+        ],
+        "title": "PracticeSubmissionOut"
+      },
+      "PracticeSubmissionSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "problem_title": {
+            "type": "string",
+            "title": "Problem Title"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "difficulty": {
+            "type": "string",
+            "title": "Difficulty"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "code_hash": {
+            "type": "string",
+            "title": "Code Hash"
+          },
+          "line_count": {
+            "type": "integer",
+            "title": "Line Count"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status",
+            "default": "not_started"
+          },
+          "evaluation_count": {
+            "type": "integer",
+            "title": "Evaluation Count",
+            "default": 0
+          },
+          "latest_evaluation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Evaluation Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "examples": [
+              "2026-10-20T01:02:03.000Z"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "problem_title",
+          "language",
+          "difficulty",
+          "code_hash",
+          "line_count",
+          "created_at"
+        ],
+        "title": "PracticeSubmissionSummary"
+      },
+      "PracticeTaskContext": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "occurrence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurrence Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "task_type": {
+            "type": "string",
+            "title": "Task Type"
+          },
+          "route_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route Id"
+          },
+          "route_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route Title"
+          },
+          "stage_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Id"
+          },
+          "stage_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Name"
+          },
+          "week_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Id"
+          },
+          "week_focus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Focus"
+          },
+          "estimated_minutes": {
+            "type": "integer",
+            "title": "Estimated Minutes"
+          },
+          "deliverable": {
+            "type": "string",
+            "title": "Deliverable"
+          },
+          "acceptance_criteria": {
+            "type": "string",
+            "title": "Acceptance Criteria"
+          },
+          "capability_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capability Codes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "title",
+          "task_type",
+          "estimated_minutes",
+          "deliverable",
+          "acceptance_criteria"
+        ],
+        "title": "PracticeTaskContext"
+      },
       "PreferenceItem": {
         "properties": {
           "event_type": {
@@ -6423,6 +8385,49 @@
           "created_at"
         ],
         "title": "RouteVersionSummary"
+      },
+      "SelfTest": {
+        "properties": {
+          "provided": {
+            "type": "boolean",
+            "title": "Provided",
+            "default": false
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Failures"
+          }
+        },
+        "type": "object",
+        "title": "SelfTest"
       },
       "SettingsOut": {
         "properties": {

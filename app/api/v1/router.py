@@ -9,6 +9,7 @@ from app.api.v1 import (
     job_targets,
     jobs,
     notifications,
+    practice,
     profile,
     routes,
     tasks,
@@ -26,6 +27,7 @@ router.include_router(jobs.router)
 router.include_router(routes.router)
 router.include_router(routes.stage_router)
 router.include_router(tasks.router)
+router.include_router(practice.router)
 router.include_router(today.router)
 router.include_router(dashboard.router)
 router.include_router(notifications.router)

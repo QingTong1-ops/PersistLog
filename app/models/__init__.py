@@ -6,6 +6,7 @@ from app.models.notification import (
     NotificationTemplate,
 )
 from app.models.planning import DailyPlan, DailyPlanItem, TaskOccurrence
+from app.models.practice import CodeDraft, CodeSubmission
 from app.models.profile import JobTarget, UserConsent, UserProfile
 from app.models.route import Route, RouteStage, RouteVersion, RouteWeek, Task
 from app.models.system import AiRun, AuditLog, IdempotencyRecord, Job, StoredFile
@@ -32,6 +33,8 @@ __all__ = [
     "DailyPlan",
     "DailyPlanItem",
     "TaskOccurrence",
+    "CodeDraft",
+    "CodeSubmission",
     "NotificationChannel",
     "NotificationTemplate",
     "NotificationPreference",
