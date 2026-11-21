@@ -115,7 +115,11 @@ def test_draft_submit_requires_consent_and_is_immutable(client: TestClient) -> N
     assert submitted.status_code == 201, submitted.text
     data = submitted.json()
     assert data["draft_id"] == draft["id"]
-    assert data["review_status"] == "not_started"
+    assert data["review_status"] == "not_evaluated"
+    assert data["evaluation_count"] == 1
+    assert data["latest_evaluation_id"]
+    assert data["latest_job_id"]
+    assert data["latest_score"] is None
     assert data["consent_scope"] == "ai_code_review"
     assert data["consent_version"] == "v1"
     assert data["code_hash"] == draft["code_hash"]
@@ -169,12 +173,18 @@ def test_direct_submission_is_idempotent(client: TestClient) -> None:
     assert second.status_code == 201, second.text
     assert second.headers["idempotency-replayed"] == "true"
     assert second.json() == first.json()
+    assert first.json()["evaluation_count"] == 1
 
     listing = client.get(
         "/api/v1/practice/submissions",
         headers=auth_header(token),
     )
     assert listing.json()["total"] == 1
+    evaluations = client.get(
+        f"/api/v1/practice/submissions/{first.json()['id']}/evaluations",
+        headers=auth_header(token),
+    )
+    assert evaluations.json()["total"] == 1
 
 
 def test_self_test_and_file_name_validation(client: TestClient) -> None:

@@ -9,6 +9,9 @@ from app.core.errors import AppError
 from app.schemas.pagination import Page
 from app.schemas.practice import (
     ALLOWED_LANGUAGES,
+    CodeEvaluationOut,
+    CodeEvaluationSummary,
+    EvaluationStart,
     PracticeContextOut,
     PracticeDraftCreate,
     PracticeDraftOut,
@@ -19,7 +22,7 @@ from app.schemas.practice import (
     PracticeSubmissionOut,
     PracticeSubmissionSummary,
 )
-from app.services import practice_service
+from app.services import code_review_service, practice_service
 
 router = APIRouter(prefix="/practice", tags=["practice"])
 
@@ -170,6 +173,53 @@ def create_submission(
     payload: PracticeSubmissionCreate,
 ) -> PracticeSubmissionOut:
     return practice_service.create_submission(db, user, payload)
+
+
+@router.post(
+    "/submissions/{submission_id}/evaluations",
+    response_model=EvaluationStart,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def start_evaluation(
+    user: CurrentUser,
+    db: DbSession,
+    submission_id: str,
+) -> EvaluationStart:
+    return code_review_service.start_evaluation(db, user, submission_id)
+
+
+@router.get(
+    "/submissions/{submission_id}/evaluations",
+    response_model=Page[CodeEvaluationSummary],
+)
+def list_evaluations(
+    user: CurrentUser,
+    db: DbSession,
+    submission_id: str,
+    page: PaginationDep,
+) -> Page[CodeEvaluationSummary]:
+    items, total = code_review_service.list_evaluations(
+        db,
+        user,
+        submission_id,
+        limit=page.limit,
+        offset=page.offset,
+    )
+    return Page(
+        items=[code_review_service.evaluation_summary(item) for item in items],
+        total=total,
+        limit=page.limit,
+        offset=page.offset,
+    )
+
+
+@router.get("/evaluations/{evaluation_id}", response_model=CodeEvaluationOut)
+def get_evaluation(
+    user: CurrentUser,
+    db: DbSession,
+    evaluation_id: str,
+) -> CodeEvaluationOut:
+    return code_review_service.get_evaluation(db, user, evaluation_id)
 
 
 @router.get("/submissions/{submission_id}", response_model=PracticeSubmissionOut)

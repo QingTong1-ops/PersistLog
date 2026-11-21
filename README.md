@@ -1,4 +1,4 @@
-# 恒序 persistLog · Backend
+﻿# 恒序 persistLog · Backend
 
 Phase 1 后端：计划导入、路线与任务、每日执行、执行看板、企业微信推送。
 
@@ -73,7 +73,7 @@ Redis 仅用于本地开发：只绑定 `127.0.0.1`、无密码，不要暴露�
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；测试强制 AI 使用 Stub、通知使用 Logging Provider，不访问外网。当前为 **157 passed**。
+测试使用 `persistlog_test`，每个 API 测试前后清表；上传文件写入 `storage_test/`；测试强制 AI 使用 Stub、通知使用 Logging Provider，不访问外网。当前为 **168 passed**。
 
 ## 数据库
 
@@ -139,4 +139,4 @@ $mysql = "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 
 ## 当前阶段
 
-Phase 1 后端 M1–M8 + W0 已完成，并完成真实 DeepSeek、企业微信 Webhook、Redis/Celery 链路验证与前端联调修复。P2/P3 已进入 **M0.1 通用基础、M0.2 AI Harness、P2 M1 代码草稿与不可变提交完成（待审查）** 阶段；P2 异步评审/评分趋势、P3 诊断/提问/复习/能力尚未实现。
+Phase 1 后端 M1–M8 + W0 已完成，并完成真实 DeepSeek、企业微信 Webhook、Redis/Celery 链路验证与前端联调修复。P2/P3 已进入 **M0.1、M0.2、P2 M1 已提交；P2 M2 异步评审与评分完成（待审查）** 阶段；P2 改进/追问/趋势、P3 诊断/提问/复习/能力尚未实现。

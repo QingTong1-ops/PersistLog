@@ -35,6 +35,7 @@ def _clean_account_tables() -> None:
     with engine.begin() as connection:
         connection.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         for table in (
+            "code_evaluations",
             "code_submissions",
             "code_drafts",
             "daily_plan_items",

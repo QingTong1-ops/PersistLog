@@ -50,5 +50,6 @@ celery_app.conf.beat_schedule = {
 celery_app.conf.imports = (
     "app.worker.tasks.import_tasks",
     "app.worker.tasks.notification_tasks",
+    "app.worker.tasks.code_review_tasks",
 )
 celery_app.autodiscover_tasks(["app.worker.tasks"])

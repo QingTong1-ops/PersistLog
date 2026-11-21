@@ -35,6 +35,7 @@ EXPECTED_TABLES = {
     "idempotency_records",
     "code_drafts",
     "code_submissions",
+    "code_evaluations",
 }
 
 
@@ -89,6 +90,8 @@ def test_common_foundation_columns_exist() -> None:
             draft_columns = {row[0] for row in cursor.fetchall()}
             cursor.execute("SHOW COLUMNS FROM code_submissions")
             submission_columns = {row[0] for row in cursor.fetchall()}
+            cursor.execute("SHOW COLUMNS FROM code_evaluations")
+            evaluation_columns = {row[0] for row in cursor.fetchall()}
     finally:
         connection.close()
 
@@ -135,4 +138,23 @@ def test_common_foundation_columns_exist() -> None:
         "code_hash",
         "consent_version",
         "status",
+        "latest_evaluation_id",
+        "current_evaluation_id",
+        "evaluation_count",
+        "review_status",
+        "latest_score",
     } <= submission_columns
+    assert {
+        "submission_id",
+        "sequence_no",
+        "status",
+        "is_current",
+        "score",
+        "level",
+        "dimensions_json",
+        "evidence_json",
+        "rubric_version",
+        "prompt_version",
+        "ai_run_id",
+        "job_id",
+    } <= evaluation_columns

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -205,6 +205,9 @@ class PracticeSubmissionSummary(BaseModel):
     review_status: str = "not_started"
     evaluation_count: int = 0
     latest_evaluation_id: str | None = None
+    latest_job_id: str | None = None
+    current_evaluation_id: str | None = None
+    latest_score: int | None = None
     created_at: UTCDateTime
 
 
@@ -229,3 +232,43 @@ class PracticeSubmissionOut(PracticeSubmissionSummary):
 
 class PracticeSubmissionCreate(CodeInput):
     pass
+
+
+class CodeEvaluationSummary(BaseModel):
+    id: str
+    submission_id: str
+    sequence_no: int
+    status: str
+    is_current: bool
+    score: int | None = None
+    level: str | None = None
+    confidence: float | None = None
+    static_risk: str | None = None
+    error_code: str | None = None
+    created_at: UTCDateTime
+    finished_at: UTCDateTime | None = None
+
+
+class CodeEvaluationOut(CodeEvaluationSummary):
+    job_id: str | None = None
+    summary: str | None = None
+    dimensions: dict[str, Any] = Field(default_factory=dict)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+    strengths: list[str] = Field(default_factory=list)
+    improvements: list[dict[str, Any]] = Field(default_factory=list)
+    followups: list[dict[str, Any]] = Field(default_factory=list)
+    not_evaluated: list[str] = Field(default_factory=list)
+    process_steps: list[dict[str, Any]] = Field(default_factory=list)
+    rubric_version: str
+    prompt_version: str
+    model: str | None = None
+    error_detail: str | None = None
+    started_at: UTCDateTime | None = None
+
+
+class EvaluationStart(BaseModel):
+    evaluation_id: str
+    job_id: str
+    submission_id: str
+    sequence_no: int
+    status: str

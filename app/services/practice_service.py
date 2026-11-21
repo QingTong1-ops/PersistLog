@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
@@ -27,6 +28,8 @@ from app.schemas.practice import (
     SelfTest,
 )
 from app.services import consent_service
+
+logger = logging.getLogger(__name__)
 
 MAX_CODE_BYTES = 200 * 1024
 
@@ -332,6 +335,12 @@ def _submission_summary(submission: CodeSubmission) -> PracticeSubmissionSummary
         task_id=submission.task_id,
         code_hash=submission.code_hash,
         line_count=submission.line_count,
+        review_status=submission.review_status,
+        evaluation_count=submission.evaluation_count,
+        latest_evaluation_id=submission.latest_evaluation_id,
+        latest_job_id=submission.latest_job_id,
+        current_evaluation_id=submission.current_evaluation_id,
+        latest_score=submission.latest_score,
         created_at=submission.created_at,
     )
 
@@ -617,6 +626,18 @@ def _create_submission(
         draft.last_submission_id = submission.id
         draft.version += 1
     db.commit()
+    db.refresh(submission)
+
+    # Submission creation and the first review are separate transactions so a
+    # broker/worker problem never loses the immutable submission.
+    from app.services import code_review_service
+
+    try:
+        code_review_service.start_evaluation(db, user, submission.id)
+    except AppError:
+        logger.exception("failed to start code review for submission %s", submission.id)
+        submission.review_status = "failed"
+        db.commit()
     db.refresh(submission)
     return _submission_out(db, user, submission)
 
